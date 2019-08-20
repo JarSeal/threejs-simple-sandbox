@@ -1,22 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Three.js sandbox</title>
-    <link rel="stylesheet" href="css/main.css">
-</head>
-<body>
 
-    <h1>sandbox</h1>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/102/three.js"></script>
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.5/dat.gui.min.js"></script> -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.2/TweenMax.min.js"></script>
+class TileMapRoot {
+    constructor() {
+        this.init();
+    }
 
-    <script>
-
+    init() {
         let scene = new THREE.Scene();
         let camera = new THREE.PerspectiveCamera(75,window.innerWidth / window.innerHeight,0.1,1000);
         camera.position.z = 5;
@@ -33,11 +21,24 @@
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
 
+        // Center of the world
+        let beamGeometry = new THREE.BoxGeometry(1,1,1);
+        let beamMaterial = new THREE.MeshLambertMaterial({color: 0xFF0000});
+        let beam = new THREE.Mesh(beamGeometry, beamMaterial);
+        // beam.position.x = -3;
+        // beam.position.y = -4;
+        // beam.position.z = -3;
+        // beam.position.x = (Math.random() - 0.5) * 10;
+        // beam.position.y = (Math.random() - 0.5) * 10;
+        // beam.position.z = (Math.random() - 0.5) * 10;
+        scene.add(beam);
+        console.log(beam.position);
+
         // let geometry = new THREE.SphereGeometry(1,100,100);
         let geometry = new THREE.BoxGeometry(1,1,1);
         let material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
         let mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
+        //scene.add(mesh);
 
         let meshX = -10;
         for(let i=0; i<15; i++) {
@@ -89,7 +90,7 @@
         // this.tl.to(mesh.rotation, .5, {y: Math.PI*.5, ease: Expo.easeOut}, "=-1.5");
 
         window.addEventListener('mousemove', onMouseMove);
+    }
+}
 
-    </script>
-</body>
-</html>
+new TileMapRoot();
