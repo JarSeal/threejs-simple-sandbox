@@ -2,6 +2,8 @@
 
 class TileMapCamera {
     constructor(renderer) {
+        this.stageMaxPosX = 64;
+        this.stageMaxPosY = 64;
         this.initPosition = {
             x: 3.5,
             y: -3.5,
@@ -15,7 +17,6 @@ class TileMapCamera {
     }
 
     init(renderer) {
-        console.log('init camera');
         this.camera = new THREE.PerspectiveCamera(70,window.innerWidth / window.innerHeight,0.1,1000);
         let zoom = 1;
         this.camera.position.x = 3.5 * zoom;
@@ -23,7 +24,7 @@ class TileMapCamera {
         this.camera.position.z = 10 * zoom;
         this.camera.rotation.x = 0.35;
         this.camera.rotation.y = 0.35;
-        this.camera.rotation.z = 0.7;
+        this.camera.rotation.z = 0.785398;
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth,window.innerHeight);
             this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -35,6 +36,10 @@ class TileMapCamera {
         window.addEventListener("mousemove", this.touchMove, {passive: false});
         window.addEventListener("mousedown", this.startTouchMove, {passive: false});
         window.addEventListener("mouseup", this.endTouchMove, {passive: false});
+    }
+
+    centerCamera() {
+        
     }
 
     touchMove = (evt) => {

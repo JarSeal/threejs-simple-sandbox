@@ -61,5 +61,8 @@ module.exports = {
     new CopyWebpackPlugin([
         {from:'src/css',to:'css'}
     ]),
+    new CopyWebpackPlugin([
+        {from:'src/js/vendor',to:'js'}
+    ]),
   ],
 };
