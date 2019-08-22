@@ -14,7 +14,7 @@ class TileMapRoot {
         renderer.setClearColor('#000000');
         renderer.setSize(window.innerWidth,window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        let cam = new TileMapCamera(renderer);
+        let cam = new TileMapCamera(scene, renderer);
         let camera = cam.getCamera();
 
         let raycaster = new THREE.Raycaster();
@@ -24,8 +24,8 @@ class TileMapRoot {
         let beamGeometry = new THREE.BoxGeometry(1,1,1);
         let beamMaterial = new THREE.MeshLambertMaterial({color: 0xff0000});
         let beam = new THREE.Mesh(beamGeometry, beamMaterial);
-        beam.position.y = 1;
-        beam.position.x = 5;
+        beam.position.y = 63;
+        beam.position.x = 0;
         beam.position.z = 0.5;
         // beam.position.x = (Math.random() - 0.5) * 10;
         // beam.position.y = (Math.random() - 0.5) * 10;
@@ -36,10 +36,10 @@ class TileMapRoot {
         scene.add(new THREE.AxesHelper(32));
 
         // World plane (helper)
-        let helper = new THREE.GridHelper(64, 64);
+        let helper = new THREE.GridHelper(64, 64, 0xff0000, 0xffffff);
         helper.rotation.x = 1.5708;
         helper.position.set(31.5, 31.5, 0);
-        helper.material.opacity = 0.25;
+        helper.material.opacity = 0.75;
         helper.material.transparent = true;
         scene.add( helper );
 

@@ -1,7 +1,7 @@
 
 
 class TileMapCamera {
-    constructor(renderer) {
+    constructor(scene, renderer) {
         this.stageMaxPosX = 64;
         this.stageMaxPosY = 64;
         this.initPosition = {
@@ -13,10 +13,12 @@ class TileMapCamera {
         this.isDragging = false;
         this.clickStart ={x:0,y:0};
         this.camera;
-        this.init(renderer);
+        this.stars = [];
+        this.starMaterials = [];
+        this.init(scene, renderer);
     }
 
-    init(renderer) {
+    init(scene, renderer) {
         this.camera = new THREE.PerspectiveCamera(70,window.innerWidth / window.innerHeight,0.1,1000);
         let zoom = 1;
         this.camera.position.x = 3.5 * zoom;
@@ -25,6 +27,22 @@ class TileMapCamera {
         this.camera.rotation.x = 0.35;
         this.camera.rotation.y = 0.35;
         this.camera.rotation.z = 0.785398;
+
+        let group = new THREE.Group();
+        let sprite = new THREE.TextureLoader().load( '/images/sprites/sprite-star.png' );
+        let material = new THREE.SpriteMaterial({map: sprite, transparent: true, alphaTest: 0});
+        for (let a=0; a<1000; a++) {
+            let x = THREE.Math.randFloatSpread(400);
+            let y = THREE.Math.randFloatSpread(400);
+            let z = THREE.Math.randFloat(-40, -100);
+            let sprite = new THREE.Sprite(material);
+            sprite.position.set(x, y, z);
+            // sprite.scale.set(-1.4, -1.4, 1)
+            // sprite.center.set(0.0, 0.0);
+            group.add(sprite);
+        }
+        scene.add(group);
+
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth,window.innerHeight);
             this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -36,18 +54,22 @@ class TileMapCamera {
         window.addEventListener("mousemove", this.touchMove, {passive: false});
         window.addEventListener("mousedown", this.startTouchMove, {passive: false});
         window.addEventListener("mouseup", this.endTouchMove, {passive: false});
+        this.centerCamera();
     }
 
     centerCamera() {
-        
+        this.camera.position.x = 36;
+        this.camera.position.y = 28;
     }
 
     touchMove = (evt) => {
         let touch1 = false;
         let touch2 = false;
         let dist;
-        let stageMaxPosX,
-            stageMaxPosY,
+        let stageMinPosX = -7,
+            stageMinPosY = -7,
+            stageMaxPosX = 67,
+            stageMaxPosY = 67,
             newX,
             newY,
             clientX,
@@ -59,8 +81,6 @@ class TileMapCamera {
             touch1 = evt;
         }
         if(this.isDragging) {
-            //stageMaxPosX = this.stageProps.stageW - this.stageProps.windowW;
-            //stageMaxPosY = this.stageProps.stageH - this.stageProps.windowH;
             clientX = parseInt(touch1.clientX);
             clientY = parseInt(touch1.clientY);
             dist = {
@@ -69,24 +89,25 @@ class TileMapCamera {
             };
             newX = this.camera.position.x + dist.x + dist.y / 2;
             newY = this.camera.position.y - dist.y + dist.x / 2;
-            // if(newX < 0) {
-            //     this.stageProps.stagePosX = 0;
-            // } else if(newX > stageMaxPosX) {
-            //     this.stageProps.stagePosX = stageMaxPosX;
-            // } else {
-            //     this.stageProps.stagePosX += dist.x;
-            // }
-            // if(newY < 0) {
-            //     this.stageProps.stagePosY = 0;
-            // } else if(newY > stageMaxPosY) {
-            //     this.stageProps.stagePosY = stageMaxPosY;
-            // } else {
-            //     this.stageProps.stagePosY += dist.y;
-            // }
+            if(newX < stageMinPosX) {
+                this.camera.position.x = stageMinPosX;
+            } else if(newX > stageMaxPosX) {
+                this.camera.position.x = stageMaxPosX;
+            } else {
+                this.camera.position.x = newX;
+            }
+            if(newY < stageMinPosY) {
+                this.camera.position.y = stageMinPosY;
+            } else if(newY > stageMaxPosY) {
+                this.camera.position.y = stageMaxPosY;
+            } else {
+                this.camera.position.y = newY;
+            }
 
             // TEMP
-            this.camera.position.x = newX;
-            this.camera.position.y = newY;
+            console.log('camera',newX,newY);
+            // this.camera.position.x = newX;
+            // this.camera.position.y = newY;
 
             this.lastDist = {
                 x: clientX,
