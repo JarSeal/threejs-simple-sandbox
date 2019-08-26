@@ -1,4 +1,5 @@
 import TileMapCamera from './tilemap-camera.js';
+import LoadTileMap from './tilemap/load-map.js';
 
 class TileMapRoot {
     constructor() {
@@ -97,22 +98,8 @@ class TileMapRoot {
         const mtlLoader = new THREE.MTLLoader();
         mtlLoader.setPath('/images/objects/');
 
-        new Promise((resolve) => {
-            mtlLoader.load('test-floor2.mtl', (materials) => {
-                resolve(materials);
-            })
-        })
-        .then((materials) => {
-            materials.preload();
-            objLoader.setMaterials(materials);
-            objLoader.load('test-floor2.obj', (object) => {
-                object.rotation.x = 1.5708;
-                object.position.x = 31.5;
-                object.position.y = 31.5;
-                console.log(object);
-                scene.add(object);
-            })
-        })
+        let mapLoader = new LoadTileMap(mtlLoader, objLoader, scene);
+        console.log('Current map:', mapLoader.getCurrentMap());
 
         function onMouseMove(event) {
             event.preventDefault();
