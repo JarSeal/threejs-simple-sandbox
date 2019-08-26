@@ -5,7 +5,6 @@ export function getModule(module, level) {
     let objFile = getModuleLevelData(level, "objFile");
     let mtlFile = getModuleLevelData(level, "mtlFile");
     let errors = checkErrors(tilemap, objFile, mtlFile);
-    console.log('errors',errors);
     return {
         module: module,
         dims: errors ? [] : [tilemap[0].length,tilemap.length],
@@ -22,8 +21,8 @@ function getModuleLevelData(level, type) {
     let data = [
         {
             level: 1,
-            objFile: "test-floor.obj",
-            mtlFile: "test-floor.mtl",
+            objFile: "test-floor2.obj",
+            mtlFile: "test-floor2.mtl",
             tilemap: [
                 [{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],

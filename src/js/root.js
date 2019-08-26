@@ -28,9 +28,6 @@ class TileMapRoot {
         beam.position.y = 63;
         beam.position.x = 0;
         beam.position.z = 0.5;
-        // beam.position.x = (Math.random() - 0.5) * 10;
-        // beam.position.y = (Math.random() - 0.5) * 10;
-        // beam.position.z = (Math.random() - 0.5) * 10;
         scene.add(beam);
 
         // axes (helper)

@@ -14,36 +14,78 @@ class LoadTileMap {
             xLength = rawShip.dims[0],
             yLength = rawShip.dims[1],
             tile,
-            curModuleIndexes;
+            moduleIndex,
+            curModuleIndexes,
+            modulesLoader = [];
         this.ship = rawShip;
         // Add modules to main map
         for(y=0;y<yLength;y++) {
             for(x=0;x<xLength;x++) {
                 tile = rawShip.floors[0].tileMap[y][x];
-                if(tile.level) {
-                    modules.push(getModule(tile.module[0], tile.level));
-                    modules[tile.module[1]].curIndexes = [0,0];
-                }
                 if(tile.module) {
-                    curModuleIndexes = modules[tile.module[1]].curIndexes;
+                    moduleIndex = tile.module[1];
+                    if(tile.level) {
+                        // first tile of module
+                        modules.push(getModule(tile.module[0], tile.level));
+                        modules[moduleIndex].curIndexes = [0,0];
+                        tile = Object.assign(
+                            {},
+                            tile,
+                            {dims: modules[moduleIndex].dims,
+                             name: modules[moduleIndex].name,
+                             objFile: modules[moduleIndex].objFile,
+                             mtlFile: modules[moduleIndex].mtlFile}
+                        );
+                        modulesLoader.push({
+                            moduleId: "module_"+tile.module[0]+"-"+tile.level,
+                            objFile: modules[moduleIndex].objFile,
+                            mtlFile: modules[moduleIndex].mtlFile,
+                            pos: tile.pos
+                        });
+                    }
+                    curModuleIndexes = modules[moduleIndex].curIndexes;
                     this.ship.floors[0].tileMap[y][x] = Object.assign(
                         {},
                         tile,
-                        modules[tile.module[1]].tilemap[curModuleIndexes[0]][curModuleIndexes[1]]
+                        modules[moduleIndex].tilemap[curModuleIndexes[0]][curModuleIndexes[1]]
                     );
-                    if(curModuleIndexes[1] === (modules[tile.module[1]].dims[1] - 1)) {
-                        modules[tile.module[1]].curIndexes[0] += 1;
-                        modules[tile.module[1]].curIndexes[1] = 0;
+                    if(curModuleIndexes[1] === (modules[moduleIndex].dims[1] - 1)) {
+                        modules[moduleIndex].curIndexes[0] += 1;
+                        modules[moduleIndex].curIndexes[1] = 0;
                     } else {
-                        modules[tile.module[1]].curIndexes[1] += 1;
+                        modules[moduleIndex].curIndexes[1] += 1;
                     }
                 } else {
                     this.ship.floors[0].tileMap[y][x] = {type:0};
                 }
             }
         }
-        //console.log(modules);
+        console.log(modulesLoader);
+        
         console.log("this.ship",this.ship);
+        let loader,
+            loaderLength = modulesLoader.length;
+        for(loader=0;loader<loaderLength;loader++) {
+            (function(module) {
+                new Promise((resolve) => {
+                    mtlLoader.load(module.mtlFile, (materials) => {
+                        console.log('module',module);
+                        resolve(materials);
+                    })
+                })
+                .then((materials) => {
+                    materials.preload();
+                    objLoader.setMaterials(materials);
+                    console.log('materials',module);
+                    objLoader.load(module.objFile, (object) => {
+                        object.rotation.x = 1.5708;
+                        object.position.y = module.pos[0];
+                        object.position.x = module.pos[1];
+                        scene.add(object);
+                    })
+                });
+            })(modulesLoader[loader]);
+        }
         // new Promise((resolve) => {
         //     mtlLoader.load('test-floor2.mtl', (materials) => {
         //         resolve(materials);
