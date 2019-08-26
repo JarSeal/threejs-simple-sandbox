@@ -9,21 +9,21 @@ class TileMapRoot {
     }
 
     init() {
-        let scene = new THREE.Scene();
-        let renderer = new THREE.WebGLRenderer({antialias: true});
+        const scene = new THREE.Scene();
+        const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor('#000000');
         renderer.setSize(window.innerWidth,window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        let cam = new TileMapCamera(scene, renderer);
-        let camera = cam.getCamera();
+        const cam = new TileMapCamera(scene, renderer);
+        const camera = cam.getCamera();
 
-        let raycaster = new THREE.Raycaster();
-        let mouse = new THREE.Vector2();
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
 
         // Center of the world
-        let beamGeometry = new THREE.BoxGeometry(1,1,1);
-        let beamMaterial = new THREE.MeshLambertMaterial({color: 0xff0000});
-        let beam = new THREE.Mesh(beamGeometry, beamMaterial);
+        const beamGeometry = new THREE.BoxGeometry(1,1,1);
+        const beamMaterial = new THREE.MeshLambertMaterial({color: 0xff0000});
+        const beam = new THREE.Mesh(beamGeometry, beamMaterial);
         beam.position.y = 63;
         beam.position.x = 0;
         beam.position.z = 0.5;
@@ -36,7 +36,7 @@ class TileMapRoot {
         scene.add(new THREE.AxesHelper(32));
 
         // World plane (helper)
-        let helper = new THREE.GridHelper(64, 64, 0xff0000, 0xffffff);
+        const helper = new THREE.GridHelper(64, 64, 0xff0000, 0xffffff);
         helper.rotation.x = 1.5708;
         helper.position.set(31.5, 31.5, 0);
         helper.material.opacity = 0.75;
@@ -44,9 +44,9 @@ class TileMapRoot {
         scene.add( helper );
 
         // let geometry = new THREE.SphereGeometry(1,100,100);
-        let geometry = new THREE.BoxGeometry(1,1,1);
-        let material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
-        let mesh = new THREE.Mesh(geometry, material);
+        const geometry = new THREE.BoxGeometry(1,1,1);
+        const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
+        const mesh = new THREE.Mesh(geometry, material);
         //scene.add(mesh);
 
         for(let i=0; i<100; i++) {
@@ -60,12 +60,12 @@ class TileMapRoot {
 
         scene.add(new THREE.AmbientLight(0xf0f0f0, 0.2));
 
-        let directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.position.set(0, -32, 10);
         directionalLight.castShadows = true;
         scene.add( directionalLight );
 
-        // let light = new THREE.PointLight(0xFFFFFF, 1, 1000);
+        // const light = new THREE.PointLight(0xFFFFFF, 1, 1000);
         // light.position.set(32,0,0);
         // scene.add(light);
 
@@ -84,13 +84,35 @@ class TileMapRoot {
         document.body.appendChild(stats.domElement);
         // Debug statisctics [END]
 
-        let render = function() {
+        const render = function() {
             requestAnimationFrame(render);
             // mesh.rotation.x += 0.05;
             // mesh.rotation.y += 0.01;
             renderer.render(scene, camera);
             stats.update(); // Debug statistics
         };
+
+        const objLoader = new THREE.OBJLoader();
+        objLoader.setPath('/images/objects/');
+        const mtlLoader = new THREE.MTLLoader();
+        mtlLoader.setPath('/images/objects/');
+
+        new Promise((resolve) => {
+            mtlLoader.load('test-floor2.mtl', (materials) => {
+                resolve(materials);
+            })
+        })
+        .then((materials) => {
+            materials.preload();
+            objLoader.setMaterials(materials);
+            objLoader.load('test-floor2.obj', (object) => {
+                object.rotation.x = 1.5708;
+                object.position.x = 31.5;
+                object.position.y = 31.5;
+                console.log(object);
+                scene.add(object);
+            })
+        })
 
         function onMouseMove(event) {
             event.preventDefault();
