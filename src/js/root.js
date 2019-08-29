@@ -30,6 +30,7 @@ class TileMapRoot {
         beam.position.z = 0.5;
         scene.add(beam);
 
+        /*
         // axes (helper)
         scene.add(new THREE.AxesHelper(32));
 
@@ -40,6 +41,7 @@ class TileMapRoot {
         helper.material.opacity = 0.75;
         helper.material.transparent = true;
         scene.add( helper );
+        */
 
         // let geometry = new THREE.SphereGeometry(1,100,100);
         const geometry = new THREE.BoxGeometry(1,1,1);
@@ -61,15 +63,16 @@ class TileMapRoot {
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.position.set(0, -32, 10);
         directionalLight.castShadows = true;
-        scene.add( directionalLight );
+        //scene.add( directionalLight );
 
-        // const light = new THREE.PointLight(0xFFFFFF, 1, 1000);
-        // light.position.set(32,0,0);
-        // scene.add(light);
+        let light = new THREE.PointLight(0xFFFFFF, 0.3, 1000, 2);
+        light.position.set(32,0,0);
+        light.castShadows = true;
+        scene.add(light);
 
-        // light = new THREE.PointLight(0xFFFFFF, 2, 1000);
-        // light.position.set(0,0,25);
-        // scene.add(light);
+        light = new THREE.PointLight(0xFFFFFF, 0.6, 1000, 2);
+        light.position.set(0,0,25);
+        scene.add(light);
 
         // Debug statisctics [START]
         let stats;

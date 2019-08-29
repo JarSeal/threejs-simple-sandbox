@@ -74,14 +74,24 @@ class LoadTileMap {
                     })
                 })
                 .then((materials) => {
+                    // materials.Material.shininess = 20;
                     materials.preload();
+                    materials.materials.Material.shininess = 10;
                     objLoader.setMaterials(materials);
-                    console.log('materials',module);
+                    console.log('materials',materials.materials.Material);
                     objLoader.load(module.objFile, (object) => {
                         object.rotation.x = 1.5708;
-                        object.position.y = module.pos[0];
-                        object.position.x = module.pos[1];
+                        object.position.y = module.pos[0] + 0.5;
+                        object.position.x = module.pos[1] + 0.5;
+                        object.castShadow = true;
+                        object.receiveShadow = true;
                         scene.add(object);
+                        let light = new THREE.PointLight( 0xffffff, 1, 8, 2);
+                        light.position.set( module.pos[1] + 5, module.pos[0] + 5, 3 );
+                        scene.add(light);
+                        let sphereSize = 0.2;
+                        let pointLightHelper = new THREE.PointLightHelper( light, sphereSize );
+                        scene.add( pointLightHelper );
                     })
                 });
             })(modulesLoader[loader]);
