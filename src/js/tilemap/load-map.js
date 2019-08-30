@@ -2,12 +2,12 @@ import { getShip } from '../data/dev-ship.js';
 import { getModule } from './modules/index.js';
 
 class LoadTileMap {
-    constructor(mtlLoader, objLoader, scene) {
+    constructor(mtlLoader, objLoader, textureLoader, scene) {
         this.ship = [];
-        this.init(mtlLoader, objLoader, scene);
+        this.init(mtlLoader, objLoader, textureLoader, scene);
     }
 
-    init(mtlLoader, objLoader, scene) {
+    init(mtlLoader, objLoader, textureLoader, scene) {
         let x, y,
             modules = [],
             rawShip = getShip(),
@@ -60,21 +60,43 @@ class LoadTileMap {
                 }
             }
         }
-        console.log(modulesLoader);
         
-        console.log("this.ship",this.ship);
+        //console.log("this.ship",this.ship);
+// // instantiate a loader
+// var loader = new THREE.TextureLoader();
+
+// // load a resource
+// loader.load(
+// 	// resource URL
+// 	'textures/land_ocean_ice_cloud_2048.jpg',
+
+// 	// onLoad callback
+// 	function ( texture ) {
+// 		// in this example we create the material when the texture is loaded
+// 		var material = new THREE.MeshBasicMaterial( {
+// 			map: texture
+// 		 } );
+// 	},
+
+// 	// onProgress callback currently not supported
+// 	undefined,
+
+// 	// onError callback
+// 	function ( err ) {
+// 		console.error( 'An error happened.' );
+// 	}
+// );
         let loader,
             loaderLength = modulesLoader.length;
         for(loader=0;loader<loaderLength;loader++) {
             (function(module) {
                 new Promise((resolve) => {
                     mtlLoader.load(module.mtlFile, (materials) => {
-                        console.log('module',module);
+                        console.log('module',materials);
                         resolve(materials);
                     })
                 })
                 .then((materials) => {
-                    // materials.Material.shininess = 20;
                     materials.preload();
                     materials.materials.Material.shininess = 10;
                     objLoader.setMaterials(materials);
@@ -85,32 +107,18 @@ class LoadTileMap {
                         object.position.x = module.pos[1] + 0.5;
                         object.castShadow = true;
                         object.receiveShadow = true;
+                        console.log('Object',object)
                         scene.add(object);
-                        let light = new THREE.PointLight( 0xffffff, 1, 8, 2);
+                        let light = new THREE.PointLight( 0xffffff, 1, 11, 2);
                         light.position.set( module.pos[1] + 5, module.pos[0] + 5, 3 );
                         scene.add(light);
                         let sphereSize = 0.2;
                         let pointLightHelper = new THREE.PointLightHelper( light, sphereSize );
-                        scene.add( pointLightHelper );
-                    })
+                        //scene.add( pointLightHelper );
+                    });
                 });
             })(modulesLoader[loader]);
         }
-        // new Promise((resolve) => {
-        //     mtlLoader.load('test-floor2.mtl', (materials) => {
-        //         resolve(materials);
-        //     })
-        // })
-        // .then((materials) => {
-        //     materials.preload();
-        //     objLoader.setMaterials(materials);
-        //     objLoader.load('test-floor2.obj', (object) => {
-        //         object.rotation.x = 1.5708;
-        //         object.position.x = 31.5;
-        //         object.position.y = 31.5;
-        //         scene.add(object);
-        //     })
-        // });
     }
 
     getCurrentMap() {

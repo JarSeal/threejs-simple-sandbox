@@ -14,6 +14,10 @@ class TileMapRoot {
         const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor('#000000');
         renderer.setSize(window.innerWidth,window.innerHeight);
+        // renderer.shadowMap.enabled = true;
+        // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // renderer.shadowMap.type = THREE.BasicShadowMap;
+        
         document.body.appendChild(renderer.domElement);
         const cam = new TileMapCamera(scene, renderer);
         const camera = cam.getCamera();
@@ -22,12 +26,14 @@ class TileMapRoot {
         const mouse = new THREE.Vector2();
 
         // Center of the world
-        const beamGeometry = new THREE.BoxGeometry(1,1,1);
-        const beamMaterial = new THREE.MeshLambertMaterial({color: 0xff0000});
-        const beam = new THREE.Mesh(beamGeometry, beamMaterial);
-        beam.position.y = 63;
-        beam.position.x = 0;
+        let beamGeometry = new THREE.BoxBufferGeometry(1,1,1);
+        let beamMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
+        let beam = new THREE.Mesh(beamGeometry, beamMaterial);
+        beam.position.y = 20;
+        beam.position.x = 25;
         beam.position.z = 0.5;
+        beam.receiveShadow = true;
+        beam.castShadow = true;
         scene.add(beam);
 
         /*
@@ -44,35 +50,80 @@ class TileMapRoot {
         */
 
         // let geometry = new THREE.SphereGeometry(1,100,100);
-        const geometry = new THREE.BoxGeometry(1,1,1);
-        const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
-        const mesh = new THREE.Mesh(geometry, material);
+        // const geometry = new THREE.BoxGeometry(1,1,1);
+        // const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
+        // const mesh = new THREE.Mesh(geometry, material);
         //scene.add(mesh);
 
-        for(let i=0; i<100; i++) {
-            let mesh = new THREE.Mesh(geometry, material);
-            mesh.position.x = (Math.random() - 0.5) * 10;
-            mesh.position.y = (Math.random() - 0.5) * 10;
-            //mesh.position.z = (Math.random() - 0.5) * 10;
-            mesh.hoverable = true;
-            scene.add(mesh);
-        }
+        // for(let i=0; i<100; i++) {
+        //     let mesh = new THREE.Mesh(geometry, material);
+        //     mesh.position.x = (Math.random() - 0.5) * 10;
+        //     mesh.position.y = (Math.random() - 0.5) * 10;
+        //     //mesh.position.z = (Math.random() - 0.5) * 10;
+        //     mesh.hoverable = true;
+        //     scene.add(mesh);
+        // }
 
         scene.add(new THREE.AmbientLight(0xf0f0f0, 0.2));
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(0, -32, 10);
-        directionalLight.castShadows = true;
-        //scene.add( directionalLight );
-
         let light = new THREE.PointLight(0xFFFFFF, 0.3, 1000, 2);
-        light.position.set(32,0,0);
-        light.castShadows = true;
+        light.position.set(32,-32,0);
+        light.castShadow = true;
         scene.add(light);
 
-        light = new THREE.PointLight(0xFFFFFF, 0.6, 1000, 2);
-        light.position.set(0,0,25);
-        scene.add(light);
+        // light = new THREE.PointLight(0xFFFFFF, 0.6, 1000, 2);
+        // light.position.set(0,0,25);
+        // light.castShadow = true;
+        // scene.add(light);
+
+        // let directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        // directionalLight.position.set(32, 10, 0);
+        // directionalLight.castShadow = true;
+        // let targetObject = new THREE.Object3D();
+        // targetObject.position.set(32,64,-4);
+        // scene.add(targetObject);
+        // directionalLight.target = targetObject;
+        // directionalLight.shadowCameraVisible = true;
+
+        // directionalLight.shadow.mapSize.width = 5120;  // default
+        // directionalLight.shadow.mapSize.height = 512; // default
+        // directionalLight.shadow.camera.near = 5;    // default
+        // directionalLight.shadow.camera.far = 64;     // default
+
+        // let d = 15;
+        // directionalLight.shadow.camera.left = - d;
+		// directionalLight.shadow.camera.right = d;
+		// directionalLight.shadow.camera.top = d;
+		// directionalLight.shadow.camera.bottom = - d;
+
+		// directionalLight.shadow.mapSize.x = -506;
+        // directionalLight.shadow.mapSize.y = -506;
+        // directionalLight.shadow.mapSize.w = 64;
+        // directionalLight.shadow.mapSize.z = 10;
+
+        // scene.add(directionalLight);
+        // scene.add(directionalLight.target);
+
+        // directionalLight.target.updateMatrixWorld();
+        // directionalLight.shadow.camera.updateProjectionMatrix();
+
+        // let helper = new THREE.DirectionalLightHelper( directionalLight, 1 );
+        // scene.add( helper );
+        // const cameraHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
+        // scene.add(cameraHelper);
+
+        let keyLight = new THREE.DirectionalLight(new THREE.Color('hsl(30, 100%, 75%)'), 1.0);
+        keyLight.position.set(-100, 0, 100);
+
+        let fillLight = new THREE.DirectionalLight(new THREE.Color('hsl(240, 100%, 75%)'), 0.75);
+        fillLight.position.set(100, 0, 100);
+
+        let backLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        backLight.position.set(100, 0, -100).normalize();
+
+        //scene.add(keyLight);
+        //scene.add(fillLight);
+        //scene.add(backLight);
 
         // Debug statisctics [START]
         let stats;
@@ -97,8 +148,10 @@ class TileMapRoot {
         objLoader.setPath('/images/objects/');
         const mtlLoader = new THREE.MTLLoader();
         mtlLoader.setPath('/images/objects/');
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.setPath('/images/objects/');
 
-        let mapLoader = new LoadTileMap(mtlLoader, objLoader, scene);
+        let mapLoader = new LoadTileMap(mtlLoader, objLoader, textureLoader, scene);
         console.log('Current map:', mapLoader.getCurrentMap());
 
         function onMouseMove(event) {
