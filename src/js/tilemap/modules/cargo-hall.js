@@ -21,8 +21,8 @@ function getModuleLevelData(level, type) {
     let data = [
         {
             level: 1,
-            objFile: "cargo-hall-l1-10x10.obj",
-            mtlFile: "cargo-hall-l1-10x10.mtl",
+            objFile: "wall-and-floor-tile.obj",
+            mtlFile: "wall-and-floor-tile.mtl",
             tilemap: [
                 [{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],

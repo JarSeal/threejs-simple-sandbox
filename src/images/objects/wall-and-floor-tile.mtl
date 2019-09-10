@@ -1,0 +1,14 @@
+# Blender MTL File: 'wall-and-floor-tile.blend'
+# Material Count: 1
+
+newmtl Material
+Ns 405.107127
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.152727 0.152727 0.152727
+Ke 0.0 0.0 0.0
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd module-map-01.png
+map_bump module-map-01-bump.png

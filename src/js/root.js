@@ -14,6 +14,8 @@ class TileMapRoot {
         const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor('#000000');
         renderer.setSize(window.innerWidth,window.innerHeight);
+        renderer.clippingPlanes = Object.freeze( [] );
+        renderer.localClippingEnabled = true;
         // renderer.shadowMap.enabled = true;
         // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         // renderer.shadowMap.type = THREE.BasicShadowMap;
@@ -24,49 +26,38 @@ class TileMapRoot {
 
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
-
-        // Center of the world
-        let beamGeometry = new THREE.BoxBufferGeometry(1,1,1);
-        let beamMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
-        let beam = new THREE.Mesh(beamGeometry, beamMaterial);
-        beam.position.y = 20;
-        beam.position.x = 25;
-        beam.position.z = 0.5;
-        beam.receiveShadow = true;
-        beam.castShadow = true;
-        scene.add(beam);
-
-        /*
+        
         // axes (helper)
-        scene.add(new THREE.AxesHelper(32));
+        //scene.add(new THREE.AxesHelper(32));
 
         // World plane (helper)
-        const helper = new THREE.GridHelper(64, 64, 0xff0000, 0xffffff);
-        helper.rotation.x = 1.5708;
-        helper.position.set(31.5, 31.5, 0);
-        helper.material.opacity = 0.75;
-        helper.material.transparent = true;
-        scene.add( helper );
-        */
+        // const helper = new THREE.GridHelper(64, 64, 0xff0000, 0xffffff);
+        // helper.rotation.x = 1.5708;
+        // helper.position.set(31.5, 31.5, 0);
+        // helper.material.opacity = 0.75;
+        // helper.material.transparent = true;
+        // scene.add( helper );
+        
 
-        // let geometry = new THREE.SphereGeometry(1,100,100);
-        // const geometry = new THREE.BoxGeometry(1,1,1);
-        // const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
-        // const mesh = new THREE.Mesh(geometry, material);
-        //scene.add(mesh);
+        const geometry = new THREE.BoxGeometry(1,1,1);
+        const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
 
-        // for(let i=0; i<100; i++) {
-        //     let mesh = new THREE.Mesh(geometry, material);
-        //     mesh.position.x = (Math.random() - 0.5) * 10;
-        //     mesh.position.y = (Math.random() - 0.5) * 10;
-        //     //mesh.position.z = (Math.random() - 0.5) * 10;
-        //     mesh.hoverable = true;
-        //     scene.add(mesh);
-        // }
+        for(let i=0; i<100; i++) {
+            let mesh = new THREE.Mesh(geometry, material);
+            mesh.position.x = (Math.random() - 0.5) * 10;
+            mesh.position.y = (Math.random() - 0.5) * 10;
+            //mesh.position.z = (Math.random() - 0.5) * 10;
+            mesh.hoverable = true;
+            scene.add(mesh);
+        }
 
+        let hemi = new THREE.HemisphereLight( 0xffffbb, 0x080820, 0.2 );
+        scene.add(hemi);
         scene.add(new THREE.AmbientLight(0xf0f0f0, 0.2));
 
-        let light = new THREE.PointLight(0xFFFFFF, 0.3, 1000, 2);
+        let light = new THREE.PointLight(0xFFFFFF, 0.8, 1000, 5);
         light.position.set(32,-32,0);
         light.castShadow = true;
         scene.add(light);
@@ -148,11 +139,22 @@ class TileMapRoot {
         objLoader.setPath('/images/objects/');
         const mtlLoader = new THREE.MTLLoader();
         mtlLoader.setPath('/images/objects/');
-        const textureLoader = new THREE.TextureLoader();
-        textureLoader.setPath('/images/objects/');
 
-        let mapLoader = new LoadTileMap(mtlLoader, objLoader, textureLoader, scene);
+        let mapLoader = new LoadTileMap(mtlLoader, objLoader, scene, renderer);
         console.log('Current map:', mapLoader.getCurrentMap());
+
+        let beamGeometry = new THREE.BoxBufferGeometry(1,1,1);
+        let beamMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
+        let beam = new THREE.Mesh(beamGeometry, beamMaterial);
+        beam.position.y = 50;
+        beam.position.x = 41;
+        beam.position.z = 0.5 + 2;
+        beam.receiveShadow = true;
+        beam.castShadow = true;
+        let group = new THREE.Group();
+        group.add(beam);
+        console.log('GROUP',group);
+        scene.add(group);
 
         function onMouseMove(event) {
             event.preventDefault();
