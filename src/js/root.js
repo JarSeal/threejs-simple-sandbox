@@ -42,7 +42,7 @@ class TileMapRoot {
         const geometry = new THREE.BoxGeometry(1,1,1);
         const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
         const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
+        //scene.add(mesh);
 
         for(let i=0; i<100; i++) {
             let mesh = new THREE.Mesh(geometry, material);
@@ -55,7 +55,7 @@ class TileMapRoot {
 
         let hemi = new THREE.HemisphereLight( 0xffffbb, 0x080820, 0.2 );
         scene.add(hemi);
-        scene.add(new THREE.AmbientLight(0xf0f0f0, 0.2));
+        scene.add(new THREE.AmbientLight(0xf0f0f0, 0.4));
 
         let light = new THREE.PointLight(0xFFFFFF, 0.8, 1000, 5);
         light.position.set(32,-32,0);

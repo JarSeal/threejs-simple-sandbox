@@ -128,54 +128,101 @@ class LoadTileMap {
                         object.castShadow = true;
                         object.receiveShadow = true;
                         object.userData.moduleId = module.id;
-                        // let planes = self.createDoorClippingPlane(scene, module.pos, module.color);
-                        // object.children[0].material.side = THREE.DoubleSide;
-                        // object.children[0].material.clipIntersection = true;
-                        // object.children[0].material.clippingPlanes = planes;
                         console.log('Object',object)
                         scene.add(object);
 
-                        let light = new THREE.PointLight( 0xffffff, 1, 11, 2);
-                        light.position.set( module.pos[1], module.pos[0], 3 );
-                        scene.add(light);
-                        let sphereSize = 0.2;
-                        let pointLightHelper = new THREE.PointLightHelper( light, sphereSize );
-                        // scene.add( pointLightHelper );
+                        self.addLights(scene, module, objLoader);
                     });
                 });
             })(this, modulesLoader[loader]);
         }
     }
 
-    createDoorClippingPlane(scene, pos, color) {
-        // pos[0] += 0.5;
-        // pos[1] += 0.5;
-        let clipPlanes;
-        clipPlanes = [
-            new THREE.Plane( new THREE.Vector3( 1, 0, 0 ).normalize(), -pos[1] - 10 ),
-            new THREE.Plane( new THREE.Vector3( - 1, 0, 0 ).normalize(), pos[1] + 7 ),
-            // new THREE.Plane( new THREE.Vector3( - 1, 0, 0 ).normalize(), pos[1]+3.5 + 12 ),
-            // new THREE.Plane( new THREE.Vector3( 0, 1, 0 ).normalize(), -pos[0]-16.5 ),
-            // new THREE.Plane( new THREE.Vector3( 0, 0, - 1 ).normalize(), 2 ),
-        ];
-        console.log('clipPlanes',pos);
-        if(color === 0x00ff00) {
-            console.log('green');
-        } else {
-            console.log('red',pos);
-        }
-        var helpers = new THREE.Group();
-        helpers.add( new THREE.PlaneHelper( clipPlanes[ 0 ], 10, 0xff0000 ) );
-        helpers.add( new THREE.PlaneHelper( clipPlanes[ 1 ], 10, 0xff00cc ) );
-        // helpers.add( new THREE.PlaneHelper( clipPlanes[ 2 ], 10, color ) );
-        // helpers.add( new THREE.PlaneHelper( clipPlanes[ 3 ], 10, color ) );
-        // helpers.add( new THREE.PlaneHelper( clipPlanes[ 2 ], 10, 0x0000ff ) );
-        helpers.visible = true;
-        if(color == 0x00ff00) {
-            
-        }
-        scene.add( helpers );
-        return clipPlanes;
+    addLights(scene, module, objLoader) {
+        let light = new THREE.PointLight( 0xffffff, 1, 11, 2);
+        light.position.set( module.pos[1], module.pos[0], 3 );
+        scene.add(light);
+        let sphereSize = 0.2;
+        let pointLightHelper = new THREE.PointLightHelper( light, sphereSize );
+        // scene.add( pointLightHelper );
+
+        objLoader.load("light-capsule.obj", (object) => {
+            object.rotation.x = 1.5708;
+            console.log('Object LIGTH',object);
+            let geometry = new THREE.Geometry().fromBufferGeometry(object.children[0].geometry);
+            geometry.mergeVertices();
+            const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7, side: THREE.DoubleSide});
+            const mesh = new THREE.Mesh(geometry, material);
+            const pos = {
+                x: module.pos[1] + 0.4,
+                y: module.pos[0] - 1.5,
+                z: 2
+            };
+            mesh.position.y = pos.y;
+            mesh.position.x = pos.x;
+            mesh.position.z = pos.z;
+            mesh.userData.moduleId = "LIGHT";
+            console.log('new geo',geometry);
+            let glowMesh = new THREE.glowShader.GeometricGlowMesh(mesh);
+            mesh.add(glowMesh.object3d);
+            let outsideUniforms	= glowMesh.outsideMesh.material.uniforms;
+            outsideUniforms.glowColor.value.set(0xffffff);
+            outsideUniforms.coeficient.value = (0.0005);
+            outsideUniforms.power.value = (6.4);
+            let insideUniforms	= glowMesh.insideMesh.material.uniforms;
+            insideUniforms.glowColor.value.set(0xffffff);
+            scene.add(mesh);
+            let smallLight = new THREE.PointLight( 0xffffff, 1, 2, 2);
+            smallLight.position.set( pos.x+0.15, pos.y+2.1, pos.z-1.1 );
+            scene.add(smallLight);
+            sphereSize = 0.2;
+            let pointLightHelperSmall = new THREE.PointLightHelper( smallLight, sphereSize );
+            //scene.add( pointLightHelperSmall );
+        });
+
+        //const geometry = new THREE.BoxGeometry(1,1,1);
+        //const geometry = new THREE.CylinderGeometry(0.5,0.5,3, 64,64,false);/* new THREE.CylinderGeometry( 1, 1, 2, 32 ); */ //new THREE.TorusKnotGeometry(1-0.25, 0.25, 32*3, 32);
+        //const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7, side: THREE.DoubleSide});
+        // const mesh = new THREE.Mesh(geometry, material);
+        // mesh.position.x = module.pos[1];
+        // mesh.position.y = module.pos[0];
+        // mesh.position.z = 5;
+        // const mesh2 = new THREE.Mesh(object.children[0].geometry, material);
+        // mesh2.rotation.x = 1.5708;
+        // mesh2.position.x = module.pos[1];
+        // mesh2.position.y = module.pos[0];
+        // mesh2.position.z = 5;
+        // console.log('newmesh',mesh2);
+
+        // let capsuleGeo = new THREE.Geometry();
+        // let cyl = new THREE.CylinderGeometry(0.25, 0.25, 2, 32, 32, true);
+        // let top = new THREE.SphereGeometry(0.25, 32, 32);
+        // let bot = new THREE.SphereGeometry(0.25, 32, 32);
+        // let matrix = new THREE.Matrix4();
+        // matrix.makeTranslation(0, 2, 0);
+        // top.applyMatrix(matrix);
+        // let matrix2 = new THREE.Matrix4();
+        // matrix2.makeTranslation(0, -3, 0);
+        // top.applyMatrix(matrix2);
+        // capsuleGeo.merge(top);
+        // capsuleGeo.merge(bot);
+        // capsuleGeo.merge(cyl);
+        // const mesh = new THREE.Mesh(capsuleGeo, material);
+        // mesh.position.x = module.pos[1];
+        // mesh.position.y = module.pos[0];
+        // mesh.position.z = 5;
+        
+        // let glowMesh = new THREE.glowShader.GeometricGlowMesh(mesh);
+        // mesh.add(glowMesh.object3d);
+        // let outsideUniforms	= glowMesh.outsideMesh.material.uniforms;
+        // outsideUniforms.glowColor.value.set('hotpink');
+        // outsideUniforms.coeficient.value = (0.45);
+        // outsideUniforms.power.value = (3.4);
+        // let insideUniforms	= glowMesh.insideMesh.material.uniforms;
+        // insideUniforms.glowColor.value.set('cyan');
+
+        // scene.add(mesh);
+
     }
 
     getCurrentMap() {
