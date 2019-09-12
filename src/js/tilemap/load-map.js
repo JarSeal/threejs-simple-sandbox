@@ -34,15 +34,17 @@ class LoadTileMap {
                             {dims: modules[moduleIndex].dims,
                              name: modules[moduleIndex].name,
                              objFile: modules[moduleIndex].objFile,
-                             mtlFile: modules[moduleIndex].mtlFile}
+                             mtlFile: modules[moduleIndex].mtlFile,
+                             aligners: modules[moduleIndex].aligners}
                         );
                         modulesLoader.push({
                             moduleId: "module_"+tile.module[0]+"-"+tile.level,
                             objFile: modules[moduleIndex].objFile,
                             mtlFile: modules[moduleIndex].mtlFile,
                             pos: tile.pos,
-                            color: tile.color,
-                            id: moduleIndex
+                            id: moduleIndex,
+                            aligners: modules[moduleIndex].aligners,
+                            turn: tile.turn || 0
                         });
                     }
                     curModuleIndexes = modules[moduleIndex].curIndexes;
@@ -63,7 +65,7 @@ class LoadTileMap {
             }
         }
         
-        //console.log("this.ship",this.ship);
+        console.log("this.ship",this.ship);
 // // instantiate a loader
 // var loader = new THREE.TextureLoader();
 
@@ -122,9 +124,14 @@ class LoadTileMap {
                     objLoader.setMaterials(materials);
                     console.log('materials',materials);
                     objLoader.load(module.objFile, (object) => {
-                        object.rotation.x = 1.5708;
-                        object.position.y = module.pos[0] + 0.5;
-                        object.position.x = module.pos[1] + 0.5;
+                        let deg90 = 1.5708;
+                        object.rotation.x = deg90;
+                        console.log('MODULE',module);
+                        if(module.turn !== 0) {
+                            object.rotation.y = deg90 * module.turn;
+                        }
+                        object.position.y = module.pos[0] + module.aligners[module.turn][0];
+                        object.position.x = module.pos[1] + module.aligners[module.turn][1];
                         object.castShadow = true;
                         object.receiveShadow = true;
                         object.userData.moduleId = module.id;
@@ -139,30 +146,27 @@ class LoadTileMap {
     }
 
     addLights(scene, module, objLoader) {
-        let light = new THREE.PointLight( 0xffffff, 1, 11, 2);
-        light.position.set( module.pos[1], module.pos[0], 3 );
-        scene.add(light);
+        let mainLight = new THREE.PointLight( 0xffffff, 1, 11, 2);
+        mainLight.position.set( module.pos[1] + 2.5, module.pos[0] + 2, 3 );
+        scene.add(mainLight);
         let sphereSize = 0.2;
-        let pointLightHelper = new THREE.PointLightHelper( light, sphereSize );
-        // scene.add( pointLightHelper );
+        let pointLightHelper = new THREE.PointLightHelper( mainLight, sphereSize );
+        //scene.add( pointLightHelper );
 
         objLoader.load("light-capsule.obj", (object) => {
             object.rotation.x = 1.5708;
-            console.log('Object LIGTH',object);
             let geometry = new THREE.Geometry().fromBufferGeometry(object.children[0].geometry);
             geometry.mergeVertices();
-            const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7, side: THREE.DoubleSide});
+            const material = new THREE.MeshLambertMaterial({color: 0xffffff, emissive: 0xffffff});
             const mesh = new THREE.Mesh(geometry, material);
             const pos = {
-                x: module.pos[1] + 0.4,
-                y: module.pos[0] - 1.5,
+                x: module.pos[1] + 1.4,
+                y: module.pos[0] + 1.6,
                 z: 2
             };
             mesh.position.y = pos.y;
             mesh.position.x = pos.x;
             mesh.position.z = pos.z;
-            mesh.userData.moduleId = "LIGHT";
-            console.log('new geo',geometry);
             let glowMesh = new THREE.glowShader.GeometricGlowMesh(mesh);
             mesh.add(glowMesh.object3d);
             let outsideUniforms	= glowMesh.outsideMesh.material.uniforms;
@@ -172,12 +176,6 @@ class LoadTileMap {
             let insideUniforms	= glowMesh.insideMesh.material.uniforms;
             insideUniforms.glowColor.value.set(0xffffff);
             scene.add(mesh);
-            let smallLight = new THREE.PointLight( 0xffffff, 1, 2, 2);
-            smallLight.position.set( pos.x+0.15, pos.y+2.1, pos.z-1.1 );
-            scene.add(smallLight);
-            sphereSize = 0.2;
-            let pointLightHelperSmall = new THREE.PointLightHelper( smallLight, sphereSize );
-            //scene.add( pointLightHelperSmall );
         });
 
         //const geometry = new THREE.BoxGeometry(1,1,1);

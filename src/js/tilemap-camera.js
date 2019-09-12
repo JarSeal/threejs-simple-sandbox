@@ -32,12 +32,12 @@ class TileMapCamera {
         let sprite = new THREE.TextureLoader().load( '/images/sprites/sprite-star.png' );
         let material = new THREE.SpriteMaterial({map: sprite, transparent: true, alphaTest: 0});
         for (let a=0; a<1000; a++) {
-            let x = THREE.Math.randFloatSpread(400);
-            let y = THREE.Math.randFloatSpread(400);
-            let z = THREE.Math.randFloat(-40, -100);
+            let x = THREE.Math.randFloat(-500, 500);
+            let y = THREE.Math.randFloat(-500, 500);
+            let z = THREE.Math.randFloat(-100, -300);
             let sprite = new THREE.Sprite(material);
             sprite.position.set(x, y, z);
-            // sprite.scale.set(-1.4, -1.4, 1)
+            // sprite.scale.set(-1.4, -1.4, 1);
             // sprite.center.set(0.0, 0.0);
             group.add(sprite);
         }
