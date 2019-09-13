@@ -4,88 +4,39 @@ import { getModule } from './modules/index.js';
 class LoadTileMap {
     constructor(mtlLoader, objLoader, scene, renderer) {
         this.ship = [];
+        this.mapLengths = [64, 64];
         this.init(mtlLoader, objLoader, scene, renderer);
     }
 
     init(mtlLoader, objLoader, scene, renderer) {
-        let x, y,
-            modules = [],
+        let m,
+            floor = 0,
             rawShip = getShip(),
-            xLength = rawShip.dims[0],
-            yLength = rawShip.dims[1],
-            tile,
-            moduleIndex,
-            curModuleIndexes,
-            modulesLoader = [];
-        this.ship = rawShip;
-        // Add modules to main map
-        for(y=0;y<yLength;y++) {
-            for(x=0;x<xLength;x++) {
-                tile = rawShip.floors[0].tileMap[y][x];
-                if(tile.module) {
-                    moduleIndex = tile.module[1];
-                    if(tile.level) {
-                        // first tile of module
-                        modules.push(getModule(tile.module[0], tile.level));
-                        modules[moduleIndex].curIndexes = [0,0];
-                        tile = Object.assign(
-                            {},
-                            tile,
-                            modules[moduleIndex]
-                        );
-                        modulesLoader.push(Object.assign(
-                            {},
-                            {
-                                pos: tile.pos,
-                                id: moduleIndex,
-                                turn: tile.turn || 0
-                            },
-                            modules[moduleIndex]
-                        ));
-                    }
-                    curModuleIndexes = modules[moduleIndex].curIndexes;
-                    this.ship.floors[0].tileMap[y][x] = Object.assign(
-                        {},
-                        tile,
-                        modules[moduleIndex].tilemap[curModuleIndexes[0]][curModuleIndexes[1]]
-                    );
-                    if(curModuleIndexes[1] === (modules[moduleIndex].dims[1] - 1)) {
-                        modules[moduleIndex].curIndexes[0] += 1;
-                        modules[moduleIndex].curIndexes[1] = 0;
-                    } else {
-                        modules[moduleIndex].curIndexes[1] += 1;
-                    }
-                } else {
-                    this.ship.floors[0].tileMap[y][x] = {type:0};
-                }
-            }
-        }
+            modules = rawShip.floors[floor].modules,
+            modulesLength = modules.length,
+            modulesLoader = [],
+            turn;
         
-        console.log("this.ship",this.ship);
-// // instantiate a loader
-// var loader = new THREE.TextureLoader();
+        this.ship = this.createTileMap(rawShip, this.mapLengths, floor);
 
-// // load a resource
-// loader.load(
-// 	// resource URL
-// 	'textures/land_ocean_ice_cloud_2048.jpg',
+        // Create modulesLoader (loads the 3D assets)
+        for(m=0; m<modulesLength; m++) {
+            turn = modules[m].turn || 0;
+            modulesLoader.push(Object.assign(
+                {},
+                {
+                    pos: modules[m].pos,
+                    type: modules[m].module[0],
+                    index: modules[m].module[1],
+                    turn: turn
+                },
+                getModule(modules[m].module[0], modules[m].level, turn)
+            ));
+        }
 
-// 	// onLoad callback
-// 	function ( texture ) {
-// 		// in this example we create the material when the texture is loaded
-// 		var material = new THREE.MeshBasicMaterial( {
-// 			map: texture
-// 		 } );
-// 	},
+        console.log('modulesloader',modulesLoader);
+        //console.log("this.ship",this.ship);
 
-// 	// onProgress callback currently not supported
-// 	undefined,
-
-// 	// onError callback
-// 	function ( err ) {
-// 		console.error( 'An error happened.' );
-// 	}
-// );
         let loader,
             loaderLength = modulesLoader.length;
         for(loader=0;loader<loaderLength;loader++) {
@@ -117,7 +68,8 @@ class LoadTileMap {
                         object.position.x = module.pos[1] + module.aligners[module.turn][1];
                         object.castShadow = true;
                         object.receiveShadow = true;
-                        object.userData.moduleId = module.id;
+                        object.userData.moduleType = module.type;
+                        object.userData.moduleIndex = module.index;
                         console.log('Object',object)
                         scene.add(object);
 
@@ -196,6 +148,64 @@ class LoadTileMap {
                 }
             });
         }
+    }
+
+    createTileMap(rawShip, mapLengths, floor) {
+        let thisFloor = [],
+            modules = rawShip.floors[0].modules,
+            modulesLength = modules.length,
+            m, x, y, row,
+            curModule,
+            curModuleData,
+            curX = 0,
+            curY = 0,
+            curDataToTile = {};
+        for(m=0; m<modulesLength; m++) {
+            curModule = modules[m];
+            curModuleData = getModule(curModule.module[0], curModule.level, curModule.turn);
+            curY = 0;
+            for(y=0; y<mapLengths[0]; y++) {
+                m === 0 ? row = [] : row = thisFloor[y]; // Row does not exist, create new
+                curX = 0;
+                for(x=0; x<mapLengths[1]; x++) {
+                    if(x <= curModule.pos[0] + curModuleData.dims[0] - 1 &&
+                       x >= curModule.pos[0] &&
+                       y <= curModule.pos[1] + curModuleData.dims[1] - 1 &&
+                       y >= curModule.pos[1]) {
+                        curDataToTile = Object.assign(
+                            {},
+                            {module:{
+                                index: curModule.module[1],
+                                moduleId: curModule.module[0],
+                                level: curModule.level,
+                                absolutePos: [x,y],
+                                relativePos: [curX,curY],
+                                name: curModuleData.name,
+                            }},
+                            curModuleData.tilemap[curY][curX]
+                        );
+                        if(m === 0) {
+                            // Tile does not exist, create new
+                            row.push(curDataToTile);
+                        } else {
+                            row[x] = curDataToTile;
+                        }
+                        if(curX < curModuleData.dims[0] - 1) {
+                            curX++;
+                        } else {
+                            curY++;
+                        }
+                    } else {
+                        if(m === 0) row.push({type:0}); // add space on the first module pass
+                    }
+                }
+                m === 0 ? thisFloor.push(row) : thisFloor[y] = row; // Row does not exist, create new
+            }
+        }
+        return thisFloor;
+    }
+
+    turnModuleTiles(turn, map) {
 
     }
 

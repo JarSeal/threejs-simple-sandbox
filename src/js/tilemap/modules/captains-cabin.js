@@ -4,19 +4,7 @@ export function getModule(module, level) {
     let tilemap = getModuleLevelData(level, "tilemap");
     let objFile = getModuleLevelData(level, "objFile");
     let mtlFile = getModuleLevelData(level, "mtlFile");
-    let aligners = getModuleLevelData(level, "aligners");
     let errors = checkErrors(tilemap, objFile, mtlFile);
-    // return {
-    //     module: module,
-    //     dims: errors ? [] : [tilemap[0].length,tilemap.length],
-    //     name: "Captain's Cabin",
-    //     level: level,
-    //     tilemap: tilemap,
-    //     objFile: objFile,
-    //     mtlFile: mtlFile,
-    //     aligners: aligners,
-    //     errors: errors
-    // }
     return Object.assign(
         {},
         {
@@ -43,11 +31,10 @@ function getModuleLevelData(level, type) {
             ],
             tilemap: [
                 [{type:2},{type:2},{type:2},{type:2},{type:2}],
-                [{type:2},{type:1},{type:1},{type:1},{type:1}],
-                [{type:2},{type:1},{type:1},{type:1},{type:1}],
-                [{type:2},{type:1},{type:1},{type:1},{type:1}],
-                [{type:2},{type:1},{type:1},{type:1},{type:1}],
-                [{type:2},{type:1},{type:1},{type:1},{type:1}],
+                [{type:2},{type:1},{type:1},{type:1},{type:2}],
+                [{type:2},{type:1},{type:1},{type:1},{type:2}],
+                [{type:2},{type:1},{type:1},{type:1},{type:3}],
+                [{type:2},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:2},{type:2},{type:2},{type:2}],
             ],
             lights: {
@@ -90,7 +77,7 @@ function getModuleLevelData(level, type) {
         if(type === undefined) return data[level-1];
         return data[level-1][type];
     } else {
-        return undefined;
+        return null;
     }
 }
 
