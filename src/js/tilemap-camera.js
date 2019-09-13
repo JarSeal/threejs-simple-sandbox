@@ -103,11 +103,8 @@ class TileMapCamera {
             } else {
                 this.camera.position.y = newY;
             }
-
-            // TEMP
-            console.log('camera',newX,newY);
-            // this.camera.position.x = newX;
-            // this.camera.position.y = newY;
+            
+            //console.log('camera',newX,newY);
 
             this.lastDist = {
                 x: clientX,

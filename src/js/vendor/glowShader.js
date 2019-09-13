@@ -98,7 +98,6 @@ THREE.glowShader.createAtmosphereMaterial	= function(){
 THREE.glowShader.GeometricGlowMesh	= function(mesh){
     let object3d	= new THREE.Object3D;
     let geometry1, geometry2;
-    console.log('glowmesh',mesh);
     
     geometry1 = mesh.geometry.clone();
     THREE.glowShader.dilateGeometry(geometry1, 0.01)

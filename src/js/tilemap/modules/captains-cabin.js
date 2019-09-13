@@ -6,17 +6,27 @@ export function getModule(module, level) {
     let mtlFile = getModuleLevelData(level, "mtlFile");
     let aligners = getModuleLevelData(level, "aligners");
     let errors = checkErrors(tilemap, objFile, mtlFile);
-    return {
-        module: module,
-        dims: errors ? [] : [tilemap[0].length,tilemap.length],
-        name: "Captain's Cabin",
-        level: level,
-        tilemap: tilemap,
-        objFile: objFile,
-        mtlFile: mtlFile,
-        aligners: aligners,
-        errors: errors
-    }
+    // return {
+    //     module: module,
+    //     dims: errors ? [] : [tilemap[0].length,tilemap.length],
+    //     name: "Captain's Cabin",
+    //     level: level,
+    //     tilemap: tilemap,
+    //     objFile: objFile,
+    //     mtlFile: mtlFile,
+    //     aligners: aligners,
+    //     errors: errors
+    // }
+    return Object.assign(
+        {},
+        {
+            module: module,
+            dims: errors ? [] : [tilemap[0].length,tilemap.length],
+            name: "Captain's Cabin",
+            errors: errors,
+        },
+        getModuleLevelData(level)
+    );
 };
 
 function getModuleLevelData(level, type) {
@@ -39,10 +49,45 @@ function getModuleLevelData(level, type) {
                 [{type:2},{type:1},{type:1},{type:1},{type:1}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1}],
                 [{type:2},{type:2},{type:2},{type:2},{type:2}],
-            ]
+            ],
+            lights: {
+                main: [
+                    {
+                        type: "point",
+                        color: 0xffffff,
+                        intensity: 1,
+                        distance: 11,
+                        decay: 2,
+                        z: 3,
+                        aligners: [
+                            [2.5, 2],
+                            [2, 2.5],
+                            [2.5, 2],
+                            [2, 2.5],
+                        ],
+                        helper: false,
+                    },
+                ],
+                props: [
+                    {
+                        type: "capsule", // this string is used as an object key
+                        color: 0xffffff,
+                        glow: false,
+                        z: 2,
+                        turn: false,
+                        aligners: [
+                            [3.7, 2.1],
+                            [2.1, 0.3],
+                            [0.3, 4.1],
+                            [4, 3.7],
+                        ],
+                    },
+                ]
+            },
         },
     ];
     if(data[level-1]) {
+        if(type === undefined) return data[level-1];
         return data[level-1][type];
     } else {
         return undefined;

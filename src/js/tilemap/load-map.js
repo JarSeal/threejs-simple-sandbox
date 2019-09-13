@@ -31,21 +31,17 @@ class LoadTileMap {
                         tile = Object.assign(
                             {},
                             tile,
-                            {dims: modules[moduleIndex].dims,
-                             name: modules[moduleIndex].name,
-                             objFile: modules[moduleIndex].objFile,
-                             mtlFile: modules[moduleIndex].mtlFile,
-                             aligners: modules[moduleIndex].aligners}
+                            modules[moduleIndex]
                         );
-                        modulesLoader.push({
-                            moduleId: "module_"+tile.module[0]+"-"+tile.level,
-                            objFile: modules[moduleIndex].objFile,
-                            mtlFile: modules[moduleIndex].mtlFile,
-                            pos: tile.pos,
-                            id: moduleIndex,
-                            aligners: modules[moduleIndex].aligners,
-                            turn: tile.turn || 0
-                        });
+                        modulesLoader.push(Object.assign(
+                            {},
+                            {
+                                pos: tile.pos,
+                                id: moduleIndex,
+                                turn: tile.turn || 0
+                            },
+                            modules[moduleIndex]
+                        ));
                     }
                     curModuleIndexes = modules[moduleIndex].curIndexes;
                     this.ship.floors[0].tileMap[y][x] = Object.assign(
@@ -108,19 +104,6 @@ class LoadTileMap {
                     materials.materials.Material.bumpMap.anisotropy = renderer.getMaxAnisotropy();
                     //materials.materials.Material.map.minFilter = THREE.LinearFilter;
                     materials.materials.Material.map.anisotropy = renderer.getMaxAnisotropy();
-                    // materials.materials.Material.displacementMap = THREE.ImageUtils.loadTexture('/images/objects/wall01-textures-displacement.png');
-                    // materials.materials.Material.displacementScale = 5;
-                    // materials.materials.Color = new THREE.MeshPhongMaterial({color: 0x0084BC});
-                    // materials.materials.Color.bumpMap = THREE.ImageUtils.loadTexture('/images/objects/wall01-textures-bump.png');
-                    // materials.materials.Color.bumpScale = 0.45;
-                    // materials.materials.Material.bumpScale = 0.045;
-                    // materials.materials.Material.color = new THREE.Color( 0xff0000 );
-                    //materials.materials.Material.transparent = true;
-                    // materials.materials.Material.alphaTest = 0.5;
-                    // let planes = self.createDoorClippingPlane(scene, module.pos, module.color);
-                    // materials.materials.Material.side = THREE.DoubleSide;
-                    // materials.materials.Material.clipIntersection = true;
-                    // materials.materials.Material.clippingPlanes = planes;
                     objLoader.setMaterials(materials);
                     console.log('materials',materials);
                     objLoader.load(module.objFile, (object) => {
@@ -146,80 +129,73 @@ class LoadTileMap {
     }
 
     addLights(scene, module, objLoader) {
-        let mainLight = new THREE.PointLight( 0xffffff, 1, 11, 2);
-        mainLight.position.set( module.pos[1] + 2.5, module.pos[0] + 2, 3 );
-        scene.add(mainLight);
-        let sphereSize = 0.2;
-        let pointLightHelper = new THREE.PointLightHelper( mainLight, sphereSize );
-        //scene.add( pointLightHelper );
+        let mainLights = module.lights.main,
+            mainLight;
+        let propLights = module.lights.props,
+            propTypes = {};
 
-        objLoader.load("light-capsule.obj", (object) => {
-            object.rotation.x = 1.5708;
-            let geometry = new THREE.Geometry().fromBufferGeometry(object.children[0].geometry);
-            geometry.mergeVertices();
-            const material = new THREE.MeshLambertMaterial({color: 0xffffff, emissive: 0xffffff});
-            const mesh = new THREE.Mesh(geometry, material);
-            const pos = {
-                x: module.pos[1] + 1.4,
-                y: module.pos[0] + 1.6,
-                z: 2
-            };
-            mesh.position.y = pos.y;
-            mesh.position.x = pos.x;
-            mesh.position.z = pos.z;
-            let glowMesh = new THREE.glowShader.GeometricGlowMesh(mesh);
-            mesh.add(glowMesh.object3d);
-            let outsideUniforms	= glowMesh.outsideMesh.material.uniforms;
-            outsideUniforms.glowColor.value.set(0xffffff);
-            outsideUniforms.coeficient.value = (0.0005);
-            outsideUniforms.power.value = (6.4);
-            let insideUniforms	= glowMesh.insideMesh.material.uniforms;
-            insideUniforms.glowColor.value.set(0xffffff);
-            scene.add(mesh);
-        });
+        for(let i=0; i<mainLights.length; i++) {
+            if(mainLights[i].type == "point") {
+                mainLight = new THREE.PointLight(
+                    mainLights[i].color,
+                    mainLights[i].intensity,
+                    mainLights[i].distance,
+                    mainLights[i].decay
+                );
+                mainLight.position.set(
+                    module.pos[1] + mainLights[i].aligners[module.turn][0],
+                    module.pos[0] + mainLights[i].aligners[module.turn][1],
+                    mainLights[i].z // TODO: THIS WILL NOT WORK WHEN MORE THAN ONE FLOOR IS INTRODUCED
+                );
+                scene.add(mainLight);
+            }
+            if(mainLights[i].helper) {
+                scene.add(new THREE.PointLightHelper(mainLight, 0.1));
+            }
+        }
+        for(let i=0; i<propLights.length; i++) {
+            propTypes[propLights[i].type] = true;
+        }
 
-        //const geometry = new THREE.BoxGeometry(1,1,1);
-        //const geometry = new THREE.CylinderGeometry(0.5,0.5,3, 64,64,false);/* new THREE.CylinderGeometry( 1, 1, 2, 32 ); */ //new THREE.TorusKnotGeometry(1-0.25, 0.25, 32*3, 32);
-        //const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7, side: THREE.DoubleSide});
-        // const mesh = new THREE.Mesh(geometry, material);
-        // mesh.position.x = module.pos[1];
-        // mesh.position.y = module.pos[0];
-        // mesh.position.z = 5;
-        // const mesh2 = new THREE.Mesh(object.children[0].geometry, material);
-        // mesh2.rotation.x = 1.5708;
-        // mesh2.position.x = module.pos[1];
-        // mesh2.position.y = module.pos[0];
-        // mesh2.position.z = 5;
-        // console.log('newmesh',mesh2);
-
-        // let capsuleGeo = new THREE.Geometry();
-        // let cyl = new THREE.CylinderGeometry(0.25, 0.25, 2, 32, 32, true);
-        // let top = new THREE.SphereGeometry(0.25, 32, 32);
-        // let bot = new THREE.SphereGeometry(0.25, 32, 32);
-        // let matrix = new THREE.Matrix4();
-        // matrix.makeTranslation(0, 2, 0);
-        // top.applyMatrix(matrix);
-        // let matrix2 = new THREE.Matrix4();
-        // matrix2.makeTranslation(0, -3, 0);
-        // top.applyMatrix(matrix2);
-        // capsuleGeo.merge(top);
-        // capsuleGeo.merge(bot);
-        // capsuleGeo.merge(cyl);
-        // const mesh = new THREE.Mesh(capsuleGeo, material);
-        // mesh.position.x = module.pos[1];
-        // mesh.position.y = module.pos[0];
-        // mesh.position.z = 5;
-        
-        // let glowMesh = new THREE.glowShader.GeometricGlowMesh(mesh);
-        // mesh.add(glowMesh.object3d);
-        // let outsideUniforms	= glowMesh.outsideMesh.material.uniforms;
-        // outsideUniforms.glowColor.value.set('hotpink');
-        // outsideUniforms.coeficient.value = (0.45);
-        // outsideUniforms.power.value = (3.4);
-        // let insideUniforms	= glowMesh.insideMesh.material.uniforms;
-        // insideUniforms.glowColor.value.set('cyan');
-
-        // scene.add(mesh);
+        if(propTypes.capsule) {
+            objLoader.load("light-capsule.obj", (object) => {
+                let deg90 = 1.5708,
+                    newObject,geometry,material,mesh,glowMesh,outsideUniforms,insideUniforms,turn;
+                for(let i=0; i<propLights.length; i++) {
+                    newObject = object.clone();
+                    material = new THREE.MeshLambertMaterial({color: propLights[i].color, emissive: propLights[i].color});
+                    if(propLights[i].glow) {
+                        geometry = new THREE.Geometry().fromBufferGeometry(newObject.children[0].geometry);
+                        geometry.mergeVertices();
+                        mesh = new THREE.Mesh(geometry, material);
+                        if(module.turn == 1 || module.turn == 3) { mesh.rotation.z = deg90; }
+                        mesh.position.y = module.pos[0] + propLights[i].aligners[module.turn][0];
+                        mesh.position.x = module.pos[1] + propLights[i].aligners[module.turn][1];
+                        mesh.position.z = propLights[i].z;
+                        glowMesh = new THREE.glowShader.GeometricGlowMesh(mesh);
+                        mesh.add(glowMesh.object3d);
+                        outsideUniforms	= glowMesh.outsideMesh.material.uniforms;
+                        outsideUniforms.glowColor.value.set(propLights[i].color);
+                        outsideUniforms.coeficient.value = (0.0005);
+                        outsideUniforms.power.value = (6.4);
+                        insideUniforms	= glowMesh.insideMesh.material.uniforms;
+                        insideUniforms.glowColor.value.set(propLights[i].color);
+                    } else {
+                        mesh = new THREE.Mesh(object.children[0].geometry, material);
+                        propLights[i].turn ? turn = deg90 : turn = 0;
+                        if(module.turn == 1 || module.turn == 3) {
+                            mesh.rotation.z = deg90 + turn;
+                        } else {
+                            mesh.rotation.z = turn;
+                        }
+                        mesh.position.y = module.pos[0] + propLights[i].aligners[module.turn][0];
+                        mesh.position.x = module.pos[1] + propLights[i].aligners[module.turn][1];
+                        mesh.position.z = propLights[i].z;
+                    }
+                    scene.add(mesh);
+                }
+            });
+        }
 
     }
 
