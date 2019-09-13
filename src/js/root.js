@@ -31,12 +31,12 @@ class TileMapRoot {
         //scene.add(new THREE.AxesHelper(32));
 
         // World plane (helper)
-        // const helper = new THREE.GridHelper(64, 64, 0xff0000, 0xffffff);
-        // helper.rotation.x = 1.5708;
-        // helper.position.set(31.5, 31.5, 0);
-        // helper.material.opacity = 0.75;
-        // helper.material.transparent = true;
-        // scene.add( helper );
+        const helper = new THREE.GridHelper(64, 64, 0xff0000, 0xffffff);
+        helper.rotation.x = 1.5708;
+        helper.position.set(31.5, 31.5, 0);
+        helper.material.opacity = 0.75;
+        helper.material.transparent = true;
+        scene.add( helper );
         
 
         const geometry = new THREE.BoxGeometry(1,1,1);

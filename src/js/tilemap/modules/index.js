@@ -1,4 +1,4 @@
-import { getModule as cargoHall } from './cargo-hall.js';
+import { getModule as cargoHall } from './captains-cabin.js';
 
 // Load a module
 export function getModule(module, level) {

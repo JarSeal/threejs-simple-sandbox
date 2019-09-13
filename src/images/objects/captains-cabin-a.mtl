@@ -10,6 +10,6 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd module-map-01.png
-map_bump module-map-01-bump.png
-map_ks module-map-01-specular.png
+map_Kd module-map-a.png
+map_bump module-map-a-bump.png
+map_ks module-map-a-specular.png

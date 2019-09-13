@@ -23,13 +23,13 @@ function getModuleLevelData(level, type) {
     let data = [
         {
             level: 1,
-            objFile: "wall-and-floor-tile.obj",
-            mtlFile: "wall-and-floor-tile.mtl",
-            aligners: [ // Based on turn value
+            objFile: "captains-cabin-1.obj",
+            mtlFile: "captains-cabin-a.mtl",
+            aligners: [ // Based on turn value (0 = no turn, 1 = 90 deg, 2 = 180 deg, 3 = 270 deg)
                 [3.5, 1.5],
-                [0,0],
+                [1.5,0.5],
                 [0.5,3.5],
-                [0,0],
+                [3.5,3.5],
             ],
             tilemap: [
                 [{type:2},{type:2},{type:2},{type:2},{type:2}],
