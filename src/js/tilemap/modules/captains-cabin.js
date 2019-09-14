@@ -21,7 +21,7 @@ function getModuleLevelData(level, type) {
     let data = [
         {
             level: 1,
-            objFile: "captains-cabin-1.obj",
+            objFile: "captains-cabin-1-a.obj",
             mtlFile: "captains-cabin-a.mtl",
             aligners: [ // Based on turn value (0 = no turn, 1 = 90 deg, 2 = 180 deg, 3 = 270 deg)
                 [3.5, 1.5],

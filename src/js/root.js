@@ -5,6 +5,7 @@ class TileMapRoot {
     constructor() {
         this.sceneState = {
             camera: {},
+            players: {},
         };
         this.init();
     }

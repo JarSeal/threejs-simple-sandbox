@@ -34,8 +34,7 @@ class LoadTileMap {
             ));
         }
 
-        console.log('modulesloader',modulesLoader);
-        //console.log("this.ship",this.ship);
+        console.log("this.ship",this.ship);
 
         let loader,
             loaderLength = modulesLoader.length;
