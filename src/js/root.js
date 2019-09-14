@@ -1,5 +1,6 @@
 import TileMapCamera from './tilemap-camera.js';
 import LoadTileMap from './tilemap/load-map.js';
+import CreatePlayer from './players/create-player.js';
 
 class TileMapRoot {
     constructor() {
@@ -63,60 +64,6 @@ class TileMapRoot {
         light.castShadow = true;
         scene.add(light);
 
-        // light = new THREE.PointLight(0xFFFFFF, 0.6, 1000, 2);
-        // light.position.set(0,0,25);
-        // light.castShadow = true;
-        // scene.add(light);
-
-        // let directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        // directionalLight.position.set(32, 10, 0);
-        // directionalLight.castShadow = true;
-        // let targetObject = new THREE.Object3D();
-        // targetObject.position.set(32,64,-4);
-        // scene.add(targetObject);
-        // directionalLight.target = targetObject;
-        // directionalLight.shadowCameraVisible = true;
-
-        // directionalLight.shadow.mapSize.width = 5120;  // default
-        // directionalLight.shadow.mapSize.height = 512; // default
-        // directionalLight.shadow.camera.near = 5;    // default
-        // directionalLight.shadow.camera.far = 64;     // default
-
-        // let d = 15;
-        // directionalLight.shadow.camera.left = - d;
-		// directionalLight.shadow.camera.right = d;
-		// directionalLight.shadow.camera.top = d;
-		// directionalLight.shadow.camera.bottom = - d;
-
-		// directionalLight.shadow.mapSize.x = -506;
-        // directionalLight.shadow.mapSize.y = -506;
-        // directionalLight.shadow.mapSize.w = 64;
-        // directionalLight.shadow.mapSize.z = 10;
-
-        // scene.add(directionalLight);
-        // scene.add(directionalLight.target);
-
-        // directionalLight.target.updateMatrixWorld();
-        // directionalLight.shadow.camera.updateProjectionMatrix();
-
-        // let helper = new THREE.DirectionalLightHelper( directionalLight, 1 );
-        // scene.add( helper );
-        // const cameraHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
-        // scene.add(cameraHelper);
-
-        let keyLight = new THREE.DirectionalLight(new THREE.Color('hsl(30, 100%, 75%)'), 1.0);
-        keyLight.position.set(-100, 0, 100);
-
-        let fillLight = new THREE.DirectionalLight(new THREE.Color('hsl(240, 100%, 75%)'), 0.75);
-        fillLight.position.set(100, 0, 100);
-
-        let backLight = new THREE.DirectionalLight(0xffffff, 1.0);
-        backLight.position.set(100, 0, -100).normalize();
-
-        //scene.add(keyLight);
-        //scene.add(fillLight);
-        //scene.add(backLight);
-
         // Debug statisctics [START]
         let stats;
         function createStats() {
@@ -141,8 +88,9 @@ class TileMapRoot {
         const mtlLoader = new THREE.MTLLoader();
         mtlLoader.setPath('/images/objects/');
 
-        let mapLoader = new LoadTileMap(mtlLoader, objLoader, scene, renderer);
-        console.log('Current map:', mapLoader.getCurrentMap());
+        new LoadTileMap(mtlLoader, objLoader, scene, renderer);
+
+        let playerCreator = new CreatePlayer(mtlLoader, objLoader, scene, renderer);
 
         let beamGeometry = new THREE.BoxBufferGeometry(1,1,1);
         let beamMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
@@ -152,10 +100,6 @@ class TileMapRoot {
         beam.position.z = 0.5 + 2;
         beam.receiveShadow = true;
         beam.castShadow = true;
-        let group = new THREE.Group();
-        group.add(beam);
-        console.log('GROUP',group);
-        scene.add(group);
 
         function onMouseMove(event) {
             event.preventDefault();
