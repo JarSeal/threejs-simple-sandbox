@@ -1,6 +1,6 @@
 import TileMapCamera from './tilemap-camera.js';
 import LoadTileMap from './tilemap/load-map.js';
-import CreatePlayer from './players/create-player.js';
+import PlayerController from './players/player-controller.js';
 
 class TileMapRoot {
     constructor() {
@@ -40,7 +40,6 @@ class TileMapRoot {
         helper.material.transparent = true;
         scene.add( helper );
         
-
         const geometry = new THREE.BoxGeometry(1,1,1);
         const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
         const mesh = new THREE.Mesh(geometry, material);
@@ -75,22 +74,21 @@ class TileMapRoot {
         document.body.appendChild(stats.domElement);
         // Debug statisctics [END]
 
-        const render = function() {
-            requestAnimationFrame(render);
-            // mesh.rotation.x += 0.05;
-            // mesh.rotation.y += 0.01;
-            renderer.render(scene, camera);
-            stats.update(); // Debug statistics
-        };
-
         const objLoader = new THREE.OBJLoader();
         objLoader.setPath('/images/objects/');
         const mtlLoader = new THREE.MTLLoader();
         mtlLoader.setPath('/images/objects/');
 
-        new LoadTileMap(mtlLoader, objLoader, scene, renderer);
+        new LoadTileMap(mtlLoader, objLoader, scene, renderer, this.sceneState);
 
-        let playerCreator = new CreatePlayer(mtlLoader, objLoader, scene, renderer);
+        let playerController = new PlayerController();
+        playerController.createNewPlayer(mtlLoader, objLoader, scene, renderer, this.sceneState, 'hero');
+
+        const render = function() {
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+            stats.update(); // Debug statistics
+        };
 
         let beamGeometry = new THREE.BoxBufferGeometry(1,1,1);
         let beamMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
@@ -121,13 +119,25 @@ class TileMapRoot {
 
         render();
 
-        // this.tl = new TimelineMax({paused: true});
-        // this.tl.to(mesh.scale, 1, {x: 2, ease: Expo.easeOut});
-        // this.tl.to(mesh.scale, .5, {x: .5, ease: Expo.easeOut});
-        // this.tl.to(mesh.position, .5, {x: 2, ease: Expo.easeOut});
-        // this.tl.to(mesh.rotation, .5, {y: Math.PI*.5, ease: Expo.easeOut}, "=-1.5");
+        function onMouseClick(event) {
+            event.preventDefault();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            let intersects = raycaster.intersectObjects(scene.walkableTiles, true);
+            for(let i=0; i<intersects.length; i++) {
+                console.log(intersects[i].object);
+                let tile = intersects[i].object;
+                //tile.position.z = 1;
+                this.tl = new TimelineMax();
+                //this.tl.to(tile.position, .5, {z: 0.2, ease: Expo.easeIn});
+                this.tl.to(tile.material, .1, {opacity: 0.5});
+                //this.tl.to(tile.position, .5, {z: 0.01, ease: Expo.easeOut});
+                this.tl.to(tile.material, .5, {opacity: 0, ease: Expo.easeIn});
+            }
+        }
 
-        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('click', onMouseClick);
     }
 }
 

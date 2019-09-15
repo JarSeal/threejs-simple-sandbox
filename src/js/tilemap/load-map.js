@@ -2,13 +2,13 @@ import { getShip } from '../data/dev-ship.js';
 import { getModule } from './modules/index.js';
 
 class LoadTileMap {
-    constructor(mtlLoader, objLoader, scene, renderer) {
+    constructor(mtlLoader, objLoader, scene, renderer, sceneState) {
         this.ship = [];
         this.mapLengths = [64, 64];
-        this.init(mtlLoader, objLoader, scene, renderer);
+        this.init(mtlLoader, objLoader, scene, renderer, sceneState);
     }
 
-    init(mtlLoader, objLoader, scene, renderer) {
+    init(mtlLoader, objLoader, scene, renderer, sceneState) {
         let m,
             floor = 0,
             rawShip = getShip(),
@@ -18,6 +18,9 @@ class LoadTileMap {
             turn;
         
         this.ship = this.createTileMap(rawShip, this.mapLengths, floor);
+        this.createClickableTiles(this.ship, scene);
+        sceneState.shipModules = rawShip;
+        sceneState.shipMap = this.ship;
 
         // Create modulesLoader (loads the 3D assets)
         for(m=0; m<modulesLength; m++) {
@@ -51,15 +54,13 @@ class LoadTileMap {
                     materials.materials.Material.shininess = 10;
                     materials.materials.Material.bumpScale = 0.045;
                     //materials.materials.Material.bumpMap.minFilter = THREE.LinearFilter;
-                    materials.materials.Material.bumpMap.anisotropy = renderer.getMaxAnisotropy();
+                    materials.materials.Material.bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
                     //materials.materials.Material.map.minFilter = THREE.LinearFilter;
-                    materials.materials.Material.map.anisotropy = renderer.getMaxAnisotropy();
+                    materials.materials.Material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
                     objLoader.setMaterials(materials);
-                    console.log('materials',materials);
                     objLoader.load(module.objFile, (object) => {
                         let deg90 = 1.5708;
                         object.rotation.x = deg90;
-                        console.log('MODULE',module);
                         if(module.turn !== 0) {
                             object.rotation.y = deg90 * module.turn;
                         }
@@ -69,7 +70,6 @@ class LoadTileMap {
                         object.receiveShadow = true;
                         object.userData.moduleType = module.type;
                         object.userData.moduleIndex = module.index;
-                        console.log('Object',object)
                         scene.add(object);
 
                         self.addLights(scene, module, objLoader);
@@ -204,13 +204,30 @@ class LoadTileMap {
         return thisFloor;
     }
 
-    turnModuleTiles(turn, map) {
-
-    }
-
-    getCurrentMap() {
-        // return getShip();
-        //return getModule(1,1);
+    createClickableTiles(shipMap, scene) {
+        let x = 0, y = 0,
+        xLength = shipMap[0].length,
+        yLength = shipMap.length,
+        geometry,
+        material,
+        mesh;
+        scene.walkableTiles = [];
+        for(y=0; y<yLength; y++) {
+            for(x=0; x<xLength; x++) {
+                if(shipMap[y][x].type == 1 || shipMap[y][x].type == 3) {
+                    geometry = new THREE.PlaneGeometry(1,1,1,1);
+                    material = new THREE.MeshLambertMaterial({color: 0xffffff});
+                    mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.x = y;
+                    mesh.position.y = x;
+                    mesh.position.z = 0.03;
+                    mesh.material.opacity = 0;
+                    mesh.material.transparent = true;
+                    scene.add(mesh);
+                    scene.walkableTiles.push(mesh);
+                }
+            }
+        }
     }
 }
 
