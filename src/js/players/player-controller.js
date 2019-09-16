@@ -37,14 +37,7 @@ class PlayerController {
 
     getStartingPosition(sceneState, type) {
         let startingPosition = sceneState.players[type].startingPos;
-        
-    }
-
-    onTileClick = (event) => {
-        event.preventDefault();
-        this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-        console.log(this.mouse);
+        // TODO: finish this. We need moduleMap and shipMap to determine actual tile..
     }
 }
 
