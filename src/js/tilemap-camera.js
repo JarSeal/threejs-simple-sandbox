@@ -197,14 +197,14 @@ class TileMapCamera {
             this.mouse.x = (clickEnd.x / window.innerWidth) * 2 - 1;
             this.mouse.y = - (clickEnd.y / window.innerHeight) * 2 + 1;
             this.raycaster.setFromCamera(this.mouse, this.camera);
-            let intersects = this.raycaster.intersectObjects(this.scene.walkableTiles, true);
-            for(let i=0; i<intersects.length; i++) {
-                console.log(intersects[i].object);
-                let tile = intersects[i].object;
-                this.tl = new TimelineMax();
-                this.tl.to(tile.material, .1, {opacity: 0.2});
-                this.tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
-            }
+            let intersects = this.raycaster.intersectObjects(this.scene.tileClick.clickPlane, true);
+            let pos = intersects[0].point;
+            let tile = this.scene.tileClick.oneTile;
+            tile.position.x = pos.x;
+            tile.position.y = pos.y;
+            this.tl = new TimelineMax();
+            this.tl.to(tile.material, .1, {opacity: 0.2});
+            this.tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
         }
     }
 
