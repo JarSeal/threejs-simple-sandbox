@@ -33,12 +33,12 @@ class TileMapRoot {
         //scene.add(new THREE.AxesHelper(32));
 
         // World plane (helper)
-        const helper = new THREE.GridHelper(64, 64, 0xff0000, 0xffffff);
-        helper.rotation.x = 1.5708;
-        helper.position.set(31.5, 31.5, 0);
-        helper.material.opacity = 0.75;
-        helper.material.transparent = true;
-        scene.add( helper );
+        // const helper = new THREE.GridHelper(64, 64, 0xff0000, 0xffffff);
+        // helper.rotation.x = 1.5708;
+        // helper.position.set(31.5, 31.5, 0);
+        // helper.material.opacity = 0.75;
+        // helper.material.transparent = true;
+        // scene.add( helper );
         
         const geometry = new THREE.BoxGeometry(1,1,1);
         const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
@@ -118,26 +118,6 @@ class TileMapRoot {
         }
 
         render();
-
-        function onMouseClick(event) {
-            event.preventDefault();
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            let intersects = raycaster.intersectObjects(scene.walkableTiles, true);
-            for(let i=0; i<intersects.length; i++) {
-                console.log(intersects[i].object);
-                let tile = intersects[i].object;
-                //tile.position.z = 1;
-                this.tl = new TimelineMax();
-                //this.tl.to(tile.position, .5, {z: 0.2, ease: Expo.easeIn});
-                this.tl.to(tile.material, .1, {opacity: 0.5});
-                //this.tl.to(tile.position, .5, {z: 0.01, ease: Expo.easeOut});
-                this.tl.to(tile.material, .5, {opacity: 0, ease: Expo.easeIn});
-            }
-        }
-
-        window.addEventListener('click', onMouseClick);
     }
 }
 

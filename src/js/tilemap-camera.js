@@ -2,6 +2,7 @@
 
 class TileMapCamera {
     constructor(scene, renderer) {
+        this.scene = scene;
         this.stageMaxPosX = 64;
         this.stageMaxPosY = 64;
         this.initPosition = {
@@ -15,6 +16,8 @@ class TileMapCamera {
         this.camera;
         this.stars = [];
         this.starMaterials = [];
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
         this.init(scene, renderer);
     }
 
@@ -29,7 +32,7 @@ class TileMapCamera {
         this.camera.rotation.z = 0.785398;
 
         let group = new THREE.Group();
-        let sprite = new THREE.TextureLoader().load( '/images/sprites/sprite-star.png' );
+        let sprite = new THREE.TextureLoader().load( '/images/sprites/star.png' );
         let material = new THREE.SpriteMaterial({map: sprite, transparent: true, alphaTest: 0});
         for (let a=0; a<1000; a++) {
             let x = THREE.Math.randFloat(-500, 500);
@@ -166,32 +169,44 @@ class TileMapCamera {
             }
         }
         this.isDragging = true;
+        console.log('start');
     }
 
     endTouchMove = (evt) => {
         this.isDragging = false;
         this.lastPinchDist = 0;
         let clickEnd;
-        if(evt.changedTouches && evt.changedTouches.length == 1) {
-            let touch1 = evt.changedTouches[0];
-            clickEnd = {
-                x: parseInt(touch1.clientX),
-                y: parseInt(touch1.clientY)
-            };
-        } else {
-            clickEnd = {
-                x: parseInt(evt.clientX),
-                y: parseInt(evt.clientY)
-            };
-        }
-        // if(Math.abs(this.clickStart.x - clickEnd.x) < 20 &&
-        //    Math.abs(this.clickStart.y - clickEnd.y) < 20) {
-        //     this.worker.postMessage({
-        //         click: true,
-        //         clickTarget: this.clickStart,
-        //     });
-        // }
         evt.preventDefault();
+        console.log('end', this.clickStart, this.lastDist);
+        if(this.clickStart.x === this.lastDist.x && this.clickStart.y === this.lastDist.y) {
+            // Click a tile (no drag or pinch)
+            if(evt.changedTouches && evt.changedTouches.length == 1) {
+                let touch1 = evt.changedTouches[0];
+                clickEnd = {
+                    x: parseInt(touch1.clientX),
+                    y: parseInt(touch1.clientY)
+                };
+            } else {
+                clickEnd = {
+                    x: parseInt(evt.clientX),
+                    y: parseInt(evt.clientY)
+                };
+            }
+            this.mouse.x = (clickEnd.x / window.innerWidth) * 2 - 1;
+            this.mouse.y = - (clickEnd.y / window.innerHeight) * 2 + 1;
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+            let intersects = this.raycaster.intersectObjects(this.scene.walkableTiles, true);
+            for(let i=0; i<intersects.length; i++) {
+                console.log(intersects[i].object);
+                let tile = intersects[i].object;
+                //tile.position.z = 1;
+                this.tl = new TimelineMax();
+                //this.tl.to(tile.position, .5, {z: 0.2, ease: Expo.easeIn});
+                this.tl.to(tile.material, .1, {opacity: 0.5});
+                //this.tl.to(tile.position, .5, {z: 0.01, ease: Expo.easeOut});
+                this.tl.to(tile.material, .5, {opacity: 0, ease: Expo.easeIn});
+            }
+        }
     }
 
     getCamera() {
