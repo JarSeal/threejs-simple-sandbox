@@ -223,6 +223,9 @@ class LoadTileMap {
                     mesh.position.z = 0.03;
                     mesh.material.opacity = 0;
                     mesh.material.transparent = true;
+                    mesh.userData.tile = shipMap[y][x];
+                    mesh.userData.tile.x = x;
+                    mesh.userData.tile.y = y;
                     scene.add(mesh);
                     scene.walkableTiles.push(mesh);
                 }

@@ -169,7 +169,6 @@ class TileMapCamera {
             }
         }
         this.isDragging = true;
-        console.log('start');
     }
 
     endTouchMove = (evt) => {
@@ -177,7 +176,6 @@ class TileMapCamera {
         this.lastPinchDist = 0;
         let clickEnd;
         evt.preventDefault();
-        console.log('end', this.clickStart, this.lastDist);
         if(this.clickStart.x === this.lastDist.x && this.clickStart.y === this.lastDist.y) {
             // Click a tile (no drag or pinch)
             if(evt.changedTouches && evt.changedTouches.length == 1) {
@@ -199,11 +197,8 @@ class TileMapCamera {
             for(let i=0; i<intersects.length; i++) {
                 console.log(intersects[i].object);
                 let tile = intersects[i].object;
-                //tile.position.z = 1;
                 this.tl = new TimelineMax();
-                //this.tl.to(tile.position, .5, {z: 0.2, ease: Expo.easeIn});
                 this.tl.to(tile.material, .1, {opacity: 0.5});
-                //this.tl.to(tile.position, .5, {z: 0.01, ease: Expo.easeOut});
                 this.tl.to(tile.material, .5, {opacity: 0, ease: Expo.easeIn});
             }
         }
