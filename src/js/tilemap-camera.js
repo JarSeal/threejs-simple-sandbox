@@ -40,8 +40,6 @@ class TileMapCamera {
             let z = THREE.Math.randFloat(-100, -300);
             let sprite = new THREE.Sprite(material);
             sprite.position.set(x, y, z);
-            // sprite.scale.set(-1.4, -1.4, 1);
-            // sprite.center.set(0.0, 0.0);
             group.add(sprite);
         }
         scene.add(group);
@@ -200,10 +198,13 @@ class TileMapCamera {
             let intersects = this.raycaster.intersectObjects(this.scene.tileClick.clickPlane, true);
             let pos = intersects[0].point;
             let tile = this.scene.tileClick.oneTile;
-            tile.position.x = pos.x;
-            tile.position.y = pos.y;
+            let dx = Math.round(pos.x);
+            let dy = Math.round(pos.y);
+            console.log('CLICKIDI',dx,dy);
+            tile.position.x = dx;
+            tile.position.y = dy;
             this.tl = new TimelineMax();
-            this.tl.to(tile.material, .1, {opacity: 0.2});
+            this.tl.to(tile.material, .1, {opacity: 0.7});
             this.tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
         }
     }

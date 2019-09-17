@@ -16,11 +16,6 @@ class TileMapRoot {
         const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor('#000000');
         renderer.setSize(window.innerWidth,window.innerHeight);
-        renderer.clippingPlanes = Object.freeze( [] );
-        renderer.localClippingEnabled = true;
-        // renderer.shadowMap.enabled = true;
-        // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        // renderer.shadowMap.type = THREE.BasicShadowMap;
         
         document.body.appendChild(renderer.domElement);
         const cam = new TileMapCamera(scene, renderer);

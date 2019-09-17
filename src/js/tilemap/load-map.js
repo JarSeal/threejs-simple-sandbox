@@ -205,8 +205,8 @@ class LoadTileMap {
     }
 
     createClickableTiles(shipMap, scene) {
-        let clickPlaneGeo = new THREE.PlaneGeometry(64,64,1,1);
-        let clickPlaneMat = new THREE.MeshLambertMaterial({color: 0xffffff});
+        let clickPlaneGeo = new THREE.PlaneGeometry(128,128,1,1);
+        let clickPlaneMat = new THREE.MeshLambertMaterial({color: 0xff0000});
         let clickPlane = new THREE.Mesh(clickPlaneGeo, clickPlaneMat);
         clickPlane.position.x = 32;
         clickPlane.position.y = 32;
@@ -227,33 +227,6 @@ class LoadTileMap {
             oneTile: mesh,
             clickPlane: [clickPlane],
         };
-        
-        // let x = 0, y = 0,
-        // xLength = shipMap[0].length,
-        // yLength = shipMap.length,
-        // geometry,
-        // material,
-        // mesh;
-        // scene.walkableTiles = [];
-        // for(y=0; y<yLength; y++) {
-        //     for(x=0; x<xLength; x++) {
-        //         if(shipMap[y][x].type == 1 || shipMap[y][x].type == 3) {
-        //             geometry = new THREE.PlaneGeometry(1,1,1,1);
-        //             material = new THREE.MeshLambertMaterial({color: 0xffffff});
-        //             mesh = new THREE.Mesh(geometry, material);
-        //             mesh.position.x = y;
-        //             mesh.position.y = x;
-        //             mesh.position.z = 0.03;
-        //             mesh.material.opacity = 0;
-        //             mesh.material.transparent = true;
-        //             mesh.userData.tile = shipMap[y][x];
-        //             mesh.userData.tile.x = x;
-        //             mesh.userData.tile.y = y;
-        //             scene.add(mesh);
-        //             scene.walkableTiles.push(mesh);
-        //         }
-        //     }
-        // }
     }
 }
 
