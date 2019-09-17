@@ -7,6 +7,10 @@ class TileMapRoot {
         this.sceneState = {
             camera: {},
             players: {},
+            floor: 0,
+            moduleMap: [],
+            tileMap: [],
+            astarMap: [],
         };
         this.init();
     }
@@ -18,7 +22,7 @@ class TileMapRoot {
         renderer.setSize(window.innerWidth,window.innerHeight);
         
         document.body.appendChild(renderer.domElement);
-        const cam = new TileMapCamera(scene, renderer);
+        const cam = new TileMapCamera(scene, renderer, this.sceneState);
         const camera = cam.getCamera();
 
         const raycaster = new THREE.Raycaster();

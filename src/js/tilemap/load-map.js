@@ -18,9 +18,10 @@ class LoadTileMap {
             turn;
         
         this.ship = this.createTileMap(rawShip, this.mapLengths, floor);
-        this.createClickableTiles(this.ship, scene);
-        sceneState.shipModules = rawShip;
+        this.createClickableTiles(scene);
+        sceneState.moduleMap = rawShip;
         sceneState.shipMap = this.ship;
+        sceneState.astarMap = this.createAstarMap(this.ship, sceneState);
 
         // Create modulesLoader (loads the 3D assets)
         for(m=0; m<modulesLength; m++) {
@@ -201,10 +202,10 @@ class LoadTileMap {
                 m === 0 ? thisFloor.push(row) : thisFloor[y] = row; // Row does not exist, create new
             }
         }
-        return thisFloor;
+        return [thisFloor];
     }
 
-    createClickableTiles(shipMap, scene) {
+    createClickableTiles(scene) {
         let clickPlaneGeo = new THREE.PlaneGeometry(128,128,1,1);
         let clickPlaneMat = new THREE.MeshLambertMaterial({color: 0xff0000});
         let clickPlane = new THREE.Mesh(clickPlaneGeo, clickPlaneMat);
@@ -227,6 +228,36 @@ class LoadTileMap {
             oneTile: mesh,
             clickPlane: [clickPlane],
         };
+    }
+
+    createAstarMap(tileMap, sceneState) {
+        let floorsLength = tileMap.length,
+            floor = 0,
+            rowsLength = 0,
+            row = 0,
+            colsLength = 0,
+            col = 0,
+            tile,
+            astarFloors = [],
+            newFloor = [];
+        for(floor=0; floor<floorsLength; floor++) {
+            rowsLength = tileMap[floor].length;
+            newFloor = [];
+            for(row=0; row<rowsLength; row++) {
+                colsLength = tileMap[floor][row].length;
+                newFloor.push([]);
+                for(col=0; col<colsLength; col++) {
+                    tile = tileMap[floor][row][col];
+                    if(tile.type == 2) {
+                        newFloor[row].push(0);
+                    } else {
+                        newFloor[row].push(1);
+                    }
+                }
+            }
+            astarFloors.push(newFloor);
+        }
+        sceneState.astar = astarFloors;
     }
 }
 

@@ -1,8 +1,9 @@
 
 
 class TileMapCamera {
-    constructor(scene, renderer) {
+    constructor(scene, renderer, sceneState) {
         this.scene = scene;
+        this.sceneState = sceneState;
         this.stageMaxPosX = 64;
         this.stageMaxPosY = 64;
         this.initPosition = {
@@ -201,6 +202,22 @@ class TileMapCamera {
             let dx = Math.round(pos.x);
             let dy = Math.round(pos.y);
             console.log('CLICKIDI',dx,dy);
+
+            // Calculate route
+            let startTime = performance.now();
+            let newGraph = new Graph(
+                this.sceneState.astar[this.sceneState.floor],
+                { diagonal: true }
+            );
+            let resultRoute = astar.search(
+                newGraph, newGraph.grid[34][29],
+                newGraph.grid[dx][dy],
+                { closest: true }
+            );
+            let endTime = performance.now();
+            console.log('route', (endTime - startTime) + "ms", resultRoute);
+            
+            // Add tile click marker and animate
             tile.position.x = dx;
             tile.position.y = dy;
             this.tl = new TimelineMax();
