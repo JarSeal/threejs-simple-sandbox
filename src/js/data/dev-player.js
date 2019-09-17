@@ -9,7 +9,12 @@ export function getPlayer() {
         width: 0.5,
         height: 1.9,
         dir: 0,
-        speed: 0.5,
+        speed: 500, // ms per tile
         moving: false,
+        animatingPos: false,
+        route: [],
+        routeIndex: 0,
+        moveStart: null,
+        mesh: null,
     };
 };

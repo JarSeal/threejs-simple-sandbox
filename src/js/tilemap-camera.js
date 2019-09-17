@@ -201,7 +201,13 @@ class TileMapCamera {
             let tile = this.scene.tileClick.oneTile;
             let dx = Math.round(pos.x);
             let dy = Math.round(pos.y);
-            console.log('CLICKIDI',dx,dy);
+
+            // Add tile click marker and animate it
+            tile.position.x = dx;
+            tile.position.y = dy;
+            this.tl = new TimelineMax();
+            this.tl.to(tile.material, .1, {opacity: 0.7});
+            this.tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
             // Calculate route
             let startTime = performance.now();
@@ -210,19 +216,20 @@ class TileMapCamera {
                 { diagonal: true }
             );
             let resultRoute = astar.search(
-                newGraph, newGraph.grid[34][29],
+                newGraph, newGraph.grid[this.sceneState.players.hero.pos[0]][this.sceneState.players.hero.pos[1]],
                 newGraph.grid[dx][dy],
                 { closest: true }
             );
             let endTime = performance.now();
-            console.log('route', (endTime - startTime) + "ms", resultRoute);
-            
-            // Add tile click marker and animate
-            tile.position.x = dx;
-            tile.position.y = dy;
-            this.tl = new TimelineMax();
-            this.tl.to(tile.material, .1, {opacity: 0.7});
-            this.tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
+            console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute);
+
+            // Add route to player movement
+            if(this.sceneState.players.hero) {
+                this.sceneState.players.hero.route = resultRoute;
+                this.sceneState.players.hero.routeIndex = 0;
+                this.sceneState.players.hero.animatingPos = false;
+                this.sceneState.players.hero.moving = true;
+            }
         }
     }
 

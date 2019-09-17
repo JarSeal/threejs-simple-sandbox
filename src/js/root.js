@@ -80,11 +80,12 @@ class TileMapRoot {
 
         new LoadTileMap(mtlLoader, objLoader, scene, renderer, this.sceneState);
 
-        let playerController = new PlayerController();
+        let playerController = new PlayerController(this.sceneState);
         playerController.createNewPlayer(mtlLoader, objLoader, scene, renderer, this.sceneState, 'hero');
 
         const render = function() {
             requestAnimationFrame(render);
+            playerController.setPositions();
             renderer.render(scene, camera);
             stats.update(); // Debug statistics
         };
@@ -105,7 +106,6 @@ class TileMapRoot {
             raycaster.setFromCamera(mouse, camera);
             let intersects = raycaster.intersectObjects(scene.children, true);
             for(let i=0; i<intersects.length; i++) {
-                // intersects[i].object.material.color.set(0xFF0000);
                 if(intersects[i].object.hoverable) {
                     this.tl = new TimelineMax();
                     this.tl.to(intersects[i].object.scale, 1, {x: 2, ease: Expo.easeOut});
