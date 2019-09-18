@@ -15,6 +15,8 @@ class TileMapCamera {
         this.isDragging = false;
         this.clickStart ={x:0,y:0};
         this.camera;
+        this.aspectRatio;
+        this.backPlane;
         this.stars = [];
         this.starMaterials = [];
         this.raycaster = new THREE.Raycaster();
@@ -23,7 +25,8 @@ class TileMapCamera {
     }
 
     init(scene, renderer) {
-        this.camera = new THREE.PerspectiveCamera(70,window.innerWidth / window.innerHeight,0.1,1000);
+        this.setAspectRatio();
+        this.camera = new THREE.PerspectiveCamera(80,this.aspectRatio,0.1,64);
         let zoom = 1;
         this.camera.position.x = 3.5 * zoom;
         this.camera.position.y = -3.5 * zoom;
@@ -31,6 +34,21 @@ class TileMapCamera {
         this.camera.rotation.x = 0.35;
         this.camera.rotation.y = 0.35;
         this.camera.rotation.z = 0.785398;
+
+        {
+            let backGeo = new THREE.PlaneBufferGeometry(80,80,1);
+            const loader = new THREE.TextureLoader();
+            const texture = loader.load(
+                '/images/stars-test.png'
+            );
+            let backMat = new THREE.MeshBasicMaterial({map:texture});
+            this.backPlane = new THREE.Mesh(backGeo, backMat);
+            this.backPlane.position.x = 32;
+            this.backPlane.position.y = 32;
+            this.backPlane.position.z = -32;
+            this.backPlane.quaternion.copy(this.camera.quaternion);
+            scene.add(this.backPlane);
+        }
 
         let group = new THREE.Group();
         let sprite = new THREE.TextureLoader().load( '/images/sprites/star.png' );
@@ -43,12 +61,15 @@ class TileMapCamera {
             sprite.position.set(x, y, z);
             group.add(sprite);
         }
-        scene.add(group);
+        //scene.add(group);
 
         window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth,window.innerHeight);
-            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.setAspectRatio();
+            this.backPlanePosition();
+            this.backPlane.updateMatrix();
+            this.camera.aspect = this.aspectRatio;
             this.camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth,window.innerHeight);
         });
         document.getElementById("mainApp").addEventListener("touchmove", this.touchMove, {passive: false});
         window.addEventListener("touchstart", this.startTouchMove, {passive: false});
@@ -59,9 +80,27 @@ class TileMapCamera {
         this.centerCamera();
     }
 
+    setAspectRatio() {
+        let w = window.innerWidth,
+            h = window.innerHeight;
+        this.aspectRatio = w / h;
+        console.log(this.aspectRatio);
+    }
+
     centerCamera() {
         this.camera.position.x = 36;
         this.camera.position.y = 28;
+        this.backPlanePosition();
+    }
+
+    backPlanePosition() {
+        this.backPlane.position.x = this.camera.position.x - 14 - (this.camera.position.x / 8);
+        this.backPlane.position.y = this.camera.position.y + 20 - (this.camera.position.y / 8);
+        if(this.aspectRation > 1.4) {
+            this.backPlane.scale.set(4,4,1);
+        } else {
+            this.backPlane.scale.set(2,2,1);
+        }
     }
 
     touchMove = (evt) => {
@@ -105,8 +144,9 @@ class TileMapCamera {
             } else {
                 this.camera.position.y = newY;
             }
+            this.backPlanePosition();
             
-            //console.log('camera',newX,newY);
+            // console.log('camera',newX,newY);
 
             this.lastDist = {
                 x: clientX,
