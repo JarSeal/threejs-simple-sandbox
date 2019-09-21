@@ -1,4 +1,4 @@
-# Blender MTL File: 'wall-and-floor-tile.blend'
+# Blender MTL File: 'captains-cabin.blend'
 # Material Count: 1
 
 newmtl Material
@@ -10,6 +10,5 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd module-map-a.png
-map_bump module-map-a-bump.png
-map_ks module-map-a-specular.png
+map_Kd captains-cabin-1-a.png
+map_bump captains-cabin-1-a-bump.png

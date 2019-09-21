@@ -24,7 +24,7 @@ function getShipFloors() {
         {
             floor: 1,
             modules: [
-                {module:[1,0],level:1,pos:[32,26],turn:3},
+                {module:[1,0],level:1,pos:[32,20],turn:3},
                 {module:[1,1],level:1,pos:[32,32],turn:2},
                 {module:[1,2],level:1,pos:[27,31]},
             ],

@@ -20,6 +20,8 @@ class TileMapRoot {
         const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor('#000000');
         renderer.setSize(window.innerWidth,window.innerHeight);
+        // renderer.gammaFactor = 2.2;
+        // renderer.gammaOutput = true;
         
         document.body.appendChild(renderer.domElement);
         const cam = new TileMapCamera(scene, renderer, this.sceneState);
@@ -53,14 +55,14 @@ class TileMapRoot {
             scene.add(mesh);
         }
 
-        let hemi = new THREE.HemisphereLight( 0xffffbb, 0x080820, 0.2 );
+        let hemi = new THREE.HemisphereLight( 0xffffbb, 0x080820, 0.8 );
         scene.add(hemi);
-        scene.add(new THREE.AmbientLight(0xf0f0f0, 0.4));
+        scene.add(new THREE.AmbientLight(0xf0f0f0, 0.5));
 
         let light = new THREE.PointLight(0xFFFFFF, 0.8, 1000, 5);
         light.position.set(32,-32,0);
         light.castShadow = true;
-        scene.add(light);
+        //scene.add(light);
 
         // Debug statisctics [START]
         let stats;
