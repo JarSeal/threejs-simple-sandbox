@@ -258,8 +258,15 @@ class TileMapCamera {
                     this.sceneState.astar[this.sceneState.floor],
                     { diagonal: true }
                 );
+                let playerPos = [this.sceneState.players.hero.pos[0], this.sceneState.players.hero.pos[1]];
+                if(this.sceneState.players.hero.moving) {
+                    playerPos = [
+                        this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].x,
+                        this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].y,
+                    ];
+                }
                 let resultRoute = astar.search(
-                    newGraph, newGraph.grid[this.sceneState.players.hero.pos[0]][this.sceneState.players.hero.pos[1]],
+                    newGraph, newGraph.grid[playerPos[0]][playerPos[1]],
                     newGraph.grid[dx][dy],
                     { closest: true }
                 );
@@ -267,11 +274,14 @@ class TileMapCamera {
                 console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute, this.sceneState);
 
                 // Add route to player movement
-                if(this.sceneState.players.hero) {
+                if(this.sceneState.players.hero &&
+                   !this.sceneState.players.hero.moving) {
                     this.sceneState.players.hero.route = resultRoute;
                     this.sceneState.players.hero.routeIndex = 0;
                     this.sceneState.players.hero.animatingPos = false;
                     this.sceneState.players.hero.moving = true;
+                } else if(this.sceneState.players.hero.moving) {
+                    this.sceneState.players.hero.newRoute = resultRoute;
                 }
             }
         }

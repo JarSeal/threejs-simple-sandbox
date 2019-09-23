@@ -98,9 +98,15 @@ class PlayerController {
                 // Check if end of one tile
                 if(player.moveStart + speed < now) {
                     player.pos = [route[player.routeIndex].x, route[player.routeIndex].y];
-                    player.routeIndex++;
                     player.moveStart = null;
                     player.animatingPos = false;
+                    if(player.newRoute.length) {
+                        player.route = player.newRoute.slice(0);
+                        player.newRoute = [];
+                        player.routeIndex = 0;
+                    } else {
+                        player.routeIndex++;
+                    }
                 }
 
                 // Check if full destination is reached

@@ -14,6 +14,7 @@ export function getPlayer() {
         animatingPos: false,
         route: [],
         routeIndex: 0,
+        newRoute: [],
         moveStart: null,
         mesh: null,
     };
