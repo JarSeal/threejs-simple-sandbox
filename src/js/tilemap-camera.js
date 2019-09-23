@@ -3,6 +3,7 @@
 class TileMapCamera {
     constructor(scene, renderer, sceneState) {
         this.scene = scene;
+        this.renderer = renderer;
         this.sceneState = sceneState;
         this.stageMaxPosX = 64;
         this.stageMaxPosY = 64;
@@ -63,14 +64,6 @@ class TileMapCamera {
         }
         //scene.add(group);
 
-        window.addEventListener('resize', () => {
-            this.setAspectRatio();
-            this.backPlanePosition();
-            this.backPlane.updateMatrix();
-            this.camera.aspect = this.aspectRatio;
-            this.camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth,window.innerHeight);
-        });
         document.getElementById("mainApp").addEventListener("touchmove", this.touchMove, {passive: false});
         window.addEventListener("touchstart", this.startTouchMove, {passive: false});
         window.addEventListener("touchend", this.endTouchMove, {passive: false});
@@ -78,6 +71,15 @@ class TileMapCamera {
         window.addEventListener("mousedown", this.startTouchMove, {passive: false});
         window.addEventListener("mouseup", this.endTouchMove, {passive: false});
         this.centerCamera();
+    }
+
+    resize() {
+        this.setAspectRatio();
+        this.backPlanePosition();
+        this.backPlane.updateMatrix();
+        this.camera.aspect = this.aspectRatio;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth,window.innerHeight);
     }
 
     setAspectRatio() {

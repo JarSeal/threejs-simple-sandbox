@@ -5,7 +5,7 @@ body {
     margin: 0;
     padding: 0;
     height: 100vh;
-    background: whitesmoke
+    background: #000;
 }
 canvas {
     display: block;
@@ -17,4 +17,11 @@ h1 {
     color: #333;
     top: 0px;
     right: 10px;
+}
+#uiCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    /* background-color: rgba(30,80,66,0.5); */
 }

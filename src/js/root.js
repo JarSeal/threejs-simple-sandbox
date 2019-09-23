@@ -1,12 +1,17 @@
 import TileMapCamera from './tilemap-camera.js';
 import LoadTileMap from './tilemap/load-map.js';
 import PlayerController from './players/player-controller.js';
+import AppUiLayer from './ui/app-ui-layer.js';
 
 class TileMapRoot {
     constructor() {
         this.sceneState = {
-            camera: {},
             players: {},
+            ui: {
+                locked: true,
+                view: null,
+                action: null,
+            },
             floor: 0,
             moduleMap: [],
             tileMap: [],
@@ -88,6 +93,7 @@ class TileMapRoot {
         const render = function() {
             requestAnimationFrame(render);
             playerController.setPositions();
+            appUiLayer.renderUi();
             renderer.render(scene, camera);
             stats.update(); // Debug statistics
         };
@@ -117,6 +123,13 @@ class TileMapRoot {
                 }
             }
         }
+
+        const appUiLayer = new AppUiLayer(this.sceneState);
+
+        window.addEventListener('resize', () => {
+            cam.resize();
+            appUiLayer.resize();
+        });
 
         render();
     }
