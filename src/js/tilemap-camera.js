@@ -243,6 +243,9 @@ class TileMapCamera {
             let dy = Math.round(pos.y);
 
             // Check if tile clicked is a walkable or a door (also walkable)
+            if(!this.sceneState.players.hero.route.length && this.sceneState.players.hero.moving) {
+                this.sceneState.players.hero.moving = false;
+            }
             if(this.sceneState.shipMap[this.sceneState.floor][dx][dy].type == 1 ||
                this.sceneState.shipMap[this.sceneState.floor][dx][dy].type == 3) {
                 // Add tile click marker and animate it
