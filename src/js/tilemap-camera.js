@@ -242,33 +242,37 @@ class TileMapCamera {
             let dx = Math.round(pos.x);
             let dy = Math.round(pos.y);
 
-            // Add tile click marker and animate it
-            tile.position.x = dx;
-            tile.position.y = dy;
-            this.tl = new TimelineMax();
-            this.tl.to(tile.material, .1, {opacity: 0.7});
-            this.tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
+            // Check if tile clicked is a walkable or a door (also walkable)
+            if(this.sceneState.shipMap[this.sceneState.floor][dx][dy].type == 1 ||
+               this.sceneState.shipMap[this.sceneState.floor][dx][dy].type == 3) {
+                // Add tile click marker and animate it
+                tile.position.x = dx;
+                tile.position.y = dy;
+                this.tl = new TimelineMax();
+                this.tl.to(tile.material, .1, {opacity: 0.7});
+                this.tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
-            // Calculate route
-            let startTime = performance.now();
-            let newGraph = new Graph(
-                this.sceneState.astar[this.sceneState.floor],
-                { diagonal: true }
-            );
-            let resultRoute = astar.search(
-                newGraph, newGraph.grid[this.sceneState.players.hero.pos[0]][this.sceneState.players.hero.pos[1]],
-                newGraph.grid[dx][dy],
-                { closest: true }
-            );
-            let endTime = performance.now();
-            console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute);
+                // Calculate route
+                let startTime = performance.now();
+                let newGraph = new Graph(
+                    this.sceneState.astar[this.sceneState.floor],
+                    { diagonal: true }
+                );
+                let resultRoute = astar.search(
+                    newGraph, newGraph.grid[this.sceneState.players.hero.pos[0]][this.sceneState.players.hero.pos[1]],
+                    newGraph.grid[dx][dy],
+                    { closest: true }
+                );
+                let endTime = performance.now();
+                console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute, this.sceneState);
 
-            // Add route to player movement
-            if(this.sceneState.players.hero) {
-                this.sceneState.players.hero.route = resultRoute;
-                this.sceneState.players.hero.routeIndex = 0;
-                this.sceneState.players.hero.animatingPos = false;
-                this.sceneState.players.hero.moving = true;
+                // Add route to player movement
+                if(this.sceneState.players.hero) {
+                    this.sceneState.players.hero.route = resultRoute;
+                    this.sceneState.players.hero.routeIndex = 0;
+                    this.sceneState.players.hero.animatingPos = false;
+                    this.sceneState.players.hero.moving = true;
+                }
             }
         }
     }

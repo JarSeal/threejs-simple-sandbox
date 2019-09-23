@@ -57,6 +57,7 @@ class LoadTileMap {
                     materials.materials.Material.shininess = 10;
                     materials.materials.Material.bumpScale = 0.145;
                     materials.materials.Material.lightMap = new THREE.TextureLoader().load( "/images/objects/captains-cabin-1-a-lightmap.png" );
+                    materials.materials.Material.lightMapIntensity = 2;
                     materials.materials.Material.lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
                     // materials.materials.Material.lightMap.wrapS = 1000;
                     // materials.materials.Material.lightMap.wrapT = 1000;
