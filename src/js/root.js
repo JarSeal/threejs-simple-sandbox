@@ -9,8 +9,9 @@ class TileMapRoot {
             players: {},
             ui: {
                 locked: true,
+                update: false,
                 view: null,
-                action: null,
+                viewData: [],
             },
             floor: 0,
             moduleMap: [],

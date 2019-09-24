@@ -209,7 +209,9 @@ class TileMapCamera {
                 y: this.clickStart.y,
             }
         }
-        this.isDragging = true;
+        if(!this.isClickTargetUi(this.clickStart)) {
+            this.isDragging = true;
+        }
     }
 
     endTouchMove = (evt) => {
@@ -290,6 +292,18 @@ class TileMapCamera {
                 }
             }
         }
+    }
+
+    isClickTargetUi(target) {
+        let circlePos = this.sceneState.ui.viewData[0].pos,
+            circleRadius = this.sceneState.ui.viewData[0].radius,
+            // hit = (circlePos[0] - target.x)^2 + (target.y - circlePos[1])^2 < circleRadius^2,
+            xDiff = Math.abs(circlePos[0] - target.x),
+            yDiff = Math.abs(circlePos[1] - target.y),
+            dist = Math.sqrt(Math.pow(xDiff,2)+Math.pow(yDiff,2)),
+            hit = dist <= circleRadius;
+        if(hit) return this.sceneState.ui.viewData[0].id;
+        return false;
     }
 
     getCamera() {

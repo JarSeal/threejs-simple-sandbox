@@ -21,31 +21,52 @@ class AppUiLayer {
         }
     }
 
+    combatView() {
+        let uiData = {
+            type: 'circle',
+            id: 'shootButton',
+            pos: [75, window.innerHeight - 75],
+            radius: 50,
+            state: 0,
+            firstClick: null,
+            action: null,
+        };
+        return uiData;
+    }
+
     resize() {
         this.uiCanvas.width = window.innerWidth;
         this.uiCanvas.height = window.innerHeight;
         this.createNewUi = true;
     }
 
-    createUi() {
-        let view = this.sceneState.ui.view;
-        let ctx = this.uiContext;
+    drawUi() {
+        let view = this.sceneState.ui.view,
+            ctx = this.uiContext,
+            data,
+            startAngle = 0,
+            endAngle = 0;
         switch(view) {
             case "combat":
-                console.log('test**************************************************');
+                data = this.combatView();
+                startAngle = 0;
+                endAngle = 2 * Math.PI;
                 ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
-                ctx.fillStyle = "#ffffff";
+                ctx.fillStyle = "rgba(255,255,255,0.5)";
+                ctx.opacity = 0.5;
                 ctx.beginPath();
-                ctx.arc(75, window.innerHeight - 75, 50, 0, 2 * Math.PI);
+                ctx.arc(data.pos[0], data.pos[1], data.radius, startAngle, endAngle);
                 ctx.fill();
+                this.sceneState.ui.viewData.push(data);
                 break;
         }
     }
 
     renderUi() {
-        if(this.createNewUi) {
-            this.createUi();
+        if(this.createNewUi || this.sceneState.ui.update) {
+            this.drawUi();
             this.createNewUi = false;
+            this.sceneState.ui.update = false;
         }
     }
 }
