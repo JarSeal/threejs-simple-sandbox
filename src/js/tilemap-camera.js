@@ -209,7 +209,7 @@ class TileMapCamera {
                 y: this.clickStart.y,
             }
         }
-        if(!this.isClickTargetUi(this.clickStart)) {
+        if(!this.isClickStartTargetUi(this.clickStart)) {
             this.isDragging = true;
         }
     }
@@ -220,6 +220,11 @@ class TileMapCamera {
         let clickEnd,
             dragToClickThreshold = 3;
         evt.preventDefault();
+        if(this.sceneState.ui.curState == 'startClick') {
+            this.sceneState.ui.curState == null;
+            this.sceneState.ui.curId = null;
+            this.sceneState.ui.update = true;
+        }
         if(this.clickStart.x < this.lastDist.x + dragToClickThreshold &&
            this.clickStart.x > this.lastDist.x - dragToClickThreshold &&
            this.clickStart.y < this.lastDist.y + dragToClickThreshold &&
@@ -294,15 +299,39 @@ class TileMapCamera {
         }
     }
 
-    isClickTargetUi(target) {
-        let circlePos = this.sceneState.ui.viewData[0].pos,
-            circleRadius = this.sceneState.ui.viewData[0].radius,
-            // hit = (circlePos[0] - target.x)^2 + (target.y - circlePos[1])^2 < circleRadius^2,
-            xDiff = Math.abs(circlePos[0] - target.x),
-            yDiff = Math.abs(circlePos[1] - target.y),
-            dist = Math.sqrt(Math.pow(xDiff,2)+Math.pow(yDiff,2)),
-            hit = dist <= circleRadius;
-        if(hit) return this.sceneState.ui.viewData[0].id;
+    isClickStartTargetUi(target) {
+        let uiData = this.sceneState.ui.viewData,
+            uiDataLength = uiData.length,
+            i,
+            pos,
+            size,
+            xDiff,
+            yDiff,
+            dist,
+            hit;
+        for(i=0; i<uiDataLength; i++) {
+            if(uiData[i].type == 'circle') {
+                pos = uiData[i].pos;
+                size = uiData[i].radius;
+                xDiff = Math.abs(pos[0] - target.x);
+                yDiff = Math.abs(pos[1] - target.y);
+                dist = Math.sqrt(Math.pow(xDiff,2)+Math.pow(yDiff,2));
+                hit = dist <= size;
+                console.log('hit',hit,uiDataLength);
+            }
+            if(hit) {
+                this.sceneState.ui.curState = 'startClick';
+                this.sceneState.ui.curId = this.sceneState.ui.viewData[0].id;
+                this.sceneState.ui.update = true;
+                return this.sceneState.ui.viewData[0].id;
+            }
+        }
+        // let circlePos = this.sceneState.ui.viewData[0].pos,
+        //     circleRadius = this.sceneState.ui.viewData[0].radius,
+        //     xDiff = Math.abs(circlePos[0] - target.x),
+        //     yDiff = Math.abs(circlePos[1] - target.y),
+        //     dist = Math.sqrt(Math.pow(xDiff,2)+Math.pow(yDiff,2)),
+        //     hit = dist <= circleRadius;
         return false;
     }
 

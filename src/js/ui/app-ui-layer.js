@@ -1,5 +1,3 @@
-
-
 class AppUiLayer {
     constructor(sceneState) {
         this.sceneState = sceneState;
@@ -22,16 +20,38 @@ class AppUiLayer {
     }
 
     combatView() {
-        let uiData = {
-            type: 'circle',
-            id: 'shootButton',
-            pos: [75, window.innerHeight - 75],
-            radius: 50,
-            state: 0,
-            firstClick: null,
-            action: null,
-        };
-        return uiData;
+        if(this.sceneState) {
+            let uiData = [
+                {
+                    type: 'circle',
+                    id: 'shootButton',
+                    pos: [75, window.innerHeight - 75],
+                    radius: 50,
+                    state: 0,
+                    firstClick: null,
+                    color: function(sceneState) {
+                        if(this.id == sceneState.ui.curId) {
+                            if(sceneState.ui.curState == 'startClick') {
+                                return 'rgba(255,255,255,1)';
+                            }
+                        }
+                        return 'rgba(255,255,255,0.5)';
+                    },
+                    action: function(sceneState) {
+                        let hero = sceneState.players.hero,
+                            heroMaterial = hero.mesh.children[0].material;
+                        if(this.id == sceneState.ui.curId) {
+                            if(sceneState.ui.curState == 'startClick') {
+                                heroMaterial.color.setHex(0xffffff);
+                                return;
+                            }
+                        }
+                        heroMaterial.color.setHex(0xff0088);
+                    }
+                },
+            ];
+            return uiData;
+        }
     }
 
     resize() {
@@ -44,26 +64,30 @@ class AppUiLayer {
         let view = this.sceneState.ui.view,
             ctx = this.uiContext,
             data,
-            startAngle = 0,
-            endAngle = 0;
+            dataLength,
+            i;
         switch(view) {
             case "combat":
                 data = this.combatView();
-                startAngle = 0;
-                endAngle = 2 * Math.PI;
+                dataLength = data.length;
                 ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
-                ctx.fillStyle = "rgba(255,255,255,0.5)";
-                ctx.opacity = 0.5;
-                ctx.beginPath();
-                ctx.arc(data.pos[0], data.pos[1], data.radius, startAngle, endAngle);
-                ctx.fill();
-                this.sceneState.ui.viewData.push(data);
+                for(i=0; i<dataLength; i++) {
+                    if(data[i].type == 'circle') {
+                        ctx.fillStyle = data[i].color(this.sceneState);
+                        ctx.beginPath();
+                        ctx.arc(data[i].pos[0], data[i].pos[1], data[i].radius, 0, 2 * Math.PI);
+                        ctx.fill();
+                        data[i].action(this.sceneState);
+                        this.sceneState.ui.viewData.push(data[i]);
+                    }
+                }
                 break;
         }
     }
 
     renderUi() {
-        if(this.createNewUi || this.sceneState.ui.update) {
+        if(this.sceneState.ui.update || this.createNewUi) {
+            this.sceneState.ui.viewData = [];
             this.drawUi();
             this.createNewUi = false;
             this.sceneState.ui.update = false;
