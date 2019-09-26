@@ -10,6 +10,7 @@ class TileMapRoot {
             ui: {
                 locked: true,
                 update: false,
+                keepUpdating: false,
                 view: null,
                 viewData: [],
                 curId: null,

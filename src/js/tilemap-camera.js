@@ -218,12 +218,14 @@ class TileMapCamera {
         this.isDragging = false;
         this.lastPinchDist = 0;
         let clickEnd,
-            dragToClickThreshold = 3;
+            dragToClickThreshold = 3,
+            tl;
         evt.preventDefault();
         if(this.sceneState.ui.curState == 'startClick') {
-            this.sceneState.ui.curState == null;
+            this.sceneState.ui.curState = null;
             this.sceneState.ui.curId = null;
             this.sceneState.ui.update = true;
+            this.sceneState.ui.keepUpdating = false;
         }
         if(this.clickStart.x < this.lastDist.x + dragToClickThreshold &&
            this.clickStart.x > this.lastDist.x - dragToClickThreshold &&
@@ -260,9 +262,9 @@ class TileMapCamera {
                 // Add tile click marker and animate it
                 tile.position.x = dx;
                 tile.position.y = dy;
-                this.tl = new TimelineMax();
-                this.tl.to(tile.material, .1, {opacity: 0.7});
-                this.tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
+                tl = new TimelineMax();
+                tl.to(tile.material, .1, {opacity: 0.7});
+                tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
                 // Calculate route
                 let startTime = performance.now();
@@ -310,7 +312,7 @@ class TileMapCamera {
             dist,
             hit;
         for(i=0; i<uiDataLength; i++) {
-            if(uiData[i].type == 'circle') {
+            if(uiData[i].type == 'circleButton') {
                 pos = uiData[i].pos;
                 size = uiData[i].radius;
                 xDiff = Math.abs(pos[0] - target.x);
@@ -323,15 +325,12 @@ class TileMapCamera {
                 this.sceneState.ui.curState = 'startClick';
                 this.sceneState.ui.curId = this.sceneState.ui.viewData[0].id;
                 this.sceneState.ui.update = true;
+                if(this.sceneState.ui.viewData[0].keepUpdatingWhenPressed) {
+                    this.sceneState.ui.keepUpdating = true;
+                }
                 return this.sceneState.ui.viewData[0].id;
             }
         }
-        // let circlePos = this.sceneState.ui.viewData[0].pos,
-        //     circleRadius = this.sceneState.ui.viewData[0].radius,
-        //     xDiff = Math.abs(circlePos[0] - target.x),
-        //     yDiff = Math.abs(circlePos[1] - target.y),
-        //     dist = Math.sqrt(Math.pow(xDiff,2)+Math.pow(yDiff,2)),
-        //     hit = dist <= circleRadius;
         return false;
     }
 
