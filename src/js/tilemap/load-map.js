@@ -255,8 +255,8 @@ class LoadTileMap {
     }
 
     createClickableTiles(scene) {
-        let clickPlaneGeo = new THREE.PlaneGeometry(128,128,1,1);
-        let clickPlaneMat = new THREE.MeshLambertMaterial({color: 0xff0000});
+        let clickPlaneGeo = new THREE.PlaneBufferGeometry(128,128,1,1);
+        let clickPlaneMat = new THREE.MeshBasicMaterial({color: 0xff0000});
         let clickPlane = new THREE.Mesh(clickPlaneGeo, clickPlaneMat);
         clickPlane.position.x = 32;
         clickPlane.position.y = 32;
@@ -264,8 +264,8 @@ class LoadTileMap {
         clickPlane.material.opacity = 0;
         clickPlane.material.transparent = true;
         scene.add(clickPlane);
-        let geometry = new THREE.PlaneGeometry(1,1,1,1);
-        let material = new THREE.MeshLambertMaterial({color: 0xffffff});
+        let geometry = new THREE.PlaneBufferGeometry(1,1,1,1);
+        let material = new THREE.MeshBasicMaterial({color: 0xffffff});
         let mesh = new THREE.Mesh(geometry, material);
         mesh.position.x = 0;
         mesh.position.y = 0;
@@ -273,8 +273,18 @@ class LoadTileMap {
         mesh.material.opacity = 0;
         mesh.material.transparent = true;
         scene.add(mesh);
+        let targetGeo = new THREE.CircleBufferGeometry(0.3,16);
+        let targetMat = new THREE.MeshBasicMaterial({color: 0xff0000});
+        let targetMesh = new THREE.Mesh(targetGeo, targetMat);
+        targetMesh.position.x = 0;
+        targetMesh.position.y = 0;
+        targetMesh.position.z = 0.03;
+        targetMesh.material.opacity = 0;
+        targetMesh.material.transparent = true;
+        scene.add(targetMesh);
         scene.tileClick = {
             oneTile: mesh,
+            oneTarget: targetMesh,
             clickPlane: [clickPlane],
         };
     }

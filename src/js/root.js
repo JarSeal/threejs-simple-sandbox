@@ -15,6 +15,7 @@ class TileMapRoot {
                 viewData: [],
                 curId: null,
                 curState: null,
+                curSecondaryState: null,
             },
             floor: 0,
             moduleMap: [],

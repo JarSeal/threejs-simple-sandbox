@@ -190,10 +190,13 @@ class TileMapCamera {
 
     startTouchMove = (evt) => {
         if(evt.touches) {
-            let touch1 = evt.touches[0];
+            let touch1 = evt.touches[0],
+                touch2 = evt.touches[1];
             this.clickStart = {
                 x: parseInt(touch1.clientX),
-                y: parseInt(touch1.clientY)
+                y: parseInt(touch1.clientY),
+                x2: touch2 ? parseInt(touch2.clientX) : null,
+                y2: touch2 ? parseInt(touch2.clientY) : null,
             };
             this.lastDist = {
                 x: this.clickStart.x,
@@ -221,11 +224,14 @@ class TileMapCamera {
             dragToClickThreshold = 3,
             tl;
         evt.preventDefault();
-        if(this.sceneState.ui.curState == 'startClick') {
+        if(this.sceneState.ui.curState == 'startClick' &&
+           !this.sceneState.ui.curSecondaryState) {
             this.sceneState.ui.curState = null;
+            this.sceneState.ui.curSecondaryState = null;
             this.sceneState.ui.curId = null;
             this.sceneState.ui.update = true;
             this.sceneState.ui.keepUpdating = false;
+            return;
         }
         if(this.clickStart.x < this.lastDist.x + dragToClickThreshold &&
            this.clickStart.x > this.lastDist.x - dragToClickThreshold &&
@@ -249,17 +255,19 @@ class TileMapCamera {
             this.raycaster.setFromCamera(this.mouse, this.camera);
             let intersects = this.raycaster.intersectObjects(this.scene.tileClick.clickPlane, true);
             let pos = intersects[0].point;
-            let tile = this.scene.tileClick.oneTile;
+            let tile;
             let dx = Math.round(pos.x);
             let dy = Math.round(pos.y);
 
-            // Check if tile clicked is a walkable or a door (also walkable)
             if(!this.sceneState.players.hero.route.length && this.sceneState.players.hero.moving) {
                 this.sceneState.players.hero.moving = false;
             }
-            if(this.sceneState.shipMap[this.sceneState.floor][dx][dy].type == 1 ||
-               this.sceneState.shipMap[this.sceneState.floor][dx][dy].type == 3) {
+            // Check if tile clicked is a walkable or a door (which is also walkable)
+            if(!this.sceneState.ui.curSecondaryState &&
+               (this.sceneState.shipMap[this.sceneState.floor][dx][dy].type == 1 ||
+               this.sceneState.shipMap[this.sceneState.floor][dx][dy].type == 3)) {
                 // Add tile click marker and animate it
+                tile = this.scene.tileClick.oneTile;
                 tile.position.x = dx;
                 tile.position.y = dy;
                 tl = new TimelineMax();
@@ -297,6 +305,15 @@ class TileMapCamera {
                 } else if(this.sceneState.players.hero.moving) {
                     this.sceneState.players.hero.newRoute = resultRoute;
                 }
+            } else if(this.sceneState.ui.curSecondaryState) {
+                this.sceneState.ui.curSecondaryState = null;
+                // Add tile click marker and animate it
+                tile = this.scene.tileClick.oneTarget;
+                tile.position.x = dx;
+                tile.position.y = dy;
+                tl = new TimelineMax();
+                tl.to(tile.material, .1, {opacity: 0.7});
+                tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
             }
         }
     }
@@ -311,6 +328,9 @@ class TileMapCamera {
             yDiff,
             dist,
             hit;
+        if(target.x2 && target.y2 && this.sceneState.ui.curState == 'startClick') {
+            this.sceneState.ui.curSecondaryState = 'tileClick';
+        }
         for(i=0; i<uiDataLength; i++) {
             if(uiData[i].type == 'circleButton') {
                 pos = uiData[i].pos;
@@ -319,7 +339,6 @@ class TileMapCamera {
                 yDiff = Math.abs(pos[1] - target.y);
                 dist = Math.sqrt(Math.pow(xDiff,2)+Math.pow(yDiff,2));
                 hit = dist <= size;
-                console.log('hit',hit,uiDataLength);
             }
             if(hit) {
                 this.sceneState.ui.curState = 'startClick';
