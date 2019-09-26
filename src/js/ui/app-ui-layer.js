@@ -1,4 +1,4 @@
-import { Signer } from "crypto";
+import { calculateAngle } from '../util.js';
 
 class AppUiLayer {
     constructor(sceneState) {
@@ -97,10 +97,6 @@ class AppUiLayer {
         }
     }
 
-    calculateAngle(startPos, endPos) {
-        return Math.atan2(endPos[0] - startPos[0], startPos[1] - endPos[1]);
-    }
-
     resize() {
         this.uiCanvas.width = window.innerWidth;
         this.uiCanvas.height = window.innerHeight;
@@ -124,7 +120,7 @@ class AppUiLayer {
                         ctx.beginPath();
                         ctx.arc(data[i].pos[0], data[i].pos[1], data[i].radius, 0, 2 * Math.PI);
                         ctx.fill();
-                        data[i].action(this.sceneState, this.calculateAngle);
+                        data[i].action(this.sceneState, calculateAngle);
                     }
                 }
                 break;

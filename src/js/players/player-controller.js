@@ -1,10 +1,9 @@
 import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
+import { calculateAngle } from '../util.js';
 
 class PlayerController {
     constructor(sceneState) {
         this.sceneState = sceneState;
-        // this.mouse = new THREE.Vector2();
-        // window.addEventListener('click', this.onTileClick);
     }
 
     createNewPlayer(mtlLoader, objLoader, scene, renderer, sceneState, type) {
@@ -84,7 +83,11 @@ class PlayerController {
             ease,
             startEndMultiplier,
             speed,
-            newDir = this.getNewDirectionForMove(player, route);
+            newDir = calculateAngle(
+                player.pos,
+                [route[player.routeIndex].x, route[player.routeIndex].y]
+            );
+            //newDir = this.getNewDirectionForMove(player, route);
         if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
             // prevent unnecessary spin moves :)
             newDir < 0 ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2 :
@@ -108,7 +111,7 @@ class PlayerController {
         }
         if(player.pos[0] !== route[player.routeIndex].x &&
             player.pos[1] !== route[player.routeIndex].y) {
-            // Moving diagonnally
+            // Moving diagonally
             speed = player.speed * 1.5 * startEndMultiplier;
         } else {
             // Moving straigth in an axis
@@ -150,10 +153,6 @@ class PlayerController {
                 this.newMove(player);
             },
         });
-    }
-
-    getNewDirectionForMove(player, route) {
-        return Math.atan2(route[player.routeIndex].x - player.pos[0], player.pos[1] - route[player.routeIndex].y);
     }
 }
 
