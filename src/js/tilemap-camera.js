@@ -307,6 +307,7 @@ class TileMapCamera {
                 }
             } else if(this.sceneState.ui.curSecondaryState) {
                 this.sceneState.ui.curSecondaryState = null;
+                this.sceneState.ui.curSecondaryTarget = [dx,dy];
                 // Add tile click marker and animate it
                 tile = this.scene.tileClick.oneTarget;
                 tile.position.x = dx;

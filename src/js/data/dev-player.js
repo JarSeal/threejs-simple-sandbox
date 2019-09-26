@@ -10,6 +10,7 @@ export function getPlayer() {
         height: 1.9,
         dir: 0,
         speed: 500, // ms per tile
+        curSpeed: 0,
         startMultiplier: 1.5,
         endMultiplier: 1.5,
         moving: false,
