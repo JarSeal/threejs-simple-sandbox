@@ -1,10 +1,10 @@
 
-// Cargo hall
+// Captain's Cabin
 export function getModule(module, level) {
-    let tilemap = getModuleLevelData(level, "tilemap");
-    let objFile = getModuleLevelData(level, "objFile");
-    let mtlFile = getModuleLevelData(level, "mtlFile");
-    let errors = checkErrors(tilemap, objFile, mtlFile);
+    let tilemap = getModuleLevelData(level, "tilemap"),
+        objFile = getModuleLevelData(level, "objFile"),
+        mtlFile = getModuleLevelData(level, "mtlFile"),
+        errors = checkErrors(tilemap, objFile, mtlFile);
     return Object.assign(
         {},
         {
@@ -39,39 +39,46 @@ function getModuleLevelData(level, type) {
                 [{type:2},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:2},{type:2},{type:2},{type:2}],
             ],
-            lights: {
-                main: [
-                    {
-                        type: "point",
-                        color: 0xffffff,
-                        intensity: 1,
-                        distance: 11,
-                        decay: 2,
-                        z: 3,
-                        aligners: [
-                            [2.5, 2],
-                            [2, 2.5],
-                            [2.5, 2],
-                            [2, 2.5],
-                        ],
-                        helper: false,
-                    },
-                ],
-                props: [
-                    {
-                        type: "capsule", // this string is used as an object key
-                        color: 0xffffff,
-                        glow: false,
-                        z: 2,
-                        turn: false,
-                        aligners: [
-                            [3.7, 2.1],
-                            [2.1, 0.3],
-                            [0.3, 4.1],
-                            [4, 3.7],
-                        ],
-                    },
-                ]
+            lights: [
+                {
+                    type: "capsule", // this string is used as an object key
+                    color: 0xffffff,
+                    onColor: 0xffffff,
+                    offColor: 0x999999,
+                    glow: false,
+                    z: 2,
+                    turn: false,
+                    aligners: [
+                        [3.7, 2.1],
+                        [2.1, 0.3],
+                        [0.3, 4.1],
+                        [4, 3.7],
+                    ],
+                },
+            ],
+            flickerTimer: performance.now(),
+            flickerState: 0,
+            action: function(sceneState, moduleIndex, scene) {
+                let timer = sceneState.moduleData[moduleIndex].flickerTimer;
+                if(timer < performance.now()) {
+                    // Flicker the lights
+                    let module = sceneState.moduleData[moduleIndex];
+                    let moduleMesh = scene.getObjectByName('module-' + module.module + '-l' + module.level + '-i' + module.index);
+                    console.log('moduleemsh',moduleMesh);
+                    let material = moduleMesh.children[0].children[0].material;
+                    material.needsUpdate = true;
+                    material.lightMapIntensity = sceneState.moduleData[moduleIndex].flickerState;
+                    if(sceneState.moduleData[moduleIndex].flickerState === 0) {
+                        sceneState.moduleData[moduleIndex].flickerTimer = performance.now() + 200;
+                        sceneState.moduleData[moduleIndex].flickerState = 2;
+                        moduleMesh.children[1].children[0].material.color.setHex(0xcccccc);
+                        moduleMesh.children[1].children[0].material.emissiveIntensity = 0;
+                    } else {
+                        sceneState.moduleData[moduleIndex].flickerTimer = performance.now() + Math.floor(Math.random() * (12000 - 2000 + 1) + 2000);
+                        sceneState.moduleData[moduleIndex].flickerState = 0;
+                        moduleMesh.children[1].children[0].material.emissiveIntensity = 1;
+                    }
+                }
             },
         },
     ];

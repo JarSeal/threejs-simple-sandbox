@@ -5,6 +5,7 @@ import { getModule } from './modules/index.js';
 class LoadTileMap {
     constructor(mtlLoader, objLoader, scene, renderer, sceneState) {
         this.ship = [];
+        this.sceneState = sceneState;
         this.mapLengths = [64, 64];
         this.init(mtlLoader, objLoader, scene, renderer, sceneState);
     }
@@ -45,7 +46,7 @@ class LoadTileMap {
             loaderLength = modulesLoader.length,
             uvs;
         for(loader=0;loader<loaderLength;loader++) {
-            (function(self, module) {
+            (function(self, module, loader) {
                 new Promise((resolve) => {
                     mtlLoader.setMaterialOptions({side: THREE.DoubleSide,color:0xff0000});
                     mtlLoader.load(module.mtlFile, (materials) => {
@@ -54,19 +55,14 @@ class LoadTileMap {
                 })
                 .then((materials) => {
                     materials.preload();
-                    materials.materials.Material.shininess = 10;
-                    materials.materials.Material.bumpScale = 0.145;
 
                     materials.materials.Material.lightMap = new THREE.TextureLoader().load( "/images/objects/captains-cabin-1-a-lightmap.png" );
-                    materials.materials.Material.lightMapIntensity = 2;
+                    materials.materials.Material.lightMapIntensity = loader;
                     materials.materials.Material.lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
-                    // materials.materials.Material.lightMap.wrapS = 1000;
-                    // materials.materials.Material.lightMap.wrapT = 1000;
-                    // materials.materials.Material.lightMap.matrix.elements[1] = -0;
-                    //materials.materials.Material.bumpMap.minFilter = THREE.LinearFilter;
+                    materials.materials.Material.shininess = 10;
+                    materials.materials.Material.bumpScale = 0.145;
                     materials.materials.Material.bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                    //materials.materials.Material.map.minFilter = THREE.LinearFilter;
                     materials.materials.Material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
                     objLoader.setMaterials(materials);
                     objLoader.load(module.objFile, (object) => {
@@ -75,88 +71,43 @@ class LoadTileMap {
                         if(module.turn !== 0) {
                             object.rotation.y = deg90 * module.turn;
                         }
+                        let clonedMaterial = object.children[0].material.clone();
+                        object.children[0].material = clonedMaterial;  // Makes materials unique
                         object.position.y = module.pos[0] + module.aligners[module.turn][0];
                         object.position.x = module.pos[1] + module.aligners[module.turn][1];
-                        // object.castShadow = true;
-                        // object.receiveShadow = true;
                         object.userData.moduleType = module.type;
                         object.userData.moduleIndex = module.index;
                         let geometry = object.children[0].geometry;
                         let uvs = geometry.attributes.uv.array;
                         geometry.addAttribute( 'uv2', new THREE.BufferAttribute( uvs, 2 ) );
-                        console.log('MESH',object, uvs.length);
-                        scene.add(object);
 
-                        self.addLights(scene, module, objLoader);
+                        let moduleGroup = new THREE.Group();
+                        moduleGroup.name = 'module-' + module.module + '-l' + module.level + '-i' + module.index;
+                        moduleGroup.add(object);
+
+                        let lights = self.addLights(module, objLoader);
+                        moduleGroup.add(lights);
+
+                        self.sceneState.moduleData.push(Object.assign(
+                            {},
+                            module,
+                            {mesh: moduleGroup}
+                        ));
+                        scene.add(moduleGroup);
                     });
                 });
-            })(this, modulesLoader[loader]);
+            })(this, modulesLoader[loader], loader);
         }
-        // this.importGltf(scene, renderer);
     }
 
-    importGltf(scene, renderer) {
-        console.log('test');
-        const loader = new GLTFLoader();
-        loader.load('/images/objects/captains-cabin.glb', (gltf) => {
-            let deg90 = 1.5708,
-                mesh = gltf.scene.children[2];
-            mesh.rotation.x = deg90;
-            mesh.position.y = 26;
-            mesh.position.x = 45;
-            //console.log('GLTF',gltf,mesh);
-            // scene.add(mesh);
-            let newGeo = mesh.geometry;
-            let newMat = new THREE.MeshPhongMaterial({
-                //map: new THREE.TextureLoader().load( "/images/objects/module-map-a.png" ),
-                color: new THREE.Color('0xffffff'),
-                map: mesh.material.map,
-                bumpMap: mesh.material.normalMap,
-                specularMap: new THREE.TextureLoader().load( "/images/objects/module-map-a-specular.png" ),
-                lightMap: new THREE.TextureLoader().load( "/images/objects/module-map-01-lightmap.png" ),
-            });
-            newMat.map.encoding = 3000;
-            newMat.bumpScale = 0.045;
-            console.log('newmat',newMat);
-            mesh.material = newMat;
-            let newMesh = new THREE.Mesh(newGeo, newMat);
-            newMesh.rotation.x = deg90;
-            newMesh.position.y = 26;
-            newMesh.position.x = 45;
-            newMesh.position.z = 0;
-            console.log('NEWMESH',newMesh);
-            scene.add(mesh);
-        });
-    }
-
-    addLights(scene, module, objLoader) {
-        let mainLights = module.lights.main,
-            mainLight;
-        let propLights = module.lights.props,
+    addLights(module, objLoader) {
+        let propLights = module.lights,
             propTypes = {};
-
-        for(let i=0; i<mainLights.length; i++) {
-            if(mainLights[i].type == "point") {
-                mainLight = new THREE.PointLight(
-                    mainLights[i].color,
-                    mainLights[i].intensity,
-                    mainLights[i].distance,
-                    mainLights[i].decay
-                );
-                mainLight.position.set(
-                    module.pos[1] + mainLights[i].aligners[module.turn][0],
-                    module.pos[0] + mainLights[i].aligners[module.turn][1],
-                    mainLights[i].z // TODO: THIS WILL NOT WORK WHEN MORE THAN ONE FLOOR IS INTRODUCED
-                );
-                //scene.add(mainLight);
-            }
-            if(mainLights[i].helper) {
-                //scene.add(new THREE.PointLightHelper(mainLight, 0.1));
-            }
-        }
         for(let i=0; i<propLights.length; i++) {
             propTypes[propLights[i].type] = true;
         }
+
+        let lightPropsGroup = new THREE.Group();
 
         if(propTypes.capsule) {
             objLoader.load("light-capsule.obj", (object) => {
@@ -193,10 +144,13 @@ class LoadTileMap {
                         mesh.position.x = module.pos[1] + propLights[i].aligners[module.turn][1];
                         mesh.position.z = propLights[i].z;
                     }
-                    scene.add(mesh);
+                    mesh.name = 'proplight-capsule-' + module.module + '-l' + module.level + '-i' + module.index;
+                    lightPropsGroup.add(mesh);
                 }
             });
         }
+
+        return lightPropsGroup;
     }
 
     createTileMap(rawShip, mapLengths, floor) {
@@ -317,6 +271,17 @@ class LoadTileMap {
             astarFloors.push(newFloor);
         }
         sceneState.astar = astarFloors;
+    }
+
+    moduleAnims(scene) {
+        let modules = this.sceneState.moduleData,
+            modulesLength = modules.length,
+            i;
+        for(i=0; i<modulesLength; i++) {
+            if(modules[i].action) {
+                modules[i].action(this.sceneState, i, scene);
+            }
+        }
     }
 }
 

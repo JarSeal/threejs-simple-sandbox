@@ -19,6 +19,7 @@ class TileMapRoot {
                 curSecondaryTarget: null,
             },
             floor: 0,
+            moduleData: [],
             moduleMap: [],
             tileMap: [],
             astarMap: [],
@@ -31,8 +32,6 @@ class TileMapRoot {
         const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor('#000000');
         renderer.setSize(window.innerWidth,window.innerHeight);
-        // renderer.gammaFactor = 2.2;
-        // renderer.gammaOutput = true;
         
         document.body.appendChild(renderer.domElement);
         const cam = new TileMapCamera(scene, renderer, this.sceneState);
@@ -91,7 +90,7 @@ class TileMapRoot {
         const mtlLoader = new THREE.MTLLoader();
         mtlLoader.setPath('/images/objects/');
 
-        new LoadTileMap(mtlLoader, objLoader, scene, renderer, this.sceneState);
+        let tileMapController = new LoadTileMap(mtlLoader, objLoader, scene, renderer, this.sceneState);
 
         let playerController = new PlayerController(this.sceneState);
         playerController.createNewPlayer(mtlLoader, objLoader, scene, renderer, this.sceneState, 'hero');
@@ -99,6 +98,7 @@ class TileMapRoot {
         const render = function() {
             requestAnimationFrame(render);
             playerController.setPositions();
+            tileMapController.moduleAnims(scene);
             appUiLayer.renderUi();
             renderer.render(scene, camera);
             stats.update(); // Debug statistics
