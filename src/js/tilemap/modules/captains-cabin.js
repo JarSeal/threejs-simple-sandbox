@@ -1,3 +1,4 @@
+import { randomTimeNow } from '../../util.js';
 
 // Captain's Cabin
 export function getModule(module, level) {
@@ -60,21 +61,20 @@ function getModuleLevelData(level, type) {
             flickerState: 0,
             action: function(sceneState, moduleIndex, scene) {
                 let timer = sceneState.moduleData[moduleIndex].flickerTimer;
-                if(timer < performance.now()) {
+                if(timer < performance.now()) { // Todo: Add check for when all is loaded
                     // Flicker the lights
                     let module = sceneState.moduleData[moduleIndex];
                     let moduleMesh = scene.getObjectByName('module-' + module.module + '-l' + module.level + '-i' + module.index);
-                    console.log('moduleemsh',moduleMesh);
                     let material = moduleMesh.children[0].children[0].material;
                     material.needsUpdate = true;
                     material.lightMapIntensity = sceneState.moduleData[moduleIndex].flickerState;
                     if(sceneState.moduleData[moduleIndex].flickerState === 0) {
-                        sceneState.moduleData[moduleIndex].flickerTimer = performance.now() + 200;
+                        sceneState.moduleData[moduleIndex].flickerTimer = randomTimeNow(200, 2000);
                         sceneState.moduleData[moduleIndex].flickerState = 2;
-                        moduleMesh.children[1].children[0].material.color.setHex(0xcccccc);
+                        moduleMesh.children[1].children[0].material.color.setHex(0xc0c0c0);
                         moduleMesh.children[1].children[0].material.emissiveIntensity = 0;
                     } else {
-                        sceneState.moduleData[moduleIndex].flickerTimer = performance.now() + Math.floor(Math.random() * (12000 - 2000 + 1) + 2000);
+                        sceneState.moduleData[moduleIndex].flickerTimer = randomTimeNow(5000, 55000);
                         sceneState.moduleData[moduleIndex].flickerState = 0;
                         moduleMesh.children[1].children[0].material.emissiveIntensity = 1;
                     }
