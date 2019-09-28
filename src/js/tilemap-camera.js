@@ -348,6 +348,7 @@ class TileMapCamera {
                 if(this.sceneState.ui.viewData[0].keepUpdatingWhenPressed) {
                     this.sceneState.ui.keepUpdating = true;
                 }
+                console.log(this.sceneState.ui);
                 return this.sceneState.ui.viewData[0].id;
             }
         }

@@ -17,16 +17,16 @@ class CombatView {
                     firstClick: null,
                     colors: ['rgba(255,255,255,0.5)', 'rgba(255,255,255,1)'],
                     colorPhase: 0,
-                    color: function(sceneState, ctrlKey) {
-                        if(ctrlKey) {
-                            console.log('ctrl');
+                    color: function(sceneState, ctrl) {
+                        if(ctrl.keyDown) {
                             sceneState.ui.curState = 'startClick';
                             sceneState.ui.curId = this.id;
                             sceneState.ui.ctrl = true;
-                        } else if(ctrlKey === false) {
+                        } else if(ctrl.keyUp && sceneState.ui.ctrl) {
                             sceneState.ui.curState = null;
                             sceneState.ui.curId = null;
-                            ctrlKey = null;
+                            sceneState.ui.curSecondaryState = null;
+                            sceneState.ui.curSecondaryTarget = null;
                             sceneState.ui.ctrl = false;
                         }
                         // UI layer change:
