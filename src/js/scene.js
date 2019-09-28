@@ -1,15 +1,21 @@
-import CombatView from './scenes/combat-view.js';
+import CombatScene from './scenes/combat-scene.js';
 
 class Scene {
     constructor(renderer, sceneState) {
         this.sceneState = sceneState;
+        this.renderer = renderer;
+        this.camera;
         this.curScene;
+        this.curViewClass;
     }
 
     loadScene(view) {
         switch(view) {
             case 'combat':
-                this.curScene = new CombatView().initView();
+                const combatScene = new CombatScene();
+                this.curViewClass = combatScene;
+                this.curScene = combatScene.initView(this.renderer, this.sceneState);
+                this.camera = combatScene.getCamera();
                 //this.addWorldHelpers(this.curScene);
                 return this.curScene;
         }
@@ -30,6 +36,14 @@ class Scene {
 
     getCurScene() {
         return this.curScene;
+    }
+
+    getCamera() {
+        return this.camera;
+    }
+
+    doLoops() {
+        this.curViewClass.doLoops();
     }
 }
 

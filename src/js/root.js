@@ -1,7 +1,4 @@
 import Scene from './scene.js';
-import TileMapCamera from './tilemap-camera.js';
-import LoadTileMap from './tilemap/load-map.js';
-import PlayerController from './players/player-controller.js';
 import AppUiLayer from './ui/app-ui-layer.js';
 
 class TileMapRoot {
@@ -62,36 +59,15 @@ class TileMapRoot {
         document.body.appendChild(stats.domElement);
         // Debug statisctics [END]
 
-        const objLoader = new THREE.OBJLoader();
-        objLoader.setPath('/images/objects/');
-        const mtlLoader = new THREE.MTLLoader();
-        mtlLoader.setPath('/images/objects/');
-
-        // Todo: move these (below here) into the combat-scene file
-        const cam = new TileMapCamera(scene, renderer, this.sceneState);
-        const camera = cam.getCamera();
-        let tileMapController = new LoadTileMap(mtlLoader, objLoader, scene, renderer, this.sceneState);
-        let playerController = new PlayerController(this.sceneState);
-        playerController.createNewPlayer(mtlLoader, objLoader, scene, renderer, this.sceneState, 'hero');
-        // Todo: move these (above here) into the combat-scene file
+        const camera = sceneController.getCamera();
 
         const render = function() {
             requestAnimationFrame(render);
-            playerController.setPositions();
-            tileMapController.moduleAnims(scene);
+            sceneController.doLoops();
             appUiLayer.renderUi();
             renderer.render(scene, camera);
             stats.update(); // Debug statistics
         };
-
-        let beamGeometry = new THREE.BoxBufferGeometry(1,1,1);
-        let beamMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
-        let beam = new THREE.Mesh(beamGeometry, beamMaterial);
-        beam.position.y = 50;
-        beam.position.x = 41;
-        beam.position.z = 0.5 + 2;
-        beam.receiveShadow = true;
-        beam.castShadow = true;
 
         window.addEventListener('resize', () => {
             cam.resize();

@@ -329,7 +329,7 @@ class TileMapCamera {
             yDiff,
             dist,
             hit;
-        if(target.x2 && target.y2 && this.sceneState.ui.curState == 'startClick') {
+        if(((target.x2 && target.y2) || (this.sceneState.ui.ctrl)) && this.sceneState.ui.curState == 'startClick') {
             this.sceneState.ui.curSecondaryState = 'tileClick';
         }
         for(i=0; i<uiDataLength; i++) {
@@ -359,4 +359,4 @@ class TileMapCamera {
     }
 }
 
-export default TileMapCamera;
+export default TileMapCamera

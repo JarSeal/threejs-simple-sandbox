@@ -6,6 +6,15 @@ class AppUiLayer {
         this.sceneState = sceneState;
         this.uiCanvas = document.getElementById("uiCanvas");
         this.uiContext;
+        this.ctrlKey = null;
+        window.addEventListener('keydown', (e) => {
+            e.ctrlKey ? this.ctrlKey = true : this.ctrlKey = false;
+        });
+        window.addEventListener('keyup', (e) => {
+            this.ctrlKey = false;
+        });
+        // window.onkeydown = function(e) { e.ctrlKey ? this.ctrlKey = true : this.ctrlKey = false; }
+        // window.onkeyup = function(e) { this.ctrlKey = false; }
         this.init();
     }
 
@@ -41,7 +50,7 @@ class AppUiLayer {
                 ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
                 for(i=0; i<dataLength; i++) {
                     if(data[i].type == 'circleButton') {
-                        ctx.fillStyle = data[i].color(this.sceneState);
+                        ctx.fillStyle = data[i].color(this.sceneState, this.ctrlKey);
                         ctx.beginPath();
                         ctx.arc(data[i].pos[0], data[i].pos[1], data[i].radius, 0, 2 * Math.PI);
                         ctx.fill();

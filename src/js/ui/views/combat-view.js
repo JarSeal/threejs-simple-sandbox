@@ -1,5 +1,4 @@
 
-
 class CombatView {
     constructor(sceneState) {
         this.sceneState = sceneState;
@@ -18,7 +17,18 @@ class CombatView {
                     firstClick: null,
                     colors: ['rgba(255,255,255,0.5)', 'rgba(255,255,255,1)'],
                     colorPhase: 0,
-                    color: function(sceneState) {
+                    color: function(sceneState, ctrlKey) {
+                        if(ctrlKey) {
+                            console.log('ctrl');
+                            sceneState.ui.curState = 'startClick';
+                            sceneState.ui.curId = this.id;
+                            sceneState.ui.ctrl = true;
+                        } else if(ctrlKey === false) {
+                            sceneState.ui.curState = null;
+                            sceneState.ui.curId = null;
+                            ctrlKey = null;
+                            sceneState.ui.ctrl = false;
+                        }
                         // UI layer change:
                         if(this.id == sceneState.ui.curId) {
                             if(sceneState.ui.curState == 'startClick') {
@@ -41,8 +51,7 @@ class CombatView {
                     action: function(sceneState, calculateAngle) {
                         // 3D layer change:
                         let hero = sceneState.players.hero,
-                            heroMaterial = hero.mesh.children[0].material,
-                            angle;
+                            heroMaterial = hero.mesh.children[0].material;
                         if(this.id == sceneState.ui.curId && sceneState.ui.curState == 'startClick') {
                             if(sceneState.ui.viewData[this.index].actionPhase === 0) {
                                 heroMaterial.color.setHex(0xffffff);
