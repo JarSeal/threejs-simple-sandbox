@@ -45,11 +45,17 @@ class AppUiLayer {
             data,
             dataLength,
             i;
+        ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+        if(this.sceneState.ui.viewLoading) {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.rect(window.innerWidth - 90, 40, 50, 50);
+            ctx.fill();
+        }
         switch(view) {
             case "combat":
                 data = this.sceneState.ui.viewData;
                 dataLength = data.length;
-                ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
                 for(i=0; i<dataLength; i++) {
                     if(data[i].type == 'circleButton') {
                         ctx.fillStyle = data[i].color(this.sceneState, this.ctrl);

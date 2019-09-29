@@ -11,6 +11,7 @@ class TileMapRoot {
                 keepUpdating: false,
                 view: null,
                 viewData: [],
+                viewLoading: true,
                 curId: null,
                 curState: null,
                 curSecondaryState: null,

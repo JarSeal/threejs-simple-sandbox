@@ -22,10 +22,10 @@ class TileMapCamera {
         this.starMaterials = [];
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
-        this.init(scene, renderer);
+        this.init(scene);
     }
 
-    init(scene, renderer) {
+    init(scene) {
         this.setAspectRatio();
         this.camera = new THREE.PerspectiveCamera(80,this.aspectRatio,0.1,64);
         let zoom = 1;

@@ -10,6 +10,7 @@ class Scene {
     }
 
     loadScene(view) {
+        this.sceneState.ui.viewLoading = true;
         switch(view) {
             case 'combat':
                 const combatScene = new CombatScene();
@@ -43,6 +44,7 @@ class Scene {
     }
 
     doLoops() {
+        if(this.sceneState.ui.viewLoading) return;
         this.curViewClass.doLoops();
     }
 }

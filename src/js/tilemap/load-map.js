@@ -7,6 +7,12 @@ class LoadTileMap {
         this.ship = [];
         this.sceneState = sceneState;
         this.mapLengths = [64, 64];
+        this.loaders = {
+            modulesLength: null,
+            modulesLoaded: false,
+            propLightsLength: null,
+            propLightsLoaded: false,
+        };
         this.init(mtlLoader, objLoader, scene, renderer, sceneState);
     }
 
@@ -45,19 +51,21 @@ class LoadTileMap {
         let loader,
             loaderLength = modulesLoader.length,
             uvs;
+        this.loaders.modulesLength = loaderLength;
         for(loader=0;loader<loaderLength;loader++) {
-            (function(self, module, loader) {
+            (function(self, module, loader, loaders, checkIfAllLoaded, sceneState) {
                 new Promise((resolve) => {
                     mtlLoader.setMaterialOptions({side: THREE.DoubleSide,color:0xff0000});
                     mtlLoader.load(module.mtlFile, (materials) => {
-                        resolve(materials);
+                        materials.preload();
+                        materials.materials.Material.lightMap = new THREE.TextureLoader().load( "/images/objects/captains-cabin-1-a-lightmap.png", () => {
+                            resolve(materials);
+                        });
                     })
                 })
                 .then((materials) => {
-                    materials.preload();
 
-                    materials.materials.Material.lightMap = new THREE.TextureLoader().load( "/images/objects/captains-cabin-1-a-lightmap.png" );
-                    materials.materials.Material.lightMapIntensity = loader;
+                    materials.materials.Material.lightMapIntensity = 2;
                     materials.materials.Material.lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
                     materials.materials.Material.shininess = 10;
@@ -85,7 +93,7 @@ class LoadTileMap {
                         moduleGroup.name = 'module-' + module.module + '-l' + module.level + '-i' + module.index;
                         moduleGroup.add(object);
 
-                        let lights = self.addLights(module, objLoader);
+                        let lights = self.addLights(module, objLoader, loader, loaders, checkIfAllLoaded, sceneState);
                         moduleGroup.add(lights);
 
                         self.sceneState.moduleData.push(Object.assign(
@@ -94,13 +102,18 @@ class LoadTileMap {
                             {mesh: moduleGroup}
                         ));
                         scene.add(moduleGroup);
+                        if(loaders.modulesLength == loader + 1) {
+                            // Last module loaded
+                            loaders.modulesLoaded = true;
+                            checkIfAllLoaded(loaders, sceneState);
+                        }
                     });
                 });
-            })(this, modulesLoader[loader], loader);
+            })(this, modulesLoader[loader], loader, this.loaders, this.checkIfAllLoaded, this.sceneState);
         }
     }
 
-    addLights(module, objLoader) {
+    addLights(module, objLoader, loaderIndex, loaders, checkIfAllLoaded, sceneState) {
         let propLights = module.lights,
             propTypes = {};
         for(let i=0; i<propLights.length; i++) {
@@ -146,11 +159,22 @@ class LoadTileMap {
                     }
                     mesh.name = 'proplight-capsule-' + module.module + '-l' + module.level + '-i' + module.index;
                     lightPropsGroup.add(mesh);
+                    if(loaders.modulesLength == loaderIndex + 1 &&
+                       propLights.length == i + 1) {
+                        loaders.propLightsLoaded = true;
+                        checkIfAllLoaded(loaders, sceneState);
+                    }
                 }
             });
         }
 
         return lightPropsGroup;
+    }
+
+    checkIfAllLoaded(loaders, sceneState) {
+        if(loaders.modulesLoaded && loaders.propLightsLoaded) {
+            sceneState.ui.viewLoading = false;
+        }
     }
 
     createTileMap(rawShip, mapLengths, floor) {
