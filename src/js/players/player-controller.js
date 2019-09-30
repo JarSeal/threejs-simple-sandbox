@@ -107,6 +107,7 @@ class PlayerController {
             // Player ends the movement
             startEndMultiplier = player.endMultiplier;
         } else {
+            // Default speed
             startEndMultiplier = 1;
         }
         if(player.pos[0] !== route[player.routeIndex].x &&
@@ -120,6 +121,8 @@ class PlayerController {
         player.curSpeed = speed;
         player.moveStart = performance.now();
         player.animatingPos = true;
+        player.newPosSet = false;
+        player.newPosTimestamp = speed / 2 + player.moveStart;
         if(player.routeIndex === 0) {
             routeLength == 1 ? ease = Sine.easeInOut : ease = Sine.easeIn;
         } else {
@@ -129,6 +132,12 @@ class PlayerController {
             x: route[player.routeIndex].x,
             y: route[player.routeIndex].y,
             ease: ease,
+            onUpdate: () => {
+                if(!player.newPosSet && player.newPosTimestamp < performance.now()) {
+                    player.pos = [route[player.routeIndex].x, route[player.routeIndex].y];
+                    player.newPosSet = true;  
+                }
+            },
             onComplete: () => {
                 player.pos = [route[player.routeIndex].x, route[player.routeIndex].y];
                 player.moveStart = null;
@@ -154,6 +163,8 @@ class PlayerController {
             },
         });
     }
+
+    
 }
 
 export default PlayerController
