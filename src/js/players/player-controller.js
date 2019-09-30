@@ -128,6 +128,14 @@ class PlayerController {
         } else {
             player.routeIndex == routeLength - 1 ? ease = Sine.easeOut : ease = Power0.easeNone;
         }
+        let realPosition = this.getRealPosition(player.route, player.routeIndex, speed);
+        if(player.routeIndex != routeLength && realPosition.routeIndex) {
+            player.routeIndex = realPosition.routeIndex;
+            player.pos = realPosition.pos;
+            player.mesh.position.x = realPosition.pos[0];
+            player.mesh.position.y = realPosition.pos[1];
+            console.log('REAL POSITION', realPosition);
+        }
         tl.to(player.mesh.position, player.curSpeed / 1000, {
             x: route[player.routeIndex].x,
             y: route[player.routeIndex].y,
@@ -135,7 +143,7 @@ class PlayerController {
             onUpdate: () => {
                 if(!player.newPosSet && player.newPosTimestamp < performance.now()) {
                     player.pos = [route[player.routeIndex].x, route[player.routeIndex].y];
-                    player.newPosSet = true;  
+                    player.newPosSet = true;
                 }
             },
             onComplete: () => {
@@ -164,7 +172,30 @@ class PlayerController {
         });
     }
 
-    
+    getRealPosition(route, index) {
+        let now,
+            curIndex,
+            curPos,
+            routeLength = route.length,
+            i;
+        now = performance.now();
+        let eta = route[index].arriving + route[0].startTimeLocal;
+        if(eta < now) {
+            for(i=index+1; i<routeLength; i++) {
+                // Check how much player is behind of eta
+                eta = route[i].arriving + route[0].startTimeLocal;
+                if(eta < now) {
+                    curIndex = i;
+                    curPos = [route[i].x, route[i].y];
+                }
+            }
+        }
+        //console.log('HAP',index,eta,now, now - eta);
+        return {
+            routeIndex: curIndex,
+            pos: curPos
+        };
+    }
 }
 
 export default PlayerController

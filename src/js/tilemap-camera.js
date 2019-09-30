@@ -292,6 +292,7 @@ class TileMapCamera {
                     newGraph.grid[dx][dy],
                     { closest: true }
                 );
+                resultRoute = this.predictPositions(resultRoute, this.sceneState.players.hero);
                 let endTime = performance.now();
                 console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute, this.sceneState);
 
@@ -348,11 +349,46 @@ class TileMapCamera {
                 if(this.sceneState.ui.viewData[0].keepUpdatingWhenPressed) {
                     this.sceneState.ui.keepUpdating = true;
                 }
-                console.log(this.sceneState.ui);
                 return this.sceneState.ui.viewData[0].id;
             }
         }
         return false;
+    }
+
+    predictPositions(route, player) {
+        let routeLength = route.length,
+            i,
+            startEndMultiplier,
+            speed,
+            cumulativeTime = 0;
+        for(i=0; i<routeLength; i++) {
+            if(i === 0) {
+                // Player starts to move
+                startEndMultiplier = player.startMultiplier;
+                route[0]['startTimeLocal'] = performance.now();
+            } else if(i == routeLength - 1) {
+                // Player ends the movement
+                startEndMultiplier = player.endMultiplier;
+            } else {
+                // Default speed
+                startEndMultiplier = 1;
+            }
+            if( (i === 0 && player.pos[0] !== route[0].x && player.pos[1] !== route[0].y) ||
+                (i !== 0 && route[i - 1].x !== route[i].x && route[i - 1].y !== route[i].y)) {
+                // Moving diagonally
+                speed = player.speed * 1.5 * startEndMultiplier;
+            } else {
+                // Moving straigth in an axis
+                speed = player.speed * startEndMultiplier;
+            }
+            if(i === 0) {
+                cumulativeTime += speed / 2;
+            } else {
+                cumulativeTime += speed;
+            }
+            route[i].arriving = cumulativeTime;
+        }
+        return route;
     }
 
     getCamera() {
