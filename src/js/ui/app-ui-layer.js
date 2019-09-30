@@ -36,6 +36,12 @@ class AppUiLayer {
     resize() {
         this.uiCanvas.width = window.innerWidth;
         this.uiCanvas.height = window.innerHeight;
+        let data = this.sceneState.ui.viewData,
+            dataLength = data.length,
+            i;
+        for(i=0; i<dataLength; i++) {
+            data[i].resize();
+        }
         this.sceneState.ui.update = true;
     }
 

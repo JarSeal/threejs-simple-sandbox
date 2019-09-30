@@ -13,6 +13,9 @@ class CombatView {
                     id: 'shootButton',
                     pos: [75, window.innerHeight - 75],
                     radius: 50,
+                    resize: function() {
+                        this.pos = [75, window.innerHeight - 75]
+                    },
                     keepUpdatingWhenPressed: true,
                     firstClick: null,
                     colors: ['rgba(255,255,255,0.5)', 'rgba(255,255,255,1)'],
