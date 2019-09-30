@@ -17,6 +17,7 @@ class TileMapRoot {
                 curSecondaryState: null,
                 curSecondaryTarget: null,
             },
+            initTime: null,
             floor: 0,
             moduleData: [],
             moduleMap: [],
@@ -27,6 +28,7 @@ class TileMapRoot {
     }
 
     init() {
+        this.sceneState.initTime = this.getInitTime();
         const appUiLayer = new AppUiLayer(this.sceneState);
 
         const renderer = new THREE.WebGLRenderer({antialias: true});
@@ -76,6 +78,15 @@ class TileMapRoot {
         });
 
         render();
+    }
+
+    getInitTime() {
+        let now = performance.now(),
+            unixTimestamp = Date.now();
+        return {
+            s: unixTimestamp,
+            ms: now,
+        }
     }
 }
 
