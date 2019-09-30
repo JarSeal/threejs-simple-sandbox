@@ -7,6 +7,7 @@ class Scene {
         this.camera;
         this.curScene;
         this.curViewClass;
+        this.resize;
     }
 
     loadScene(view) {
@@ -14,6 +15,7 @@ class Scene {
         switch(view) {
             case 'combat':
                 const combatScene = new CombatScene();
+                this.resize = () => {combatScene.resize();};
                 this.curViewClass = combatScene;
                 this.curScene = combatScene.initView(this.renderer, this.sceneState);
                 this.camera = combatScene.getCamera();
@@ -33,6 +35,10 @@ class Scene {
         helper.material.opacity = 0.75;
         helper.material.transparent = true;
         scene.add( helper );
+    }
+
+    resize() {
+        this.resize();
     }
 
     getCurScene() {

@@ -6,9 +6,9 @@ class CombatScene {
     constructor() {
         this.scene;
         this.camera;
+        this.tileMapCamera;
         this.tileMapController;
-        this.playerController;
-    }
+        this.playerController;    }
 
     initView(renderer, sceneState) {
         const objLoader = new THREE.OBJLoader();
@@ -26,13 +26,18 @@ class CombatScene {
         this.scene.add(hemi);
         this.scene.add(new THREE.AmbientLight(0xf0f0f0, 0.5));
 
-        this.camera = new TileMapCamera(this.scene, renderer, sceneState).getCamera();
+        this.tileMapCamera = new TileMapCamera(this.scene, renderer, sceneState);
+        this.camera = this.tileMapCamera.getCamera();
 
         return this.scene;
     }
 
     getCamera() {
         return this.camera;
+    }
+
+    resize() {
+        this.tileMapCamera.resize();
     }
 
     doLoops() {

@@ -71,7 +71,7 @@ class TileMapRoot {
         };
 
         window.addEventListener('resize', () => {
-            cam.resize();
+            sceneController.resize();
             appUiLayer.resize();
         });
 
