@@ -1,0 +1,14 @@
+# Blender MTL File: 'captains-cabin-lowpoly.blend'
+# Material Count: 3
+
+newmtl Material
+Ns 405.107127
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.152727 0.152727 0.152727
+Ke 0.0 0.0 0.0
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd captains-cabin-1-a.png
+map_bump captains-cabin-1-a-bump.png
