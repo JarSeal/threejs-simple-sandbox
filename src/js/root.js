@@ -36,7 +36,7 @@ class TileMapRoot {
         renderer.setSize(window.innerWidth,window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const sceneController = new Scene(renderer, this.sceneState);
+        const sceneController = new Scene(renderer, this.sceneState, appUiLayer.logMessage);
         let scene = sceneController.loadScene(this.sceneState.ui.view);
         
         const geometry = new THREE.BoxGeometry(1,1,1);

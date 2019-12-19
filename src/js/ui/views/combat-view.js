@@ -11,10 +11,11 @@ class CombatView {
                     type: 'circleButton',
                     index: 0,
                     id: 'shootButton',
-                    pos: [75, window.innerHeight - 75],
+                    size: 75,
+                    pos: [this.size, window.innerHeight - this.size],
                     radius: 50,
                     resize: function() {
-                        this.pos = [75, window.innerHeight - 75]
+                        this.pos = [this.size, window.innerHeight - this.size];
                     },
                     keepUpdatingWhenPressed: true,
                     firstClick: null,
@@ -88,6 +89,28 @@ class CombatView {
                         }
                     },
                 },
+                {
+                    type: 'logDisplay',
+                    index: 0,
+                    id: 'logDisplay',
+                    color: 'rgba(255,255,255,0.5)',
+                    width: 250,
+                    height: 320,
+                    padding: 20,
+                    pos: [window.innerWidth - this.width, window.innerHeight - this.height],
+                    resize: function() {
+                        this.pos = [window.innerWidth - this.width, window.innerHeight - this.height];
+                    },
+                    newItemWDate: function(ctx) {
+                        ctx.font = "11px Arial";
+                        ctx.fillStyle = "#000";
+                        ctx.fillText(
+                            "Mon 12:45.23",
+                            this.pos[0] + this.padding,
+                            this.pos[1] + this.padding + 10
+                        );
+                    }
+                }
             ];
             return uiData;
         }

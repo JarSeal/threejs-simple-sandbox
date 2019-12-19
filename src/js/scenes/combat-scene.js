@@ -10,7 +10,7 @@ class CombatScene {
         this.tileMapController;
         this.playerController;    }
 
-    initView(renderer, sceneState) {
+    initView(renderer, sceneState, logMessage) {
         const objLoader = new THREE.OBJLoader();
         const mtlLoader = new THREE.MTLLoader();
         objLoader.setPath('/images/objects/');
@@ -26,7 +26,7 @@ class CombatScene {
         this.scene.add(hemi);
         this.scene.add(new THREE.AmbientLight(0xf0f0f0, 0.5));
 
-        this.tileMapCamera = new TileMapCamera(this.scene, renderer, sceneState);
+        this.tileMapCamera = new TileMapCamera(this.scene, renderer, sceneState, logMessage);
         this.camera = this.tileMapCamera.getCamera();
 
         return this.scene;

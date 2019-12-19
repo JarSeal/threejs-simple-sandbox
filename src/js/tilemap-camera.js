@@ -1,10 +1,11 @@
 
 
 class TileMapCamera {
-    constructor(scene, renderer, sceneState) {
+    constructor(scene, renderer, sceneState, logMessage) {
         this.scene = scene;
         this.renderer = renderer;
         this.sceneState = sceneState;
+        this.logMessage = logMessage;
         this.stageMaxPosX = 64;
         this.stageMaxPosY = 64;
         this.initPosition = {
@@ -273,6 +274,8 @@ class TileMapCamera {
                 tl = new TimelineMax();
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
+
+                this.logMessage('Moving to ' + dx + ' ' + dy);
 
                 // Calculate route
                 let startTime = performance.now();

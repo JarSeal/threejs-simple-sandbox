@@ -3,6 +3,7 @@ import { calculateAngle } from '../util.js';
 
 class AppUiLayer {
     constructor(sceneState) {
+        this.logs = [];
         this.sceneState = sceneState;
         this.uiCanvas = document.getElementById("uiCanvas");
         this.uiContext;
@@ -23,14 +24,12 @@ class AppUiLayer {
     init() {
         let ui = this.sceneState.ui;
         this.uiContext = this.uiCanvas.getContext("2d");
-        this.resize();
 
         if(!ui.view) {
             ui.view = "combat";
             ui.viewData = new CombatView(this.sceneState).getView();
-            ui.update = true;
-            console.log('init new UI', ui.view);
         }
+        this.resize();
     }
 
     resize() {
@@ -69,6 +68,13 @@ class AppUiLayer {
                         ctx.arc(data[i].pos[0], data[i].pos[1], data[i].radius, 0, 2 * Math.PI);
                         ctx.fill();
                         data[i].action(this.sceneState, calculateAngle);
+                    } else
+                    if(data[i].type == 'logDisplay') {
+                        ctx.fillStyle = data[i].color;
+                        ctx.beginPath();
+                        ctx.rect(data[i].pos[0], data[i].pos[1], data[i].width, data[i].height);
+                        ctx.fill();
+                        data[i].newItemWDate(ctx);
                     }
                 }
                 break;
@@ -82,6 +88,10 @@ class AppUiLayer {
                 //this.sceneState.ui.update = false;
             }
         }
+    }
+
+    logMessage(msg) {
+        console.log(msg);
     }
 }
 

@@ -1,9 +1,10 @@
 import CombatScene from './scenes/combat-scene.js';
 
 class Scene {
-    constructor(renderer, sceneState) {
+    constructor(renderer, sceneState, logMessage) {
         this.sceneState = sceneState;
         this.renderer = renderer;
+        this.logMessage = logMessage;
         this.camera;
         this.curScene;
         this.curViewClass;
@@ -17,7 +18,7 @@ class Scene {
                 const combatScene = new CombatScene();
                 this.resize = () => {combatScene.resize();};
                 this.curViewClass = combatScene;
-                this.curScene = combatScene.initView(this.renderer, this.sceneState);
+                this.curScene = combatScene.initView(this.renderer, this.sceneState, this.logMessage);
                 this.camera = combatScene.getCamera();
                 //this.addWorldHelpers(this.curScene);
                 return this.curScene;
