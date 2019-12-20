@@ -1,11 +1,11 @@
 
 
 class TileMapCamera {
-    constructor(scene, renderer, sceneState, logMessage) {
+    constructor(scene, renderer, sceneState, AppUiLayer) {
         this.scene = scene;
         this.renderer = renderer;
         this.sceneState = sceneState;
-        this.logMessage = logMessage;
+        this.AppUiLayer = AppUiLayer;
         this.stageMaxPosX = 64;
         this.stageMaxPosY = 64;
         this.initPosition = {
@@ -80,14 +80,14 @@ class TileMapCamera {
         this.backPlane.updateMatrix();
         this.camera.aspect = this.aspectRatio;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth,window.innerHeight);
+        this.renderer.setSize(document.documentElement.clientWidth, document.documentElement.clientHeight);
     }
 
     setAspectRatio() {
-        let w = window.innerWidth,
-            h = window.innerHeight;
+        let w = document.documentElement.clientWidth,
+            h = document.documentElement.clientHeight;
         this.aspectRatio = w / h;
-        console.log(this.aspectRatio);
+        console.log(this.aspectRatio,w,h);
     }
 
     centerCamera() {
@@ -251,8 +251,8 @@ class TileMapCamera {
                     y: parseInt(evt.clientY)
                 };
             }
-            this.mouse.x = (clickEnd.x / window.innerWidth) * 2 - 1;
-            this.mouse.y = - (clickEnd.y / window.innerHeight) * 2 + 1;
+            this.mouse.x = (clickEnd.x / document.documentElement.clientWidth) * 2 - 1;
+            this.mouse.y = - (clickEnd.y / document.documentElement.clientHeight) * 2 + 1;
             this.raycaster.setFromCamera(this.mouse, this.camera);
             let intersects = this.raycaster.intersectObjects(this.scene.tileClick.clickPlane, true);
             let pos = intersects[0].point;
@@ -275,7 +275,7 @@ class TileMapCamera {
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
-                this.logMessage('Moving to ' + dx + ' ' + dy);
+                this.AppUiLayer.logMessage(performance.now(), 'somebod', 'Moving to ' + dx + ', ' + dy);
 
                 // Calculate route
                 let startTime = performance.now();

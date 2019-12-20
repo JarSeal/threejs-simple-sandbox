@@ -91,25 +91,70 @@ class CombatView {
                 },
                 {
                     type: 'logDisplay',
-                    index: 0,
+                    index: 1,
                     id: 'logDisplay',
+                    created: false,
                     color: 'rgba(255,255,255,0.5)',
                     width: 250,
                     height: 320,
                     padding: 20,
-                    pos: [window.innerWidth - this.width, window.innerHeight - this.height],
+                    showEachLogItem: 5400, // in ms
+                    fadeTime: 200, // in ms
+                    listParentElem: null,
+                    listUlElem: null,
+                    pos: [document.documentElement.clientWidth - this.width, document.documentElement.clientHeight - this.height],
                     resize: function() {
-                        this.pos = [window.innerWidth - this.width, window.innerHeight - this.height];
+                        this.pos = [document.documentElement.clientWidth - this.width, document.documentElement.clientHeight - this.height];
                     },
-                    newItemWDate: function(ctx) {
-                        ctx.font = "11px Arial";
-                        ctx.fillStyle = "#000";
-                        ctx.fillText(
-                            "Mon 12:45.23",
-                            this.pos[0] + this.padding,
-                            this.pos[1] + this.padding + 10
-                        );
-                    }
+                    renderLogList: function(logList) {
+                        let logListLength = logList.length,
+                            i = 0,
+                            now = performance.now(),
+                            removeThese = [];
+                        if(!this.created) {
+                            this.createLogList();
+                            this.created = true;
+                        }
+                        for(i=0; i<logListLength; i++) {
+                            if(!logList[i][3]) {
+                                // New item found, recreate the list
+                                logList[i].push(now);
+                                logList[i].push("log-item-"+i+"-"+Math.round(now));
+                                this.listUlElem.insertAdjacentHTML(
+                                    'afterbegin',
+                                    '<li class="log-list-item" id="'+logList[i][4]+'">'+
+                                        '<span class="log-list-item__user-date">'+logList[i][1]+' - '+
+                                        logList[i][0]+'</span><br>'+
+                                        '<span class="log-list-item__msg">'+logList[i][2]+'</span>'+
+                                    '</li>'
+                                )
+                            } else
+                            if(logList[i][3] + this.showEachLogItem < now) {
+                                let curElem = document.getElementById(logList[i][4]);
+                                this.listUlElem.removeChild(curElem);
+                                removeThese.push(i);
+                            } else
+                            if(logList[i][3] + (this.showEachLogItem - this.fadeTime) < now) {
+                                let curElem = document.getElementById(logList[i][4]);
+                                curElem.classList.add('fadeOut');
+                            } else
+                            if(logList[i][3] + this.fadeTime < now) {
+                                let curElem = document.getElementById(logList[i][4]);
+                                curElem.classList.add("fadeIn");
+                            }
+                        }
+                        for(i=0; i<removeThese.length; i++) {
+                            logList.splice(removeThese[i], 1);
+                        }
+                    },
+                    createLogList: function() {
+                        let appElem = document.getElementById("mainApp");
+                        this.listParentElem = document.createElement('div');
+                        this.listParentElem.setAttribute("id", "log-list");
+                        this.listUlElem = document.createElement('ul');
+                        this.listParentElem.appendChild(this.listUlElem);
+                        appElem.appendChild(this.listParentElem);
+                    },
                 }
             ];
             return uiData;

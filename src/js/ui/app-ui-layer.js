@@ -6,6 +6,11 @@ class AppUiLayer {
         this.logs = [];
         this.sceneState = sceneState;
         this.uiCanvas = document.getElementById("uiCanvas");
+        this.logList = [[
+            sceneState.initTime.ms,
+            "[SYSTEM]",
+            "START GAME!"
+        ]];
         this.uiContext;
         this.ctrl = {keyDown:false,keyUp:true};
         window.addEventListener('keydown', (e) => {
@@ -28,13 +33,14 @@ class AppUiLayer {
         if(!ui.view) {
             ui.view = "combat";
             ui.viewData = new CombatView(this.sceneState).getView();
+
         }
         this.resize();
     }
 
     resize() {
-        this.uiCanvas.width = window.innerWidth;
-        this.uiCanvas.height = window.innerHeight;
+        this.uiCanvas.width = document.documentElement.clientWidth;
+        this.uiCanvas.height = document.documentElement.clientHeight;
         let data = this.sceneState.ui.viewData,
             dataLength = data.length,
             i;
@@ -50,11 +56,11 @@ class AppUiLayer {
             data,
             dataLength,
             i;
-        ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+        ctx.clearRect(0,0,document.documentElement.clientWidth, document.documentElement.clientHeight);
         if(this.sceneState.ui.viewLoading) {
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.rect(window.innerWidth - 90, 40, 50, 50);
+            ctx.rect(document.documentElement.clientWidth - 90, 40, 50, 50);
             ctx.fill();
         }
         switch(view) {
@@ -70,11 +76,7 @@ class AppUiLayer {
                         data[i].action(this.sceneState, calculateAngle);
                     } else
                     if(data[i].type == 'logDisplay') {
-                        ctx.fillStyle = data[i].color;
-                        ctx.beginPath();
-                        ctx.rect(data[i].pos[0], data[i].pos[1], data[i].width, data[i].height);
-                        ctx.fill();
-                        data[i].newItemWDate(ctx);
+                        data[i].renderLogList(this.logList);
                     }
                 }
                 break;
@@ -90,8 +92,10 @@ class AppUiLayer {
         }
     }
 
-    logMessage(msg) {
-        console.log(msg);
+    logMessage(when, who, what) {
+        this.logList.unshift([
+            when, who, what
+        ]);
     }
 }
 

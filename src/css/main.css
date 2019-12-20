@@ -1,5 +1,6 @@
 *,*:before,*:after {
     user-select: none;
+    box-sizing: border-box;
 }
 body {
     margin: 0;
@@ -23,4 +24,35 @@ h1 {
     top: 0;
     left: 0;
     z-index: 50;
+}
+
+#log-list {
+    display: block;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(255,255,255,0.5);
+    width: 250px;
+    height: 350px;
+    border-radius: 5px 0 0 0;
+    padding: 20px;
+}
+#log-list ul {
+    display: block;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 310px;
+    overflow-y: auto;
+}
+.log-list-item {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+.log-list-item.fadeIn {
+    opacity: 1;
+}
+.log-list-item.fadeOut {
+    opacity: 0;
 }

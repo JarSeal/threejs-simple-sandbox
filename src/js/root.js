@@ -33,10 +33,10 @@ class TileMapRoot {
 
         const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor('#000000');
-        renderer.setSize(window.innerWidth,window.innerHeight);
+        renderer.setSize(document.documentElement.clientWidth, document.documentElement.clientHeight);
         document.body.appendChild(renderer.domElement);
 
-        const sceneController = new Scene(renderer, this.sceneState, appUiLayer.logMessage);
+        const sceneController = new Scene(renderer, this.sceneState, appUiLayer);
         let scene = sceneController.loadScene(this.sceneState.ui.view);
         
         const geometry = new THREE.BoxGeometry(1,1,1);
@@ -86,6 +86,8 @@ class TileMapRoot {
         return {
             s: unixTimestamp,
             ms: now,
+            dayName: "Mon",
+            dayNameNumber: 1
         }
     }
 }
