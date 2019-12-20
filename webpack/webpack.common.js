@@ -1,4 +1,5 @@
 const webpack = require('webpack');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const commonPaths = require('./paths');
@@ -37,6 +38,17 @@ module.exports = {
           },
         ],
       },
+      {
+        test: /\.s[ac]ss$/i,
+        use: [
+          // fallback to style-loader in development
+          process.env.NODE_ENV !== 'production'
+            ? 'style-loader'
+            : MiniCssExtractPlugin.loader,
+          'css-loader',
+          'sass-loader',
+        ],
+      },
     ],
   },
   serve: {
@@ -59,10 +71,10 @@ module.exports = {
         {from:'src/images',to:'images'}
     ]),
     new CopyWebpackPlugin([
-        {from:'src/css',to:'css'}
-    ]),
-    new CopyWebpackPlugin([
         {from:'src/js/vendor',to:'js'}
     ]),
+    new MiniCssExtractPlugin({
+      filename: 'css/main.css'
+    }),
   ],
 };

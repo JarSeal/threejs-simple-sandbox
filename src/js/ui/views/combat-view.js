@@ -106,6 +106,16 @@ class CombatView {
                     resize: function() {
                         this.pos = [document.documentElement.clientWidth - this.width, document.documentElement.clientHeight - this.height];
                     },
+                    toggleLogList: (e) => {
+                        e.stopPropagation();
+                        if(this.listOpen === undefined) this.listOpen = true;
+                        this.listOpen = !this.listOpen;
+                        if(this.listOpen) {
+                            document.getElementById('log-list').classList.remove("log-list--open");
+                        } else {
+                            document.getElementById('log-list').classList.add("log-list--open");
+                        }
+                    },
                     renderLogList: function(logList) {
                         let logListLength = logList.length,
                             i = 0,
@@ -120,8 +130,7 @@ class CombatView {
                                 // New item found, recreate the list
                                 logList[i].push(now);
                                 logList[i].push("log-item-"+i+"-"+Math.round(now));
-                                this.listUlElem.insertAdjacentHTML(
-                                    'afterbegin',
+                                this.listUlElem.insertAdjacentHTML('afterbegin',
                                     '<li class="log-list-item" id="'+logList[i][4]+'">'+
                                         '<span class="log-list-item__user-date">'+logList[i][1]+' - '+
                                         logList[i][0]+'</span><br>'+
@@ -148,10 +157,14 @@ class CombatView {
                         }
                     },
                     createLogList: function() {
-                        let appElem = document.getElementById("mainApp");
+                        let appElem = document.getElementById("mainApp"),
+                            toggleButton = document.createElement("div");
+                        toggleButton.setAttribute("id", "log-list__toggle");
+                        toggleButton.onclick = this.toggleLogList;
                         this.listParentElem = document.createElement('div');
                         this.listParentElem.setAttribute("id", "log-list");
                         this.listUlElem = document.createElement('ul');
+                        this.listParentElem.appendChild(toggleButton);
                         this.listParentElem.appendChild(this.listUlElem);
                         appElem.appendChild(this.listParentElem);
                     },

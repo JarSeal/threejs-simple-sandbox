@@ -1,4 +1,3 @@
-import GLTFLoader from 'three-gltf-loader';
 import { getShip } from '../data/dev-ship.js';
 import { getModule } from './modules/index.js';
 

@@ -65,12 +65,13 @@ class TileMapCamera {
         }
         //scene.add(group);
 
-        document.getElementById("mainApp").addEventListener("touchmove", this.touchMove, {passive: false});
-        window.addEventListener("touchstart", this.startTouchMove, {passive: false});
-        window.addEventListener("touchend", this.endTouchMove, {passive: false});
-        window.addEventListener("mousemove", this.touchMove, {passive: false});
-        window.addEventListener("mousedown", this.startTouchMove, {passive: false});
-        window.addEventListener("mouseup", this.endTouchMove, {passive: false});
+        let mainApp = document.getElementById("uiCanvas");
+        mainApp.addEventListener("touchmove", this.touchMove, {passive: false});
+        mainApp.addEventListener("touchstart", this.startTouchMove, {passive: false});
+        mainApp.addEventListener("touchend", this.endTouchMove, {passive: false});
+        mainApp.addEventListener("mousemove", this.touchMove, {passive: false});
+        mainApp.addEventListener("mousedown", this.startTouchMove, {passive: false});
+        mainApp.addEventListener("mouseup", this.endTouchMove, {passive: false});
         this.centerCamera();
     }
 

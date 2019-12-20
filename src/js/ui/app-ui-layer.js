@@ -9,7 +9,7 @@ class AppUiLayer {
         this.logList = [[
             sceneState.initTime.ms,
             "[SYSTEM]",
-            "START GAME!"
+            "START of logging!"
         ]];
         this.uiContext;
         this.ctrl = {keyDown:false,keyUp:true};
@@ -33,7 +33,6 @@ class AppUiLayer {
         if(!ui.view) {
             ui.view = "combat";
             ui.viewData = new CombatView(this.sceneState).getView();
-
         }
         this.resize();
     }
