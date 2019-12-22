@@ -126,29 +126,30 @@ class CombatView {
                             this.created = true;
                         }
                         for(i=0; i<logListLength; i++) {
-                            if(!logList[i][3]) {
+                            if(!logList[i][4]) {
                                 // New item found, recreate the list
                                 logList[i].push(now);
                                 logList[i].push("log-item-"+i+"-"+Math.round(now));
                                 this.listUlElem.insertAdjacentHTML('afterbegin',
-                                    '<li class="log-list-item" id="'+logList[i][4]+'">'+
+                                    '<li class="log-list-item" id="'+logList[i][5]+'">'+
+                                        '<span class="log-list-item__type">'+logList[i][3]+'</span>'+
                                         '<span class="log-list-item__user-date">'+logList[i][1]+' - '+
                                         logList[i][0]+'</span><br>'+
                                         '<span class="log-list-item__msg">'+logList[i][2]+'</span>'+
                                     '</li>'
                                 )
                             } else
-                            if(logList[i][3] + this.showEachLogItem < now) {
-                                let curElem = document.getElementById(logList[i][4]);
-                                this.listUlElem.removeChild(curElem);
+                            if(logList[i][4] + this.showEachLogItem < now) {
+                                let curElem = document.getElementById(logList[i][5]);
+                                if(this.listUlElem) this.listUlElem.removeChild(curElem);
                                 removeThese.push(i);
                             } else
-                            if(logList[i][3] + (this.showEachLogItem - this.fadeTime) < now) {
-                                let curElem = document.getElementById(logList[i][4]);
+                            if(logList[i][4] + (this.showEachLogItem - this.fadeTime) < now) {
+                                let curElem = document.getElementById(logList[i][5]);
                                 curElem.classList.add('fadeOut');
                             } else
-                            if(logList[i][3] + this.fadeTime < now) {
-                                let curElem = document.getElementById(logList[i][4]);
+                            if(logList[i][4] + this.fadeTime < now) {
+                                let curElem = document.getElementById(logList[i][5]);
                                 curElem.classList.add("fadeIn");
                             }
                         }

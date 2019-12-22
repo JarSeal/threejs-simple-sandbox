@@ -276,7 +276,14 @@ class TileMapCamera {
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
-                this.AppUiLayer.logMessage(performance.now(), 'somebod', 'Moving to ' + dx + ', ' + dy);
+                if(!this.sceneState.players.hero.moving) {
+                    this.AppUiLayer.logMessage(
+                        performance.now(),
+                        this.sceneState.players.hero.name,
+                        'Started moving.. (x: ' + dx + ', y:' + dy + ')',
+                        'M'
+                    );
+                }
 
                 // Calculate route
                 let startTime = performance.now();

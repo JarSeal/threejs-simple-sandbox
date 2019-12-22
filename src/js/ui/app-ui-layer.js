@@ -9,7 +9,8 @@ class AppUiLayer {
         this.logList = [[
             sceneState.initTime.ms,
             "[SYSTEM]",
-            "START of logging!"
+            "START of logging!",
+            "S"
         ]];
         this.uiContext;
         this.ctrl = {keyDown:false,keyUp:true};
@@ -91,9 +92,10 @@ class AppUiLayer {
         }
     }
 
-    logMessage(when, who, what) {
+    logMessage(when, who, what, type) {
+        when = Math.round((when - this.sceneState.initTime.ms) / 1000) + "s"; // Temp solution
         this.logList.unshift([
-            when, who, what
+            when, who, what, type
         ]);
     }
 }
