@@ -21,6 +21,15 @@ class TileMapCamera {
         this.backPlane;
         this.stars = [];
         this.starMaterials = [];
+        this.sprites = {
+            projectileLaserViolet: new THREE.TextureLoader().load('/images/sprites/laser-projectile.png'),
+        };
+        this.guns = [{
+            type: "projectile",
+            class: "laser",
+            color: "violet",
+            material: new THREE.SpriteMaterial({map: this.sprites.projectileLaserViolet, transparent: true, alphaTest: 0}),
+        }];
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.init(scene);
@@ -52,18 +61,18 @@ class TileMapCamera {
             scene.add(this.backPlane);
         }
 
-        let group = new THREE.Group();
-        let sprite = new THREE.TextureLoader().load( '/images/sprites/star.png' );
-        let material = new THREE.SpriteMaterial({map: sprite, transparent: true, alphaTest: 0});
-        for (let a=0; a<1000; a++) {
-            let x = THREE.Math.randFloat(-500, 500);
-            let y = THREE.Math.randFloat(-500, 500);
-            let z = THREE.Math.randFloat(-100, -300);
-            let sprite = new THREE.Sprite(material);
-            sprite.position.set(x, y, z);
-            group.add(sprite);
-        }
-        //scene.add(group);
+        // let group = new THREE.Group();
+        // let sprite = new THREE.TextureLoader().load( '/images/sprites/star.png' );
+        // let material = new THREE.SpriteMaterial({map: sprite, transparent: true, alphaTest: 0});
+        // for (let a=0; a<1000; a++) {
+        //     let x = THREE.Math.randFloat(-500, 500);
+        //     let y = THREE.Math.randFloat(-500, 500);
+        //     let z = THREE.Math.randFloat(-100, -300);
+        //     let sprite = new THREE.Sprite(material);
+        //     sprite.position.set(x, y, z);
+        //     group.add(sprite);
+        // }
+        // scene.add(group);
 
         let mainApp = document.getElementById("uiCanvas");
         mainApp.addEventListener("touchmove", this.touchMove, {passive: false});
@@ -318,6 +327,32 @@ class TileMapCamera {
                     this.sceneState.players.hero.newRoute = resultRoute;
                 }
             } else if(this.sceneState.ui.curSecondaryState) {
+                // SHOOT or turn / point
+                this.AppUiLayer.logMessage(
+                    performance.now(),
+                    this.sceneState.players.hero.name,
+                    'Shots fired..',
+                    'B'
+                );
+
+                // let newShotMaterial = new THREE.Sprite(this.guns[0].material.clone()),
+                //     newShot = new THREE.Group();
+                // newShotMaterial.scale.set(1, 0.22, 1);
+                // newShot.add(newShotMaterial);
+                // newShot.rotation.z = this.sceneState.players.hero.mesh.rotation.z;
+                // newShot.position.set(this.sceneState.players.hero.pos[0], this.sceneState.players.hero.pos[1], 1);
+                // this.scene.add(newShot);
+
+                setTimeout(() => {
+                    let geometry = new THREE.PlaneBufferGeometry();
+                    let material = new THREE.MeshBasicMaterial( { map: this.sprites.projectileLaserViolet ,opacity: 0.8, transparent: true } );
+                    let mesh = new THREE.Mesh( geometry, material );
+                    mesh.scale.set(1, 0.22, 1);
+                    mesh.position.set(this.sceneState.players.hero.pos[0], this.sceneState.players.hero.pos[1], 1);
+                    mesh.rotation.z = this.sceneState.players.hero.mesh.rotation.z + 1.5;
+                    this.scene.add( mesh );
+                }, 300);
+
                 this.sceneState.ui.curSecondaryState = null;
                 this.sceneState.ui.curSecondaryTarget = [dx,dy];
                 // Add tile click marker and animate it
