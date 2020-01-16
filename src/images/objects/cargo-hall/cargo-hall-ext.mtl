@@ -1,7 +1,7 @@
 # Blender MTL File: 'captains-capin.blend'
 # Material Count: 1
 
-newmtl Material.001
+newmtl cargo-hall-1-a-ext
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
@@ -10,4 +10,5 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd exterior-markers.png
+map_Kd cargo-hall/exterior-baked.png
+map_bump cargo-hall/exterior-bump.png

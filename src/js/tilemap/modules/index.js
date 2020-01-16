@@ -1,4 +1,5 @@
 import { getModule as captainsCabin } from './captains-cabin.js';
+import { getModule as cargoHall } from './cargo-hall.js';
 
 // Load a module
 export function getModule(module, level, turn) {
@@ -6,6 +7,9 @@ export function getModule(module, level, turn) {
     switch(module) {
         case 1:
             mod = captainsCabin(module, level);
+            break;
+        case 2:
+            mod = cargoHall(module, level);
             break;
         default:
             return {errors: [{error: 1}]} // Module data not found

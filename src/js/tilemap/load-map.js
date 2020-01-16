@@ -25,6 +25,7 @@ class LoadTileMap {
             turn;
         
         this.ship = this.createTileMap(rawShip, this.mapLengths, floor);
+        console.log('THESHIP',this.ship);
         this.createClickableTiles(scene);
         sceneState.moduleMap = rawShip;
         sceneState.shipMap = this.ship;
@@ -33,7 +34,7 @@ class LoadTileMap {
         // Create modulesLoader (loads the 3D assets)
         for(m=0; m<modulesLength; m++) {
             turn = modules[m].turn || 0;
-            modulesLoader.push(Object.assign(
+            let modulePart = Object.assign(
                 {},
                 {
                     pos: modules[m].pos,
@@ -42,10 +43,17 @@ class LoadTileMap {
                     turn: turn
                 },
                 getModule(modules[m].module[0], modules[m].level, turn)
-            ));
+            );
+            if(modulePart.models.interior) {
+                modulesLoader.push(Object.assign({},modulePart,{part:"interior"}));
+            }
+            if(modulePart.models.exterior) {
+                modulesLoader.push(Object.assign({},modulePart,{part:"exterior"}));
+            }
+            if(modulePart.models.details) {
+                modulesLoader.push(Object.assign({},modulePart,{part:"details"}));
+            }
         }
-
-        // console.log("this.ship",this.ship);
 
         let loader,
             loaderLength = modulesLoader.length,
@@ -53,33 +61,31 @@ class LoadTileMap {
         this.loaders.modulesLength = loaderLength;
         for(loader=0;loader<loaderLength;loader++) {
             (function(self, module, loader, loaders, checkIfAllLoaded, sceneState) {
-                new Promise((resolve) => {
-                    mtlLoader.setMaterialOptions({side: THREE.DoubleSide,color:0xff0000});
-                    mtlLoader.load(module.mtlFile, (materials) => {
-                        materials.preload();
-                        materials.materials.Material.lightMap = new THREE.TextureLoader().load( "/images/objects/captains-cabin-1-a-lightmap.png", () => {
-                            resolve(materials);
-                        });
-                    })
-                })
-                .then((materials) => {
+                
+                // NEW VERSION
+                let mLoader = new THREE.MTLLoader();
+                mLoader.setPath('/images/objects/');
+                mLoader.load(module.models[module.part].mtlFile, (materials) => {
+                    materials.preload();
+                    materials.materials[module.models[module.part].mtlId].lightMap = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].lightMap);
+                    materials.materials[module.models[module.part].mtlId].lightMapIntensity = 2;
+                    materials.materials[module.models[module.part].mtlId].lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                    materials.materials[module.models[module.part].mtlId].shininess = 10;
+                    materials.materials[module.models[module.part].mtlId].bumpScale = 0.145;
+                    materials.materials[module.models[module.part].mtlId].bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                    materials.materials[module.models[module.part].mtlId].map.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
-                    materials.materials.Material.lightMapIntensity = 2;
-                    materials.materials.Material.lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-
-                    materials.materials.Material.shininess = 10;
-                    materials.materials.Material.bumpScale = 0.145;
-                    materials.materials.Material.bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                    materials.materials.Material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                    objLoader.setMaterials(materials);
-                    objLoader.load(module.objFile, (object) => {
+                    let oLoader = new THREE.OBJLoader();
+                    oLoader.setMaterials(materials);
+                    oLoader.setPath('/images/objects/');
+                    oLoader.load(module.models[module.part].objFile, (object) => {
                         let deg90 = 1.5708;
                         object.rotation.x = deg90;
                         if(module.turn !== 0) {
                             object.rotation.y = deg90 * module.turn;
                         }
-                        let clonedMaterial = object.children[0].material.clone();
-                        object.children[0].material = clonedMaterial;  // Makes materials unique
+                        // let clonedMaterial = object.children[0].material.clone();
+                        // object.children[0].material = clonedMaterial;  // Makes materials unique
                         object.position.y = module.pos[0] + module.aligners[module.turn][0];
                         object.position.x = module.pos[1] + module.aligners[module.turn][1];
                         object.userData.moduleType = module.type;
@@ -92,8 +98,66 @@ class LoadTileMap {
                         moduleGroup.name = 'module-' + module.module + '-l' + module.level + '-i' + module.index;
                         moduleGroup.add(object);
 
-                        let lights = self.addLights(module, objLoader, loader, loaders, checkIfAllLoaded, sceneState);
-                        moduleGroup.add(lights);
+                        // let lights = self.addLights(module, objLoader, loader, loaders, checkIfAllLoaded, sceneState);
+                        // moduleGroup.add(lights);
+
+                        self.sceneState.moduleData.push(Object.assign(
+                            {},
+                            module,
+                            {mesh: moduleGroup}
+                        ));
+                        scene.add(moduleGroup);
+                        if(loaders.modulesLength == loader + 1) {
+                            // Last module loaded
+                            loaders.modulesLoaded = true;
+                            checkIfAllLoaded(loaders, sceneState);
+                        }
+                    });
+                });
+                
+                return;
+                new Promise((resolve) => {
+                    mtlLoader.setMaterialOptions({color:0xff0000});
+                    mtlLoader.load(module.models[module.part].mtlFile, (materials) => {
+                        materials.preload();
+                        console.log("testing", module.part,materials);
+                        materials.materials[module.models[module.part].mtlId].lightMap = new THREE.TextureLoader().load( "/images/objects/"+module.models[module.part].lightMap, () => {
+                            resolve(materials);
+                        });
+                    });
+                })
+                .then((materials) => {
+
+                    materials.materials[module.models[module.part].mtlId].lightMapIntensity = 2;
+                    materials.materials[module.models[module.part].mtlId].lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+                    materials.materials[module.models[module.part].mtlId].shininess = 10;
+                    materials.materials[module.models[module.part].mtlId].bumpScale = 0.145;
+                    materials.materials[module.models[module.part].mtlId].bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                    materials.materials[module.models[module.part].mtlId].map.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                    objLoader.setMaterials(materials);
+                    objLoader.load(module.models[module.part].objFile, (object) => {
+                        let deg90 = 1.5708;
+                        object.rotation.x = deg90;
+                        if(module.turn !== 0) {
+                            object.rotation.y = deg90 * module.turn;
+                        }
+                        // let clonedMaterial = object.children[0].material.clone();
+                        // object.children[0].material = clonedMaterial;  // Makes materials unique
+                        object.position.y = module.pos[0] + module.aligners[module.turn][0];
+                        object.position.x = module.pos[1] + module.aligners[module.turn][1];
+                        object.userData.moduleType = module.type;
+                        object.userData.moduleIndex = module.index;
+                        let geometry = object.children[0].geometry;
+                        let uvs = geometry.attributes.uv.array;
+                        geometry.addAttribute( 'uv2', new THREE.BufferAttribute( uvs, 2 ) );
+
+                        let moduleGroup = new THREE.Group();
+                        moduleGroup.name = 'module-' + module.module + '-l' + module.level + '-i' + module.index;
+                        moduleGroup.add(object);
+
+                        // let lights = self.addLights(module, objLoader, loader, loaders, checkIfAllLoaded, sceneState);
+                        // moduleGroup.add(lights);
 
                         self.sceneState.moduleData.push(Object.assign(
                             {},
@@ -171,7 +235,7 @@ class LoadTileMap {
     }
 
     checkIfAllLoaded(loaders, sceneState) {
-        if(loaders.modulesLoaded && loaders.propLightsLoaded) {
+        if(loaders.modulesLoaded) {
             sceneState.ui.viewLoading = false;
         }
     }
