@@ -1,5 +1,4 @@
-import { calculateAngle } from "./util";
-
+import Projectiles from "./players/projectiles.js";
 
 class TileMapCamera {
     constructor(scene, renderer, sceneState, AppUiLayer) {
@@ -22,15 +21,7 @@ class TileMapCamera {
         this.backPlane;
         this.stars = [];
         this.starMaterials = [];
-        this.sprites = {
-            projectileLaserViolet: new THREE.TextureLoader().load('/images/sprites/laser-projectile.png'),
-        };
-        this.guns = [{
-            type: "projectile",
-            class: "laser",
-            color: "violet",
-            material: new THREE.SpriteMaterial({map: this.sprites.projectileLaserViolet, transparent: true, alphaTest: 0}),
-        }];
+        this.projectiles = new Projectiles();
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.init(scene);
@@ -353,24 +344,8 @@ class TileMapCamera {
                 tl = new TimelineMax();
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
-
-                let target = this.sceneState.ui.curSecondaryTarget;
-                let name = "projectileLaserViolet"+performance.now();
-                setTimeout(() => {
-                    console.log(this.sceneState.players.hero.pos, target);
-                    let angle = calculateAngle(this.sceneState.players.hero.pos, target);
-                    let geometry = new THREE.PlaneBufferGeometry();
-                    let material = new THREE.MeshBasicMaterial({map: this.sprites.projectileLaserViolet, transparent: true});
-                    let mesh = new THREE.Mesh(geometry, material);
-                    mesh.scale.set(1, 0.22, 1);
-                    mesh.position.set(this.sceneState.players.hero.pos[0], this.sceneState.players.hero.pos[1], 1);
-                    mesh.rotation.z = angle + 1.5708;
-                    mesh.name = name;
-                    this.scene.add(mesh);
-                    setTimeout(() => {
-                        this.scene.remove(this.scene.getObjectByName(name));
-                    },4000);
-                }, 300);
+                
+                this.projectiles.shootProjectile(this.sceneState.players.hero.pos, this.sceneState.ui.curSecondaryTarget, this.scene);
             }
         }
     }
