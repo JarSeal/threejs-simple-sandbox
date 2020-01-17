@@ -319,14 +319,6 @@ class TileMapCamera {
                     this.sceneState.players.hero.newRoute = resultRoute;
                 }
             } else if(this.sceneState.ui.curSecondaryState) {
-                // SHOOT or turn / point
-                this.AppUiLayer.logMessage(
-                    performance.now(),
-                    this.sceneState.players.hero.name,
-                    'Shots fired..',
-                    'B'
-                );
-
                 // let newShotMaterial = new THREE.Sprite(this.guns[0].material.clone()),
                 //     newShot = new THREE.Group();
                 // newShotMaterial.scale.set(1, 0.22, 1);
@@ -345,7 +337,13 @@ class TileMapCamera {
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
                 
-                this.projectiles.shootProjectile(this.sceneState.players.hero.pos, this.sceneState.ui.curSecondaryTarget, this.scene);
+                this.projectiles.shootProjectile(
+                    this.sceneState.players.hero.pos,
+                    this.sceneState.ui.curSecondaryTarget,
+                    this.scene,
+                    this.sceneState,
+                    this.AppUiLayer
+                );
             }
         }
     }

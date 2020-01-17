@@ -13,15 +13,25 @@ class Projectiles {
         }];
     }
 
-    shootProjectile(from, target, scene) {
+    shootProjectile(from, target, scene, sceneState, AppUiLayer) {
         if(from[0] === target[0] && from[1] === target[1]) return; // Do not shoot your own legs
+        
+        AppUiLayer.logMessage(
+            performance.now(),
+            sceneState.players.hero.name,
+            'Shots fired..',
+            'B'
+        );
+
         let tl = new TimelineMax();
         let name = "projectileLaserViolet"+performance.now(),
-            speedPerTile = 0.1,
+            speedPerTile = 0.1, // in seconds
+            maxRange = 64, // in tiles
             xDist = Math.abs(from[0] - target[0]),
             yDist = Math.abs(from[1] - target[1]),
             xAdder = 0,
-            yAdder = 0;
+            yAdder = 0,
+            solidObstacle = this.calculateSolidObstacle(from, target, speedPerTile, sceneState.shipMap[sceneState.floor]);
         if(xDist > yDist) {
             xAdder = 64;
             yAdder = 64 * (yDist / xDist);
@@ -41,18 +51,75 @@ class Projectiles {
             mesh.rotation.z = angle + 1.5708;
             mesh.name = name;
             scene.add(mesh);
+            tl.startTime = performance.now();
             tl.to(scene.getObjectByName(name).position, speed, {
                 x: target[0] + (target[0] > from[0] ? xAdder : -xAdder),
                 y: target[1] + (target[1] > from[1] ? yAdder : -yAdder),
                 ease: Linear.easeNone,
-                onComplete: () => {
-                    
+                onUpdate: () => {
+                    if(tl.startTime + solidObstacle.timeOfHit < performance.now()) {
+                        tl.kill();
+                        let removeThis = scene.getObjectByName(name);
+                        if(removeThis) scene.remove(removeThis);
+                    }
                 },
             });
             setTimeout(() => {
-                scene.remove(scene.getObjectByName(name));
+                let removeThis = scene.getObjectByName(name);
+                if(removeThis) scene.remove(removeThis);
             },4000);
         }, 300);
+    }
+
+    calculateSolidObstacle(from, target, speed, tileMap) {
+        let dir = 0,
+            i = 0,
+            maxChecks = 128,
+            distanceToHit = 0,
+            travelTimeToHit = 0,
+            hitPos = [];
+        // Check if the projectile travels on a straight line
+        if(from[0] === target[0] || from[1] === target[1]) {
+            if(from[0] === target[0]) {
+                if(from[1] > target[1]) {
+                    dir = 0;
+                    for(i=1;i<maxChecks;i++) {
+                        if(this.checkIfWall(from[0], from[1] - i, tileMap)) {
+                            distanceToHit = i;
+                            travelTimeToHit = i * speed * 1000;
+                            hitPos = [from[0], from[1] - i];
+                            break;
+                        }
+                    }
+                } else {
+                    dir = 4;
+                }
+            } else {
+                if(from[0] > target[0]) {
+                    dir = 2;
+                } else {
+                    dir = 6;
+                }
+            }
+        } else {
+            // Not straight
+
+        }
+
+        return {
+            obstacle: hitPos,
+            timeOfHit: travelTimeToHit,
+            dist: distanceToHit,
+            dir: dir,
+        };
+
+        // RETURN an object with:
+        // {obstacle: [x,y], timeOfHit: timeInMs, dir: dir}
+    }
+
+    checkIfWall(x, y, tileMap) {
+        if(!tileMap[x] || !tileMap[x][y] || x < 0 || y < 0) return false;
+        return tileMap[x][y].type === 2;
     }
 }
 
