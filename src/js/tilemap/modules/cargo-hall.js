@@ -41,17 +41,11 @@ function getModuleLevelData(level, type) {
                 }
             },
             aligners: [ // Based on turn value (0 = no turn, 1 = 90 deg, 2 = 180 deg, 3 = 270 deg)
-                [0.5, 0.5],
-                [1.5,0.5],
-                [0.5,3.5],
-                [3.5,3.5],
+                [0.47, 0.47],
+                [0.47,7.55],
+                [7.55,8.53],
+                [8.55,0.46],
             ],
-            // aligners: [ // Based on turn value (0 = no turn, 1 = 90 deg, 2 = 180 deg, 3 = 270 deg)
-            //     [0,0],
-            //     [0,0],
-            //     [0,0],
-            //     [0,0],
-            // ],
             tilemap: [
                 [{type:2},{type:2},{type:2},{type:3},{type:2},{type:2},{type:2},{type:2},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
