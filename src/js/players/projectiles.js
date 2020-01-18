@@ -93,17 +93,54 @@ class Projectiles {
                     }
                 } else {
                     dir = 4;
+                    for(i=1;i<maxChecks;i++) {
+                        if(this.checkIfWall(from[0], from[1] + i, tileMap)) {
+                            distanceToHit = i;
+                            travelTimeToHit = i * speed * 1000;
+                            hitPos = [from[0], from[1] - i];
+                            break;
+                        }
+                    }
                 }
             } else {
                 if(from[0] > target[0]) {
                     dir = 2;
+                    for(i=1;i<maxChecks;i++) {
+                        if(this.checkIfWall(from[0] - i, from[1], tileMap)) {
+                            distanceToHit = i;
+                            travelTimeToHit = i * speed * 1000;
+                            hitPos = [from[0], from[1] - i];
+                            break;
+                        }
+                    }
                 } else {
                     dir = 6;
+                    for(i=1;i<maxChecks;i++) {
+                        if(this.checkIfWall(from[0] + i, from[1], tileMap)) {
+                            distanceToHit = i;
+                            travelTimeToHit = i * speed * 1000;
+                            hitPos = [from[0], from[1] - i];
+                            break;
+                        }
+                    }
                 }
             }
         } else {
             // Not straight
-
+            if(from[1] > target[1] && from[0] > target[0]) {
+                dir = 1;
+                console.log(target[1]);
+            } else
+            if(from[1] < target[1] && from[0] > target[0]) {
+                dir = 3;
+            } else
+            if(from[1] < target[1] && from[0] < target[0]) {
+                dir = 5;
+            } else
+            if(from[1] > target[1] && from[0] < target[0]) {
+                dir = 7;
+            }
+            console.log('DIR',dir);
         }
 
         return {
