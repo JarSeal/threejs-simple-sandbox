@@ -77,7 +77,10 @@ class Projectiles {
             maxChecks = 128,
             distanceToHit = 0,
             travelTimeToHit = 0,
-            hitPos = [];
+            hitPos = [],
+            xDist = 0,
+            yDist = 0;
+        speed *= 1000;
         // Check if the projectile travels on a straight line
         if(from[0] === target[0] || from[1] === target[1]) {
             if(from[0] === target[0]) {
@@ -86,7 +89,7 @@ class Projectiles {
                     for(i=1;i<maxChecks;i++) {
                         if(this.checkIfWall(from[0], from[1] - i, tileMap)) {
                             distanceToHit = i;
-                            travelTimeToHit = i * speed * 1000;
+                            travelTimeToHit = i * speed;
                             hitPos = [from[0], from[1] - i];
                             break;
                         }
@@ -96,7 +99,7 @@ class Projectiles {
                     for(i=1;i<maxChecks;i++) {
                         if(this.checkIfWall(from[0], from[1] + i, tileMap)) {
                             distanceToHit = i;
-                            travelTimeToHit = i * speed * 1000;
+                            travelTimeToHit = i * speed;
                             hitPos = [from[0], from[1] - i];
                             break;
                         }
@@ -108,7 +111,7 @@ class Projectiles {
                     for(i=1;i<maxChecks;i++) {
                         if(this.checkIfWall(from[0] - i, from[1], tileMap)) {
                             distanceToHit = i;
-                            travelTimeToHit = i * speed * 1000;
+                            travelTimeToHit = i * speed;
                             hitPos = [from[0], from[1] - i];
                             break;
                         }
@@ -118,7 +121,7 @@ class Projectiles {
                     for(i=1;i<maxChecks;i++) {
                         if(this.checkIfWall(from[0] + i, from[1], tileMap)) {
                             distanceToHit = i;
-                            travelTimeToHit = i * speed * 1000;
+                            travelTimeToHit = i * speed;
                             hitPos = [from[0], from[1] - i];
                             break;
                         }
@@ -127,9 +130,25 @@ class Projectiles {
             }
         } else {
             // Not straight
+            xDist = Math.abs(from[0] - target[0]);
+            yDist = Math.abs(from[1] - target[1]);
+            let angle = Math.atan(xDist / yDist);
+            let xPos = 0,
+                yPos = 0;
             if(from[1] > target[1] && from[0] > target[0]) {
                 dir = 1;
-                console.log(target[1]);
+                console.log(from, target, xDist, yDist);
+                for(i=1;i<maxChecks;i++) {
+                    // Calculate the yPos of the projectile by calculating it with the angle and Adjacent (x)
+                    // If yPos is over a whole number, then the yPos is that whole number (use Math.floor)
+                    yPos = i;
+                    xPos = Math.floor(yPos * Math.tan(angle));
+                    console.log('yPos',xPos,yPos * Math.tan(angle));
+                    if(this.checkIfWall(from[0] - xPos, from[1] - yPos, tileMap)) {
+                        console.log('POP');
+                        break;
+                    }
+                }
             } else
             if(from[1] < target[1] && from[0] > target[0]) {
                 dir = 3;
