@@ -100,7 +100,7 @@ class Projectiles {
                         if(this.checkIfWall(from[0], from[1] + i, tileMap)) {
                             distanceToHit = i;
                             travelTimeToHit = i * speed;
-                            hitPos = [from[0], from[1] - i];
+                            hitPos = [from[0], from[1] + i];
                             break;
                         }
                     }
@@ -112,7 +112,7 @@ class Projectiles {
                         if(this.checkIfWall(from[0] - i, from[1], tileMap)) {
                             distanceToHit = i;
                             travelTimeToHit = i * speed;
-                            hitPos = [from[0], from[1] - i];
+                            hitPos = [from[0] - 1, from[1]];
                             break;
                         }
                     }
@@ -122,7 +122,7 @@ class Projectiles {
                         if(this.checkIfWall(from[0] + i, from[1], tileMap)) {
                             distanceToHit = i;
                             travelTimeToHit = i * speed;
-                            hitPos = [from[0], from[1] - i];
+                            hitPos = [from[0] + 1, from[1]];
                             break;
                         }
                     }
@@ -132,8 +132,8 @@ class Projectiles {
             // Not straight
             xDist = Math.abs(from[0] - target[0]);
             yDist = Math.abs(from[1] - target[1]);
-            let angle = Math.atan(xDist / yDist);
-            let xPos = 0,
+            let angle = Math.atan(xDist / yDist),
+                xPos = 0,
                 yPos = 0;
             if(from[1] > target[1] && from[0] > target[0]) {
                 dir = 1;
@@ -145,7 +145,11 @@ class Projectiles {
                     xPos = Math.floor(yPos * Math.tan(angle));
                     console.log('yPos',xPos,yPos * Math.tan(angle));
                     if(this.checkIfWall(from[0] - xPos, from[1] - yPos, tileMap)) {
-                        console.log('POP');
+                        hitPos = [from[0] - xPos, from[1] - yPos];
+                        distanceToHit = Math.sqrt(
+                            Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
+                        );
+                        travelTimeToHit = distanceToHit * speed;
                         break;
                     }
                 }
