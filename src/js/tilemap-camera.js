@@ -342,7 +342,8 @@ class TileMapCamera {
                     this.sceneState.ui.curSecondaryTarget,
                     this.scene,
                     this.sceneState,
-                    this.AppUiLayer
+                    this.AppUiLayer,
+                    this.camera
                 );
             }
         }

@@ -25,7 +25,6 @@ class LoadTileMap {
             turn;
         
         this.ship = this.createTileMap(rawShip, this.mapLengths, floor);
-        console.log('THESHIP',this.ship);
         this.createClickableTiles(scene);
         sceneState.moduleMap = rawShip;
         sceneState.shipMap = this.ship;

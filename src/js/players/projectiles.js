@@ -13,7 +13,7 @@ class Projectiles {
         }];
     }
 
-    shootProjectile(from, target, scene, sceneState, AppUiLayer) {
+    shootProjectile(from, target, scene, sceneState, AppUiLayer, camera) {
         if(from[0] === target[0] && from[1] === target[1]) return; // Do not shoot your own legs
         
         AppUiLayer.logMessage(
@@ -58,17 +58,20 @@ class Projectiles {
                 ease: Linear.easeNone,
                 onUpdate: () => {
                     if(tl.startTime + solidObstacle.timeOfHit < performance.now()) {
+                        // Solid obstacle hit!
                         tl.kill();
                         let removeThis = scene.getObjectByName(name);
                         if(removeThis) scene.remove(removeThis);
+                        // Create blast sparks
+                        this.hitObstacle(solidObstacle, 'solid', scene, name, camera);
                     }
                 },
             });
             setTimeout(() => {
                 let removeThis = scene.getObjectByName(name);
                 if(removeThis) scene.remove(removeThis);
-            },4000);
-        }, 300);
+            },4000); // Back up to cleanup the projectile (if the projectile goes into space)
+        }, 300); // Delay before the shot takes of (maybe needed, maybe not..)
     }
 
     calculateSolidObstacle(from, target, speed, tileMap) {
@@ -113,7 +116,7 @@ class Projectiles {
                         if(this.checkIfWall(from[0] - i, from[1], tileMap)) {
                             distanceToHit = i;
                             travelTimeToHit = i * speed;
-                            hitPos = [from[0] - 1, from[1]];
+                            hitPos = [from[0] - i, from[1]];
                             break;
                         }
                     }
@@ -123,7 +126,7 @@ class Projectiles {
                         if(this.checkIfWall(from[0] + i, from[1], tileMap)) {
                             distanceToHit = i;
                             travelTimeToHit = i * speed;
-                            hitPos = [from[0] + 1, from[1]];
+                            hitPos = [from[0] + i, from[1]];
                             break;
                         }
                     }
@@ -221,7 +224,7 @@ class Projectiles {
         }
 
         return {
-            obstacle: hitPos,
+            obstaclePos: hitPos,
             timeOfHit: travelTimeToHit,
             dist: distanceToHit,
             dir: dir,
@@ -231,6 +234,131 @@ class Projectiles {
     checkIfWall(x, y, tileMap) {
         if(!tileMap[x] || !tileMap[x][y] || x < 0 || y < 0) return false;
         return tileMap[x][y].type === 2;
+    }
+
+    hitObstacle(obstacle, type, scene, projectileName, camera) {
+        let pos = obstacle.obstaclePos,
+            dir = obstacle.dir,
+            posWOffset = [pos[0], pos[1]],
+            minFloorParticles = 6,
+            maxFloorParticles = 20,
+            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles),
+            i = 0;
+        switch(dir) {
+            case 0:
+                posWOffset = [pos[0], pos[1] + 0.4];
+                break;
+            case 1:
+                posWOffset = [pos[0] + 0.4, pos[1] + 0.4];
+                break;
+            case 2:
+                posWOffset = [pos[0] + 0.4, pos[1]];
+                break;
+            case 3:
+                posWOffset = [pos[0] + 0.4, pos[1] - 0.4];
+                break;
+            case 4:
+                posWOffset = [pos[0], pos[1] - 0.4];
+                break;
+            case 5:
+                posWOffset = [pos[0] - 0.4, pos[1] - 0.4];
+                break;
+            case 6:
+                posWOffset = [pos[0] - 0.4, pos[1]];
+                break;
+            case 7:
+                posWOffset = [pos[0] - 0.4, pos[1] + 0.4];
+                break;
+        }
+        if(type == 'solid') {
+            for(i=0; i<floorParticles; i++) {
+                (() => {
+                    let sparkName = projectileName + "-" + i,
+                        size = 0.1;
+                    let sparkGeo = new THREE.PlaneBufferGeometry(size, size);
+                    let sparkMat = new THREE.MeshBasicMaterial({
+                        color: 0xffff00,
+                        transparent: true,
+                        opacity: 1
+                    });
+                    let spark = new THREE.Mesh(sparkGeo, sparkMat);
+                    spark.position.set(posWOffset[0], posWOffset[1], 1);
+                    spark.name = sparkName;
+                    spark.quaternion.copy(camera.quaternion);
+                    scene.add(spark);
+                    let tl = new TimelineMax(),
+                        lifeSpan = this._randomFloatInBetween(0.1, 1.2),
+                        newX = posWOffset[0] + this.random2dAmount(dir, 'x'),
+                        newY = posWOffset[1] + this.random2dAmount(dir, 'y');
+                    tl.to(scene.getObjectByName(sparkName).position, lifeSpan, {x: newX, y: newY})
+                    .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: 0 + size, ease: Bounce.easeOut}, "-="+lifeSpan)
+                    .to(scene.getObjectByName(sparkName).scale, lifeSpan, {x: 0.05, y: 0.05, ease: Bounce.easeOut}, "-="+(lifeSpan / 1.5))
+                    .to(scene.getObjectByName(sparkName).material, lifeSpan, {opacity: 0});
+                    setTimeout(() => {
+                        let removeThis = scene.getObjectByName(sparkName);
+                        if(removeThis) scene.remove(removeThis);
+                    }, lifeSpan * 1000 * 2);
+                })();
+            }
+        }
+    }
+
+    _randomIntInBetween(min, max) {
+        return Math.floor(Math.random() * (max - min + 1) + min)
+    }
+
+    _randomFloatInBetween(min, max) {
+        min *= 10; max *= 10;
+        return Math.floor(Math.random() * (max - min + 1) + min) / 10;
+    }
+
+    random2dAmount(dir, axis) {
+        let min = 0.4,
+            max = 1.6,
+            amount = this._randomFloatInBetween(min, max);
+        switch(dir) {
+            case 0:
+                if(axis == 'x') {
+                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                }
+                return amount;
+            case 1:
+                if(axis == 'x') {
+                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                }
+                return amount;
+            case 2:
+                if(axis == 'y') {
+                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                }
+                return amount;
+            case 3:
+                if(axis == 'y') {
+                    return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                }
+                return amount;
+            case 4:
+                if(axis == 'x') {
+                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                }
+                return -amount;
+            case 5:
+                if(axis == 'x') {
+                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                }
+                return -amount;
+            case 6:
+                if(axis == 'y') {
+                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                }
+                return -amount;
+            case 7:
+                if(axis == 'y') {
+                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                }
+                return -amount;
+        }
+        return 1; // TEMP RETURN
     }
 }
 
