@@ -8,7 +8,8 @@ class CombatScene {
         this.camera;
         this.tileMapCamera;
         this.tileMapController;
-        this.playerController;    }
+        this.playerController;
+    }
 
     initView(renderer, sceneState, AppUiLayer) {
         const objLoader = new THREE.OBJLoader();
@@ -22,7 +23,7 @@ class CombatScene {
         this.playerController = new PlayerController(sceneState);
         this.playerController.createNewPlayer(mtlLoader, objLoader, this.scene, renderer, sceneState, 'hero');
 
-        let hemi = new THREE.HemisphereLight( 0xffffbb, 0x080820, 0.8 );
+        let hemi = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.8);
         this.scene.add(hemi);
         this.scene.add(new THREE.AmbientLight(0xf0f0f0, 0.5));
 

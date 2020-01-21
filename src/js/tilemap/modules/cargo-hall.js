@@ -9,7 +9,7 @@ export function getModule(module, level) {
         {
             module: module,
             dims: errors ? [] : [tilemap[0].length,tilemap.length],
-            name: "Captain's Cabin",
+            name: "Cargo Hall",
             errors: errors,
         },
         getModuleLevelData(level)
@@ -21,28 +21,42 @@ function getModuleLevelData(level, type) {
         {
             level: 1,
             models: {
+                interior: {
+                    mtlId: "cargo-hall-1-a-int",
+                    objFile: "cargo-hall/cargo-hall-int.obj",
+                    mtlFile: "cargo-hall/cargo-hall-int.mtl",
+                    diffuseMap: "cargo-hall/interior-baked.png",
+                    lightMap: "cargo-hall/interior-lightmap.png",
+                    normalMap: "cargo-hall/interior-normal.png",
+                    bumpMap: "cargo-hall/interior-bump.png", // TODO: Check if necessary..
+                },
                 exterior: {
-                    mtlId: "captains-cabin-1-a-ext",
-                    objFile: "captains-cabin-lowpoly.obj",
-                    mtlFile: "captains-cabin-lowpoly.mtl",
-                    diffuseMap: "captains-cabin-1-a.png",
-                    lightMap: "captains-cabin-1-a-lightmap.png",
-                    bumpMap: "captains-cabin-1-a-bump.png",
+                    mtlId: "cargo-hall-1-a-ext",
+                    objFile: "cargo-hall/cargo-hall-ext.obj",
+                    mtlFile: "cargo-hall/cargo-hall-ext.mtl",
+                    diffuseMap: "cargo-hall/exterior-baked.png",
+                    lightMap: "cargo-hall/exterior-lightmap.png",
+                    normalMap: "cargo-hall/exterior-normal.png",
+                    bumpMap: "cargo-hall/exterior-bump.png",
                 }
             },
             aligners: [ // Based on turn value (0 = no turn, 1 = 90 deg, 2 = 180 deg, 3 = 270 deg)
-                [3.5, 1.5],
-                [1.5,0.5],
-                [0.5,3.5],
-                [3.5,3.5],
+                [0.47, 0.47],
+                [0.47,7.55],
+                [7.55,8.53],
+                [8.55,0.46],
             ],
             tilemap: [
-                [{type:2},{type:2},{type:2},{type:2},{type:2}],
-                [{type:2},{type:1},{type:1},{type:1},{type:2}],
-                [{type:2},{type:1},{type:1},{type:1},{type:2}],
-                [{type:2},{type:1},{type:1},{type:1},{type:3}],
-                [{type:2},{type:1},{type:1},{type:1},{type:2}],
-                [{type:2},{type:2},{type:2},{type:2},{type:2}],
+                [{type:2},{type:2},{type:2},{type:3},{type:2},{type:2},{type:2},{type:2},{type:2}],
+                [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+                [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+                [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+                [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+                [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+                [{type:3},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+                [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+                [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+                [{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2}],
             ],
             // lights: [
             //     {

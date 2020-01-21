@@ -7,7 +7,7 @@ export function getPlayer() {
         pos: [],
         newPosSet: false,
         newPosTimestamp: null,
-        startPos: [3,4,0,1,0], // x,y,floor,moduleId,moduleIndex,
+        startPos: [3,4,0,2,0], // x,y,floor,moduleId,moduleIndex,
         width: 0.5,
         height: 1.9,
         dir: 0,

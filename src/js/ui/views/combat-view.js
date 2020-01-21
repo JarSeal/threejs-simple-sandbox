@@ -63,7 +63,7 @@ class CombatView {
                             }
                             if(sceneState.ui.curSecondaryTarget) {
                                 // Calculate angle for player to turn to
-                                let angle = calculateAngle(hero.pos,sceneState.ui.curSecondaryTarget);
+                                let angle = calculateAngle(hero.pos, sceneState.ui.curSecondaryTarget);
                                 // prevent unnecessary spin moves :)
                                 if(Math.abs(hero.mesh.rotation.z - angle) > Math.PI) {
                                     angle < 0 ? hero.mesh.rotation.z = hero.mesh.rotation.z + Math.PI * -2 :
@@ -141,7 +141,7 @@ class CombatView {
                             } else
                             if(logList[i][4] + this.showEachLogItem < now) {
                                 let curElem = document.getElementById(logList[i][5]);
-                                if(this.listUlElem) this.listUlElem.removeChild(curElem);
+                                if(this.listUlElem && curElem) this.listUlElem.removeChild(curElem);
                                 removeThese.push(i);
                             } else
                             if(logList[i][4] + (this.showEachLogItem - this.fadeTime) < now) {

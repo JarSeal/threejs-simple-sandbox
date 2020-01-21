@@ -1,4 +1,4 @@
-
+import Projectiles from "./players/projectiles.js";
 
 class TileMapCamera {
     constructor(scene, renderer, sceneState, AppUiLayer) {
@@ -21,6 +21,7 @@ class TileMapCamera {
         this.backPlane;
         this.stars = [];
         this.starMaterials = [];
+        this.projectiles = new Projectiles();
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.init(scene);
@@ -52,18 +53,18 @@ class TileMapCamera {
             scene.add(this.backPlane);
         }
 
-        let group = new THREE.Group();
-        let sprite = new THREE.TextureLoader().load( '/images/sprites/star.png' );
-        let material = new THREE.SpriteMaterial({map: sprite, transparent: true, alphaTest: 0});
-        for (let a=0; a<1000; a++) {
-            let x = THREE.Math.randFloat(-500, 500);
-            let y = THREE.Math.randFloat(-500, 500);
-            let z = THREE.Math.randFloat(-100, -300);
-            let sprite = new THREE.Sprite(material);
-            sprite.position.set(x, y, z);
-            group.add(sprite);
-        }
-        //scene.add(group);
+        // let group = new THREE.Group();
+        // let sprite = new THREE.TextureLoader().load( '/images/sprites/star.png' );
+        // let material = new THREE.SpriteMaterial({map: sprite, transparent: true, alphaTest: 0});
+        // for (let a=0; a<1000; a++) {
+        //     let x = THREE.Math.randFloat(-500, 500);
+        //     let y = THREE.Math.randFloat(-500, 500);
+        //     let z = THREE.Math.randFloat(-100, -300);
+        //     let sprite = new THREE.Sprite(material);
+        //     sprite.position.set(x, y, z);
+        //     group.add(sprite);
+        // }
+        // scene.add(group);
 
         let mainApp = document.getElementById("uiCanvas");
         mainApp.addEventListener("touchmove", this.touchMove, {passive: false});
@@ -318,6 +319,14 @@ class TileMapCamera {
                     this.sceneState.players.hero.newRoute = resultRoute;
                 }
             } else if(this.sceneState.ui.curSecondaryState) {
+                // let newShotMaterial = new THREE.Sprite(this.guns[0].material.clone()),
+                //     newShot = new THREE.Group();
+                // newShotMaterial.scale.set(1, 0.22, 1);
+                // newShot.add(newShotMaterial);
+                // newShot.rotation.z = this.sceneState.players.hero.mesh.rotation.z;
+                // newShot.position.set(this.sceneState.players.hero.pos[0], this.sceneState.players.hero.pos[1], 1);
+                // this.scene.add(newShot);
+
                 this.sceneState.ui.curSecondaryState = null;
                 this.sceneState.ui.curSecondaryTarget = [dx,dy];
                 // Add tile click marker and animate it
@@ -327,6 +336,14 @@ class TileMapCamera {
                 tl = new TimelineMax();
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
+                
+                this.projectiles.shootProjectile(
+                    this.sceneState.players.hero.pos,
+                    this.sceneState.ui.curSecondaryTarget,
+                    this.scene,
+                    this.sceneState,
+                    this.AppUiLayer
+                );
             }
         }
     }
