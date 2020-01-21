@@ -141,7 +141,7 @@ class CombatView {
                             } else
                             if(logList[i][4] + this.showEachLogItem < now) {
                                 let curElem = document.getElementById(logList[i][5]);
-                                if(this.listUlElem) this.listUlElem.removeChild(curElem);
+                                if(this.listUlElem && curElem) this.listUlElem.removeChild(curElem);
                                 removeThese.push(i);
                             } else
                             if(logList[i][4] + (this.showEachLogItem - this.fadeTime) < now) {

@@ -83,6 +83,7 @@ class Projectiles {
         speed *= 1000;
         // Check if the projectile travels on a straight line
         if(from[0] === target[0] || from[1] === target[1]) {
+            // Straight line
             if(from[0] === target[0]) {
                 if(from[1] > target[1]) {
                     dir = 0;
@@ -132,20 +133,23 @@ class Projectiles {
             // Not straight
             xDist = Math.abs(from[0] - target[0]);
             yDist = Math.abs(from[1] - target[1]);
-            let angle = Math.atan(xDist / yDist),
+            let angle = xDist < yDist ? Math.atan(xDist / yDist) : Math.atan(yDist / xDist),
                 xPos = 0,
                 yPos = 0;
             if(from[1] > target[1] && from[0] > target[0]) {
                 dir = 1;
-                console.log(from, target, xDist, yDist);
                 for(i=1;i<maxChecks;i++) {
-                    // Calculate the yPos of the projectile by calculating it with the angle and Adjacent (x)
-                    // If yPos is over a whole number, then the yPos is that whole number (use Math.floor)
-                    yPos = i;
-                    xPos = Math.floor(yPos * Math.tan(angle));
-                    console.log('yPos',xPos,yPos * Math.tan(angle));
-                    if(this.checkIfWall(from[0] - xPos, from[1] - yPos, tileMap)) {
-                        hitPos = [from[0] - xPos, from[1] - yPos];
+                    // Calculate the xPos or the yPos of the projectile by calculating it with the angle and Adjacent (x)
+                    // If xPos or yPos is over a whole number, then the yPos is that whole number (after rounding)
+                    if(xDist < yDist) {
+                        yPos = i;
+                        xPos = Math.round(yPos * Math.tan(angle));
+                    } else {
+                        xPos = i;
+                        yPos = Math.round(xPos * Math.tan(angle));
+                    }
+                    if(this.checkIfWall(from[0] - xPos, from[1] - yPos, tileMap)) { // - and -
+                        hitPos = [from[0] - xPos, from[1] - yPos]; // - and -
                         distanceToHit = Math.sqrt(
                             Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
                         );
@@ -156,14 +160,64 @@ class Projectiles {
             } else
             if(from[1] < target[1] && from[0] > target[0]) {
                 dir = 3;
+                for(i=1;i<maxChecks;i++) {
+                    if(xDist < yDist) {
+                        yPos = i;
+                        xPos = Math.round(yPos * Math.tan(angle));
+                    } else {
+                        xPos = i;
+                        yPos = Math.round(xPos * Math.tan(angle));
+                    }
+                    if(this.checkIfWall(from[0] - xPos, from[1] + yPos, tileMap)) { // - and +
+                        hitPos = [from[0] - xPos, from[1] + yPos]; // - and +
+                        distanceToHit = Math.sqrt(
+                            Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
+                        );
+                        travelTimeToHit = distanceToHit * speed;
+                        break;
+                    }
+                }
             } else
             if(from[1] < target[1] && from[0] < target[0]) {
                 dir = 5;
+                for(i=1;i<maxChecks;i++) {
+                    if(xDist < yDist) {
+                        yPos = i;
+                        xPos = Math.round(yPos * Math.tan(angle));
+                    } else {
+                        xPos = i;
+                        yPos = Math.round(xPos * Math.tan(angle));
+                    }
+                    if(this.checkIfWall(from[0] + xPos, from[1] + yPos, tileMap)) { // + and +
+                        hitPos = [from[0] + xPos, from[1] + yPos]; // + and +
+                        distanceToHit = Math.sqrt(
+                            Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
+                        );
+                        travelTimeToHit = distanceToHit * speed;
+                        break;
+                    }
+                }
             } else
             if(from[1] > target[1] && from[0] < target[0]) {
                 dir = 7;
+                for(i=1;i<maxChecks;i++) {
+                    if(xDist < yDist) {
+                        yPos = i;
+                        xPos = Math.round(yPos * Math.tan(angle));
+                    } else {
+                        xPos = i;
+                        yPos = Math.round(xPos * Math.tan(angle));
+                    }
+                    if(this.checkIfWall(from[0] + xPos, from[1] - yPos, tileMap)) { // + and -
+                        hitPos = [from[0] + xPos, from[1] - yPos]; // + and -
+                        distanceToHit = Math.sqrt(
+                            Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
+                        );
+                        travelTimeToHit = distanceToHit * speed;
+                        break;
+                    }
+                }
             }
-            console.log('DIR',dir);
         }
 
         return {
@@ -172,9 +226,6 @@ class Projectiles {
             dist: distanceToHit,
             dir: dir,
         };
-
-        // RETURN an object with:
-        // {obstacle: [x,y], timeOfHit: timeInMs, dir: dir}
     }
 
     checkIfWall(x, y, tileMap) {
