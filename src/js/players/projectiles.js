@@ -31,7 +31,8 @@ class Projectiles {
             yDist = Math.abs(from[1] - target[1]),
             xAdder = 0,
             yAdder = 0,
-            solidObstacle = this.calculateSolidObstacle(from, target, speedPerTile, sceneState.shipMap[sceneState.floor]);
+            tileMap = sceneState.shipMap[sceneState.floor],
+            solidObstacle = this.calculateSolidObstacle(from, target, speedPerTile, tileMap);
         if(xDist > yDist) {
             xAdder = 64;
             yAdder = 64 * (yDist / xDist);
@@ -63,7 +64,7 @@ class Projectiles {
                         let removeThis = scene.getObjectByName(name);
                         if(removeThis) scene.remove(removeThis);
                         // Create blast sparks
-                        this.hitObstacle(solidObstacle, 'solid', scene, name, camera);
+                        this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap);
                     }
                 },
             });
@@ -236,7 +237,7 @@ class Projectiles {
         return tileMap[x][y].type === 2;
     }
 
-    hitObstacle(obstacle, type, scene, projectileName, camera) {
+    hitObstacle(obstacle, type, scene, projectileName, camera, tileMap) {
         let pos = obstacle.obstaclePos,
             dir = obstacle.dir,
             posWOffset = [pos[0], pos[1]],
@@ -274,10 +275,11 @@ class Projectiles {
             for(i=0; i<floorParticles; i++) {
                 (() => {
                     let sparkName = projectileName + "-" + i,
-                        size = 0.1;
+                        size = 0.1,
+                        startColor = {color:"#ffffff"};
                     let sparkGeo = new THREE.PlaneBufferGeometry(size, size);
                     let sparkMat = new THREE.MeshBasicMaterial({
-                        color: 0xffff00,
+                        color: 0xffffff,
                         transparent: true,
                         opacity: 1
                     });
@@ -288,12 +290,18 @@ class Projectiles {
                     scene.add(spark);
                     let tl = new TimelineMax(),
                         lifeSpan = this._randomFloatInBetween(0.1, 1.2),
-                        newX = posWOffset[0] + this.random2dAmount(dir, 'x'),
-                        newY = posWOffset[1] + this.random2dAmount(dir, 'y');
+                        newX = posWOffset[0] + this.random2dAmount(dir, 'x', tileMap, obstacle.obstaclePos),
+                        newY = posWOffset[1] + this.random2dAmount(dir, 'y', tileMap, obstacle.obstaclePos);
                     tl.to(scene.getObjectByName(sparkName).position, lifeSpan, {x: newX, y: newY})
-                    .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: 0 + size, ease: Bounce.easeOut}, "-="+lifeSpan)
-                    .to(scene.getObjectByName(sparkName).scale, lifeSpan, {x: 0.05, y: 0.05, ease: Bounce.easeOut}, "-="+(lifeSpan / 1.5))
-                    .to(scene.getObjectByName(sparkName).material, lifeSpan, {opacity: 0});
+                      .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: 0 + size, ease: Bounce.easeOut}, "-="+lifeSpan)
+                      .to(startColor, lifeSpan / 4, {color:"#ffff00", onUpdate: () => {
+                        scene.getObjectByName(sparkName).material.color.set(startColor.color);
+                      }}, "-="+(lifeSpan / 1.5))
+                      .to(startColor, lifeSpan / 4, {color:"#ff0000", onUpdate: () => {
+                        scene.getObjectByName(sparkName).material.color.set(startColor.color);
+                      }}, "-="+(lifeSpan / 4))
+                      .to(scene.getObjectByName(sparkName).scale, lifeSpan, {x: 0.05, y: 0.05, ease: Bounce.easeOut}, "-="+(lifeSpan / 1.5))
+                      .to(scene.getObjectByName(sparkName).material, lifeSpan, {opacity: 0});
                     setTimeout(() => {
                         let removeThis = scene.getObjectByName(sparkName);
                         if(removeThis) scene.remove(removeThis);
@@ -312,7 +320,7 @@ class Projectiles {
         return Math.floor(Math.random() * (max - min + 1) + min) / 10;
     }
 
-    random2dAmount(dir, axis) {
+    random2dAmount(dir, axis, tileMap, hitPos) {
         let min = 0.4,
             max = 1.6,
             amount = this._randomFloatInBetween(min, max);
@@ -323,42 +331,69 @@ class Projectiles {
                 }
                 return amount;
             case 1:
-                if(axis == 'x') {
-                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) {
+                    if(axis == 'y') {
+                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                    }
+                    return amount;
+                } else {
+                    if(axis == 'x') {
+                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                    }
+                    return amount;
                 }
-                return amount;
             case 2:
                 if(axis == 'y') {
                     return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
                 }
                 return amount;
             case 3:
-                if(axis == 'y') {
-                    return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) {
+                    if(axis == 'y') {
+                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                    }
+                    return amount;
+                } else {
+                    if(axis == 'x') {
+                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                    }
+                    return -amount;
                 }
-                return amount;
             case 4:
                 if(axis == 'x') {
                     return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
                 }
                 return -amount;
             case 5:
-                if(axis == 'x') {
-                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) {
+                    if(axis == 'y') {
+                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                    }
+                    return -amount;
+                } else {
+                    if(axis == 'x') {
+                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                    }
+                    return -amount;
                 }
-                return -amount;
             case 6:
                 if(axis == 'y') {
                     return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
                 }
                 return -amount;
             case 7:
-                if(axis == 'y') {
-                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) {
+                    if(axis == 'y') {
+                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                    }
+                    return -amount;
+                } else {
+                    if(axis == 'x') {
+                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                    }
+                    return amount;
                 }
-                return -amount;
         }
-        return 1; // TEMP RETURN
     }
 }
 
