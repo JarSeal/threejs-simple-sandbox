@@ -5,6 +5,7 @@ export function getPlayer() {
     return {
         name: "DEV PLAYER",
         pos: [],
+        microPos: [],
         newPosSet: false,
         newPosTimestamp: null,
         startPos: [3,4,0,2,0], // x,y,floor,moduleId,moduleIndex,

@@ -2,20 +2,16 @@ import { calculateAngle } from "../util";
 
 class Projectiles {
     constructor() {
-        this.sprites = {
-            projectileLaserViolet: new THREE.TextureLoader().load('/images/sprites/laser-projectile.png'),
-        };
-        this.projectileLongGeo = new THREE.PlaneBufferGeometry();
-        this.projectileLongMat = new THREE.MeshBasicMaterial({
-            map: this.sprites.projectileLaserViolet,
-            transparent: true
+        this.projectileGeoInside = new THREE.PlaneBufferGeometry();
+        this.projectileGeoOutside = new THREE.PlaneBufferGeometry();
+        this.projectileMatInside = new THREE.MeshBasicMaterial({
+            color: 0xfffff0,
         });
-        this.guns = [{
-            type: "projectile",
-            class: "laser",
-            color: "violet",
-            material: new THREE.SpriteMaterial({map: this.sprites.projectileLaserViolet, transparent: true, alphaTest: 0}),
-        }];
+        this.projectileMatOutside = new THREE.MeshBasicMaterial({
+            color: 0xff0000,
+            transparent: true,
+            opacity: 0.2,
+        });
         this.sparkSize = 0.1;
         this.sparkGeo = new THREE.PlaneBufferGeometry(this.sparkSize, this.sparkSize);
         this.sparkMat = new THREE.MeshBasicMaterial({
@@ -33,8 +29,10 @@ class Projectiles {
             performance.now(),
             sceneState.players.hero.name,
             'Shots fired..',
-            'B'
+            'S'
         );
+
+        console.log(sceneState.players.hero);
 
         let tl = new TimelineMax();
         let name = "projectileLaserViolet"+performance.now(),
@@ -54,17 +52,30 @@ class Projectiles {
         }
         let dist = Math.sqrt(Math.pow(xDist + xAdder, 2) + Math.pow(yDist + yAdder, 2)),
             speed = dist * speedPerTile;
+        console.log('FROM',solidObstacle);
         setTimeout(() => {
-            let angle = calculateAngle(from, target);
-            let mesh = new THREE.Mesh(this.projectileLongGeo, this.projectileLongMat);
-            let deleteTimer;
-            mesh.scale.set(1, 0.22, 1);
-            mesh.position.set(from[0], from[1], 1);
-            mesh.rotation.z = angle + 1.5708;
-            mesh.name = name;
-            scene.add(mesh);
+            let angle = calculateAngle(from, target),
+                deleteTimer;
+            //let mesh = new THREE.Mesh(this.projectileLongGeo, this.projectileLongMat);
+            //mesh.scale.set(1, 0.22, 1);
+            //let mesh = new THREE.Line(this.projectileGeo, this.projectileMat);
+            //meshInside.position.set(from[0], from[1], 1);
+            let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
+            meshInside.scale.set(0.35, 0.05, 1);
+            meshInside.name = name+"-inside";
+            let meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
+            meshOutside.scale.set(0.51, 0.21, 1);
+            meshOutside.position.set(0, 0, -0.01);
+            meshOutside.name = name+"-outside";
+            let projectileGroup = new THREE.Group();
+            projectileGroup.name = name+"-group";
+            projectileGroup.add(meshInside);
+            projectileGroup.add(meshOutside);
+            projectileGroup.rotation.z = angle + 1.5708;
+            projectileGroup.position.set(from[0], from[1], 1);
+            scene.add(projectileGroup);
             tl.startTime = performance.now();
-            tl.to(scene.getObjectByName(name).position, speed, {
+            tl.to(projectileGroup.position, speed, {
                 x: target[0] + (target[0] > from[0] ? xAdder : -xAdder),
                 y: target[1] + (target[1] > from[1] ? yAdder : -yAdder),
                 ease: Linear.easeNone,
@@ -73,13 +84,11 @@ class Projectiles {
                         // Solid obstacle hit!
                         tl.kill(); // Stop animation
                         // Create blast sparks
-                        this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap);
-                        // Delete object
-                        let removeThis = scene.getObjectByName(name);
-                        if(removeThis) {
-                            if(deleteTimer) clearTimeout(deleteTimer);
-                            scene.remove(removeThis);
-                        }
+                        this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap, projectileGroup.position);
+                        // Delete objects and group
+                        scene.remove(meshInside);
+                        scene.remove(projectileGroup);
+                        if(deleteTimer) clearTimeout(deleteTimer);
                     }
                 },
             });
@@ -87,7 +96,7 @@ class Projectiles {
                 let removeThis = scene.getObjectByName(name);
                 if(removeThis) scene.remove(removeThis);
             },4000); // Back up to cleanup the projectile (if the projectile goes into space or something else)
-        }, 300); // Delay before the shot takes of (maybe needed, maybe not..)
+        }, 0); // Delay before the shot takes of (maybe needed, maybe not..)
     }
 
     calculateSolidObstacle(from, target, speed, tileMap) {
@@ -257,12 +266,14 @@ class Projectiles {
     }
 
     checkIfWall(x, y, tileMap) {
+        x = Math.floor(x);
+        y = Math.floor(y);
         if(!tileMap[x] || !tileMap[x][y] || x < 0 || y < 0) return false;
         return tileMap[x][y].type === 2;
     }
 
-    hitObstacle(obstacle, type, scene, projectileName, camera, tileMap) {
-        let pos = obstacle.obstaclePos,
+    hitObstacle(obstacle, type, scene, projectileName, camera, tileMap, projectilePos) {
+        let pos = [projectilePos.x, projectilePos.y],
             dir = obstacle.dir,
             posWOffset = [pos[0], pos[1]],
             minFloorParticles = 6,
