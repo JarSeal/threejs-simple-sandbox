@@ -5,12 +5,25 @@ class Projectiles {
         this.sprites = {
             projectileLaserViolet: new THREE.TextureLoader().load('/images/sprites/laser-projectile.png'),
         };
+        this.projectileLongGeo = new THREE.PlaneBufferGeometry();
+        this.projectileLongMat = new THREE.MeshBasicMaterial({
+            map: this.sprites.projectileLaserViolet,
+            transparent: true
+        });
         this.guns = [{
             type: "projectile",
             class: "laser",
             color: "violet",
             material: new THREE.SpriteMaterial({map: this.sprites.projectileLaserViolet, transparent: true, alphaTest: 0}),
         }];
+        this.sparkSize = 0.1;
+        this.sparkGeo = new THREE.PlaneBufferGeometry(this.sparkSize, this.sparkSize);
+        this.sparkMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 1,
+            name: "sparkMaterial",
+        });
     }
 
     shootProjectile(from, target, scene, sceneState, AppUiLayer, camera) {
@@ -26,7 +39,6 @@ class Projectiles {
         let tl = new TimelineMax();
         let name = "projectileLaserViolet"+performance.now(),
             speedPerTile = 0.1, // in seconds
-            maxRange = 64, // in tiles
             xDist = Math.abs(from[0] - target[0]),
             yDist = Math.abs(from[1] - target[1]),
             xAdder = 0,
@@ -44,9 +56,8 @@ class Projectiles {
             speed = dist * speedPerTile;
         setTimeout(() => {
             let angle = calculateAngle(from, target);
-            let geometry = new THREE.PlaneBufferGeometry();
-            let material = new THREE.MeshBasicMaterial({map: this.sprites.projectileLaserViolet, transparent: true});
-            let mesh = new THREE.Mesh(geometry, material);
+            let mesh = new THREE.Mesh(this.projectileLongGeo, this.projectileLongMat);
+            let deleteTimer;
             mesh.scale.set(1, 0.22, 1);
             mesh.position.set(from[0], from[1], 1);
             mesh.rotation.z = angle + 1.5708;
@@ -60,18 +71,22 @@ class Projectiles {
                 onUpdate: () => {
                     if(tl.startTime + solidObstacle.timeOfHit < performance.now()) {
                         // Solid obstacle hit!
-                        tl.kill();
-                        let removeThis = scene.getObjectByName(name);
-                        if(removeThis) scene.remove(removeThis);
+                        tl.kill(); // Stop animation
                         // Create blast sparks
                         this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap);
+                        // Delete object
+                        let removeThis = scene.getObjectByName(name);
+                        if(removeThis) {
+                            if(deleteTimer) clearTimeout(deleteTimer);
+                            scene.remove(removeThis);
+                        }
                     }
                 },
             });
-            setTimeout(() => {
+            deleteTimer = setTimeout(() => {
                 let removeThis = scene.getObjectByName(name);
                 if(removeThis) scene.remove(removeThis);
-            },4000); // Back up to cleanup the projectile (if the projectile goes into space)
+            },4000); // Back up to cleanup the projectile (if the projectile goes into space or something else)
         }, 300); // Delay before the shot takes of (maybe needed, maybe not..)
     }
 
@@ -80,10 +95,12 @@ class Projectiles {
             i = 0,
             maxChecks = 128,
             distanceToHit = 0,
+            distanceByAxis = [],
             travelTimeToHit = 0,
             hitPos = [],
-            xDist = 0,
-            yDist = 0;
+            xDist = Math.abs(from[0] - target[0]),
+            yDist = Math.abs(from[1] - target[1]),
+            angle = xDist < yDist ? Math.atan(xDist / yDist) : Math.atan(yDist / xDist);
         speed *= 1000;
         // Check if the projectile travels on a straight line
         if(from[0] === target[0] || from[1] === target[1]) {
@@ -94,6 +111,7 @@ class Projectiles {
                     for(i=1;i<maxChecks;i++) {
                         if(this.checkIfWall(from[0], from[1] - i, tileMap)) {
                             distanceToHit = i;
+                            distanceByAxis = [from[0], from[1] - i];
                             travelTimeToHit = i * speed;
                             hitPos = [from[0], from[1] - i];
                             break;
@@ -104,6 +122,7 @@ class Projectiles {
                     for(i=1;i<maxChecks;i++) {
                         if(this.checkIfWall(from[0], from[1] + i, tileMap)) {
                             distanceToHit = i;
+                            distanceByAxis = [from[0], from[1] + i];
                             travelTimeToHit = i * speed;
                             hitPos = [from[0], from[1] + i];
                             break;
@@ -116,6 +135,7 @@ class Projectiles {
                     for(i=1;i<maxChecks;i++) {
                         if(this.checkIfWall(from[0] - i, from[1], tileMap)) {
                             distanceToHit = i;
+                            distanceByAxis = [from[0] - i, from[1]];
                             travelTimeToHit = i * speed;
                             hitPos = [from[0] - i, from[1]];
                             break;
@@ -126,6 +146,7 @@ class Projectiles {
                     for(i=1;i<maxChecks;i++) {
                         if(this.checkIfWall(from[0] + i, from[1], tileMap)) {
                             distanceToHit = i;
+                            distanceByAxis = [from[0] + i, from[1]];
                             travelTimeToHit = i * speed;
                             hitPos = [from[0] + i, from[1]];
                             break;
@@ -135,10 +156,7 @@ class Projectiles {
             }
         } else {
             // Not straight
-            xDist = Math.abs(from[0] - target[0]);
-            yDist = Math.abs(from[1] - target[1]);
-            let angle = xDist < yDist ? Math.atan(xDist / yDist) : Math.atan(yDist / xDist),
-                xPos = 0,
+            let xPos = 0,
                 yPos = 0;
             if(from[1] > target[1] && from[0] > target[0]) {
                 dir = 1;
@@ -157,6 +175,7 @@ class Projectiles {
                         distanceToHit = Math.sqrt(
                             Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
                         );
+                        distanceByAxis = [from[0] - xPos, from[1] - yPos];
                         travelTimeToHit = distanceToHit * speed;
                         break;
                     }
@@ -177,6 +196,7 @@ class Projectiles {
                         distanceToHit = Math.sqrt(
                             Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
                         );
+                        distanceByAxis = [from[0] - xPos, from[1] + yPos];
                         travelTimeToHit = distanceToHit * speed;
                         break;
                     }
@@ -197,6 +217,7 @@ class Projectiles {
                         distanceToHit = Math.sqrt(
                             Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
                         );
+                        distanceByAxis = [from[0] + xPos, from[1] + yPos];
                         travelTimeToHit = distanceToHit * speed;
                         break;
                     }
@@ -217,6 +238,7 @@ class Projectiles {
                         distanceToHit = Math.sqrt(
                             Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
                         );
+                        distanceByAxis = [from[0] + xPos, from[1] - yPos];
                         travelTimeToHit = distanceToHit * speed;
                         break;
                     }
@@ -228,7 +250,9 @@ class Projectiles {
             obstaclePos: hitPos,
             timeOfHit: travelTimeToHit,
             dist: distanceToHit,
+            distByAxis: distanceByAxis,
             dir: dir,
+            angle: angle,
         };
     }
 
@@ -275,15 +299,8 @@ class Projectiles {
             for(i=0; i<floorParticles; i++) {
                 (() => {
                     let sparkName = projectileName + "-" + i,
-                        size = 0.1,
-                        startColor = {color:"#ffffff"};
-                    let sparkGeo = new THREE.PlaneBufferGeometry(size, size);
-                    let sparkMat = new THREE.MeshBasicMaterial({
-                        color: 0xffffff,
-                        transparent: true,
-                        opacity: 1
-                    });
-                    let spark = new THREE.Mesh(sparkGeo, sparkMat);
+                        startColor = {color:"#ffffff"},
+                        spark = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone());
                     spark.position.set(posWOffset[0], posWOffset[1], 1);
                     spark.name = sparkName;
                     spark.quaternion.copy(camera.quaternion);
@@ -293,7 +310,7 @@ class Projectiles {
                         newX = posWOffset[0] + this.random2dAmount(dir, 'x', tileMap, obstacle.obstaclePos),
                         newY = posWOffset[1] + this.random2dAmount(dir, 'y', tileMap, obstacle.obstaclePos);
                     tl.to(scene.getObjectByName(sparkName).position, lifeSpan, {x: newX, y: newY})
-                      .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: 0 + size, ease: Bounce.easeOut}, "-="+lifeSpan)
+                      .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: this.sparkSize, ease: Bounce.easeOut}, "-="+lifeSpan)
                       .to(startColor, lifeSpan / 4, {color:"#ffff00", onUpdate: () => {
                         scene.getObjectByName(sparkName).material.color.set(startColor.color);
                       }}, "-="+(lifeSpan / 1.5))
@@ -304,7 +321,10 @@ class Projectiles {
                       .to(scene.getObjectByName(sparkName).material, lifeSpan, {opacity: 0});
                     setTimeout(() => {
                         let removeThis = scene.getObjectByName(sparkName);
-                        if(removeThis) scene.remove(removeThis);
+                        if(removeThis) {
+                            removeThis.material.dispose();
+                            scene.remove(removeThis);
+                        }
                     }, lifeSpan * 1000 * 2);
                 })();
             }
@@ -331,6 +351,9 @@ class Projectiles {
                 }
                 return amount;
             case 1:
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) {
+                    return amount;
+                } else
                 if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) {
                     if(axis == 'y') {
                         return Math.round(Math.random() * 10) < 9 ? -amount : amount;
@@ -348,6 +371,10 @@ class Projectiles {
                 }
                 return amount;
             case 3:
+                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) {
+                    if(axis == 'y') { return -amount; }
+                    return amount;
+                } else
                 if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) {
                     if(axis == 'y') {
                         return Math.round(Math.random() * 10) < 9 ? amount : -amount;
@@ -365,6 +392,9 @@ class Projectiles {
                 }
                 return -amount;
             case 5:
+                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) {
+                    return -amount;
+                } else
                 if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) {
                     if(axis == 'y') {
                         return Math.round(Math.random() * 10) < 9 ? amount : -amount;
@@ -382,6 +412,10 @@ class Projectiles {
                 }
                 return -amount;
             case 7:
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) {
+                    if(axis == 'y') { return amount; }
+                    return -amount;
+                } else
                 if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) {
                     if(axis == 'y') {
                         return Math.round(Math.random() * 10) < 9 ? -amount : amount;
