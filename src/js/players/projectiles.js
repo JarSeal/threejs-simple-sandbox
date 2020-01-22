@@ -32,8 +32,6 @@ class Projectiles {
             'S'
         );
 
-        console.log(sceneState.players.hero);
-
         let tl = new TimelineMax();
         let name = "projectileLaserViolet"+performance.now(),
             speedPerTile = 0.1, // in seconds
@@ -52,14 +50,9 @@ class Projectiles {
         }
         let dist = Math.sqrt(Math.pow(xDist + xAdder, 2) + Math.pow(yDist + yAdder, 2)),
             speed = dist * speedPerTile;
-        console.log('FROM',solidObstacle);
         setTimeout(() => {
             let angle = calculateAngle(from, target),
                 deleteTimer;
-            //let mesh = new THREE.Mesh(this.projectileLongGeo, this.projectileLongMat);
-            //mesh.scale.set(1, 0.22, 1);
-            //let mesh = new THREE.Line(this.projectileGeo, this.projectileMat);
-            //meshInside.position.set(from[0], from[1], 1);
             let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
             meshInside.scale.set(0.35, 0.05, 1);
             meshInside.name = name+"-inside";
@@ -266,8 +259,8 @@ class Projectiles {
     }
 
     checkIfWall(x, y, tileMap) {
-        x = Math.floor(x);
-        y = Math.floor(y);
+        x = Math.round(x);
+        y = Math.round(y);
         if(!tileMap[x] || !tileMap[x][y] || x < 0 || y < 0) return false;
         return tileMap[x][y].type === 2;
     }
@@ -307,6 +300,7 @@ class Projectiles {
                 break;
         }
         if(type == 'solid') {
+            //this.setBurnSpot(dir, tileMap, posWOffset, type, scene);
             for(i=0; i<floorParticles; i++) {
                 (() => {
                     let sparkName = projectileName + "-" + i,
@@ -439,6 +433,14 @@ class Projectiles {
                     return amount;
                 }
         }
+    }
+
+    setBurnSpot(dir, tileMap, posWOffset, type, scene) {
+        let darkSpot = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone());
+        darkSpot.scale.set(3,3,1);
+        darkSpot.position.set(posWOffset[0], posWOffset[1], 1);
+        darkSpot.rotation.set(1.5708/2,1.5708,0);
+        scene.add(darkSpot);
     }
 }
 
