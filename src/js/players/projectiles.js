@@ -276,6 +276,10 @@ class Projectiles {
         switch(dir) {
             case 0:
                 posWOffset = [pos[0], pos[1] + 0.4];
+                let dOff = tileMap[Math.round(obstacle.obstaclePos[0])][Math.round(obstacle.obstaclePos[1])].dOff;
+                if(dOff) {
+                    posWOffset = [pos[0], pos[1] + dOff[dir]]
+                }
                 break;
             case 1:
                 posWOffset = [pos[0] + 0.4, pos[1] + 0.4];

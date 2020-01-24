@@ -1,19 +1,20 @@
-import { randomTimeNow } from '../../util.js';
 
-// Captain's Cabin
+// Cargo Hall
 export function getModule(module, level) {
     let tilemap = getModuleLevelData(level, "tilemap"),
-        errors = checkErrors(tilemap);
-    return Object.assign(
-        {},
-        {
-            module: module,
-            dims: errors ? [] : [tilemap[0].length,tilemap.length],
-            name: "Cargo Hall",
-            errors: errors,
-        },
-        getModuleLevelData(level)
-    );
+        errors = checkErrors(tilemap),
+        data = Object.assign(
+            {},
+            {
+                module: module,
+                dims: errors ? [] : [tilemap[0].length,tilemap.length],
+                name: "Cargo Hall",
+                errors: errors,
+            },
+            getModuleLevelData(level)
+        );
+    data.tilemap = addTilemapMeta(data);
+    return data;
 };
 
 function getModuleLevelData(level, type) {
@@ -106,6 +107,31 @@ function getModuleLevelData(level, type) {
     } else {
         return null;
     }
+}
+
+function addTilemapMeta(data) {
+    let tilemap = data.tilemap,
+        level = data.level,
+        dims = [tilemap[0].length,tilemap.length],
+        dOff = [0.5,0,0,0,0,0,0,0],
+        meta = [
+        [{corner:true,dOff:[0,0,0,0,0,0,0,0,0]},{dOff:[0.5,0,0,0,0,0,0,0,0]},{type:2},{type:3},{type:2},{type:2},{type:2},{type:2},{type:2}],
+        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+        [{type:3},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+        [{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2}],
+    ];
+    for(let y=0; y<dims[1]; y++) {
+        for(let x=0; x<dims[0]; x++) {
+            tilemap[y][x] = Object.assign({}, tilemap[y][x], {dOff: dOff}, meta[y][x]);
+        }
+    }
+    return tilemap;
 }
 
 function checkErrors(tilemap) {
