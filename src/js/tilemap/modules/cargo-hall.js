@@ -13,7 +13,7 @@ export function getModule(module, level) {
             },
             getModuleLevelData(level)
         );
-    data.tilemap = addTilemapMeta(data);
+    data.tilemap = addWallDOff(data);
     return data;
 };
 
@@ -59,46 +59,6 @@ function getModuleLevelData(level, type) {
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2}],
             ],
-            // lights: [
-            //     {
-            //         type: "capsule", // this string is used as an object key
-            //         color: 0xffffff,
-            //         onColor: 0xffffff,
-            //         offColor: 0x999999,
-            //         glow: false,
-            //         z: 2,
-            //         turn: false,
-            //         aligners: [
-            //             [3.7, 2.1],
-            //             [2.1, 0.3],
-            //             [0.3, 4.1],
-            //             [4, 3.7],
-            //         ],
-            //     },
-            // ],
-            // flickerTimer: performance.now(),
-            // flickerState: 0,
-            // action: function(sceneState, moduleIndex, scene) {
-            //     let timer = sceneState.moduleData[moduleIndex].flickerTimer;
-            //     if(timer < performance.now()) { // Todo: Add check for when all is loaded
-            //         // Flicker the lights
-            //         let module = sceneState.moduleData[moduleIndex];
-            //         let moduleMesh = scene.getObjectByName('module-' + module.module + '-l' + module.level + '-i' + module.index);
-            //         let material = moduleMesh.children[0].children[0].material;
-            //         material.needsUpdate = true;
-            //         material.lightMapIntensity = sceneState.moduleData[moduleIndex].flickerState;
-            //         if(sceneState.moduleData[moduleIndex].flickerState === 0) {
-            //             sceneState.moduleData[moduleIndex].flickerTimer = randomTimeNow(200, 2000);
-            //             sceneState.moduleData[moduleIndex].flickerState = 2;
-            //             moduleMesh.children[1].children[0].material.color.setHex(0xc0c0c0);
-            //             moduleMesh.children[1].children[0].material.emissiveIntensity = 0;
-            //         } else {
-            //             sceneState.moduleData[moduleIndex].flickerTimer = randomTimeNow(5000, 55000);
-            //             sceneState.moduleData[moduleIndex].flickerState = 0;
-            //             moduleMesh.children[1].children[0].material.emissiveIntensity = 1;
-            //         }
-            //     }
-            // },
         },
     ];
     if(data[level-1]) {
@@ -109,28 +69,36 @@ function getModuleLevelData(level, type) {
     }
 }
 
-function addTilemapMeta(data) {
+function addWallDOff(data) {
     let tilemap = data.tilemap,
         level = data.level,
         dims = [tilemap[0].length,tilemap.length],
-        dOff = [0.5,0,0,0,0,0,0,0],
-        meta = [
-        [{corner:true,dOff:[0,0,0,0,0,0,0,0,0]},{dOff:[0.5,0,0,0,0,0,0,0,0]},{type:2},{type:3},{type:2},{type:2},{type:2},{type:2},{type:2}],
-        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
-        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
-        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
-        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
-        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
-        [{type:3},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
-        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
-        [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
-        [{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2}],
-    ];
+        dOff = [0,0,0,0,0,0,0,0], // Default dark offset
+        meta = [],
+        northWall, eastWall, southWall, westWall;
+    // Create empty meta grid
     for(let y=0; y<dims[1]; y++) {
+        if(!meta[y]) { meta.push([]); }
         for(let x=0; x<dims[0]; x++) {
-            tilemap[y][x] = Object.assign({}, tilemap[y][x], {dOff: dOff}, meta[y][x]);
+            if(!meta[y][x]) { meta[y].push([]); }
         }
     }
+    northWall = {dOff: [0,0.5,2.5,0.5,0,0,0,0]};
+    meta[0][1] = meta[0][2] = meta[0][3] = meta[0][4] = meta[0][5] = meta[0][6] = meta[0][7] = northWall;
+    southWall = {dOff: [0,0,0,0,0,-0.5,-0.5,-0.5]};
+    meta[9][1] = meta[9][2] = meta[9][3] = meta[9][4] = meta[9][5] = meta[9][6] = meta[9][7] = southWall;
+    meta[0][0] = {dOff: [0,0,0,0,0,0,0,0], corner:true};
+    meta[0][8] = {dOff: [0,0,0,0,0,0,0,0], corner:true};
+    meta[9][0] = {dOff: [0,0,0,0,0,0,0,0], corner:true};
+    meta[9][8] = {dOff: [0,0,0,0,0,0,0,0], corner:true};
+    for(let y=0; y<dims[1]; y++) {
+        for(let x=0; x<dims[0]; x++) {
+            if(tilemap[y][x].type == 2) {
+                tilemap[y][x] = Object.assign({}, tilemap[y][x], {dOff: dOff}, meta[y][x]);
+            }
+        }
+    }
+    console.log('TILEMAP META',tilemap);
     return tilemap;
 }
 

@@ -20,8 +20,8 @@ class PlayerController {
     createHero(sceneState, scene) {
         let hero = getPlayer();
         sceneState.players.hero = hero;
-        sceneState.players.hero.pos = [34,29,0];
-        sceneState.players.hero.microPos = [34,29,0];
+        sceneState.players.hero.pos = [35,43,0];
+        sceneState.players.hero.microPos = [35,43,0];
         let group = new THREE.Group();
 
         let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
