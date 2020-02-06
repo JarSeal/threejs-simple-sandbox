@@ -20,6 +20,8 @@ class Projectiles {
             opacity: 1,
             name: "sparkMaterial",
         });
+        this.burnMarkTexture = new THREE.TextureLoader().load('/images/sprites/burn-mark.png');
+        this.smokeTexture = new THREE.TextureLoader().load('/images/sprites/smoke-01.png');
     }
 
     shootProjectile(from, target, scene, sceneState, AppUiLayer, camera) {
@@ -33,7 +35,8 @@ class Projectiles {
         );
 
         let tl = new TimelineMax();
-        let speedPerTile = 0.1; // in seconds
+        let speedPerTile = 0.1, // in seconds
+            angle = calculateAngle(from, target);
         let tileMap = sceneState.shipMap[sceneState.floor];
         let solidObstacle = this.calculateSolidObstacle(from, target, speedPerTile, tileMap);
         if(solidObstacle.dir == 3) {
@@ -53,7 +56,6 @@ class Projectiles {
             yAdder = 64;
         }
         let dist = Math.sqrt(Math.pow(xDist + xAdder, 2) + Math.pow(yDist + yAdder, 2));
-        console.log(dist,'solid',solidObstacle);
         let tempTarget = [];
         tempTarget.push(target[0] + (target[0] > from[0] ? xAdder : -xAdder));
         tempTarget.push(target[1] + (target[1] > from[1] ? yAdder : -yAdder));
@@ -66,8 +68,7 @@ class Projectiles {
         }
         let speed = dist * speedPerTile;
         setTimeout(() => {
-            let angle = calculateAngle(from, target),
-                deleteTimer;
+            let deleteTimer;
             let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
             meshInside.scale.set(0.35, 0.05, 1);
             meshInside.name = name + "-inside";
@@ -89,11 +90,10 @@ class Projectiles {
                 ease: Linear.easeNone,
                 onUpdate: () => {
                     if(tl.startTime + solidObstacle.timeOfHit < performance.now()) { // Solid obstacle hit!
-                        console.log("KILL");
                         tl.progress(1);
                         tl.kill(); // Stop animation
                         // Create blast sparks
-                        this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap, projectileGroup.position);
+                        this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap);
                         // Delete objects and group
                         scene.remove(meshInside);
                         scene.remove(projectileGroup);
@@ -101,10 +101,9 @@ class Projectiles {
                     }
                 },
                 onComplete: () => {
-                    console.log("KILL");
                     tl.progress(1);
                     // Create blast sparks
-                    this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap, projectileGroup.position);
+                    this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap);
                     // Delete objects and group
                     scene.remove(meshInside);
                     scene.remove(projectileGroup);
@@ -123,7 +122,6 @@ class Projectiles {
         let dir = 0,
             i = 0,
             maxChecks = 128,
-            xLengthToHit = 0,
             distanceToHit = 0,
             distanceByAxis = [],
             travelTimeToHit = 0,
@@ -131,6 +129,7 @@ class Projectiles {
             hitMicroPos = [],
             xDist = Math.abs(from[0] - target[0]),
             yDist = Math.abs(from[1] - target[1]),
+            quarterRadiansTurn = Math.PI / 4,
             angle = xDist < yDist ? Math.atan(xDist / yDist) : Math.atan(yDist / xDist);
         speed *= 1000;
         // Check if the projectile travels on a straight line
@@ -227,13 +226,16 @@ class Projectiles {
                         distanceToHit = Math.sqrt(
                             Math.pow((xDist < yDist ? yPos * Math.tan(angle) : xPos), 2) + Math.pow((xDist < yDist ? yPos : xPos * Math.tan(angle)), 2)
                         ); // THIS WORKS
+                        // distanceToHit = Math.sqrt(
+                        //     Math.pow(yPos * Math.tan(angle), 2) + Math.pow(yPos, 2)
+                        // ); // THIS WORKS
                         hitMicroPos = this.getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap);
                         // if(xPos < yPos) {
                         //     hitMicroPos = [from[0] - xLengthToHit, from[1] + yPos]; // Do the real microPos calculation here
                         // } else {
                         //     hitMicroPos = [from[0] - xPos, from[1] + xLengthToHit]; // Do the real microPos calculation here
                         // }
-                        console.log("MICROPOS",hitMicroPos,hitPos);
+                        
                         // distanceToHit = Math.sqrt( // Do the real calculation of the distance to hit here (according to micro pos)
                         //     Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
                         // );
@@ -305,7 +307,7 @@ class Projectiles {
         return tileMap[x][y].type === 2;
     }
 
-    hitObstacle(obstacle, type, scene, projectileName, camera, tileMap, projectilePos) {
+    hitObstacle(obstacle, type, scene, projectileName, camera, tileMap) {
         let pos = [obstacle.hitMicroPos[0], obstacle.hitMicroPos[1]],
             dir = obstacle.dir,
             posWOffset = [pos[0], pos[1]],
@@ -313,7 +315,8 @@ class Projectiles {
             minFloorParticles = 6,
             maxFloorParticles = 20,
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles),
-            i = 0;
+            i = 0,
+            streaks = this._randomIntInBetween(2, 6);
         switch(dir) {
             case 0:
                 posWOffset = [pos[0], pos[1] + 0.4];
@@ -344,7 +347,7 @@ class Projectiles {
                 break;
         }
         if(type == 'solid') {
-            this.setBurnSpot(posWOffset, scene, obstacle);
+            this.setBurnSpot(posWOffset, scene, obstacle, camera);
             for(i=0; i<floorParticles; i++) {
                 (() => {
                     let sparkName = projectileName + "-" + i,
@@ -375,6 +378,44 @@ class Projectiles {
                             scene.remove(removeThis);
                         }
                     }, lifeSpan * 1000 * 2);
+                })();
+            }
+            for(i=0; i<streaks; i++) {
+                (() => {
+                    let tl = new TimelineMax(),
+                        lifeSpan = this._randomFloatInBetween(0.1, 0.2),
+                        newX = posWOffset[0] + this.random2dAmount(dir, 'x', tileMap, obstacle.obstaclePos),
+                        newY = posWOffset[1] + this.random2dAmount(dir, 'y', tileMap, obstacle.obstaclePos),
+                        newZ = this._randomFloatInBetween(0.8, 1.6),
+                        streakGeo = new THREE.Geometry();
+                    streakGeo.vertices.push(
+                        new THREE.Vector3(posWOffset[0], posWOffset[1], 1),
+                        new THREE.Vector3(posWOffset[0], posWOffset[1], 1),
+                    );
+                    let streak = new THREE.Line(streakGeo, new THREE.LineBasicMaterial({color: 0xffffff}));
+                    console.log(streak.geometry);
+                    scene.add(streak);
+                    tl.to(streak.geometry.vertices[1], lifeSpan, {
+                        x: newX,
+                        y: newY,
+                        z: newZ,
+                        ease: Linear.easeNone,
+                        onUpdate: () => {
+                            streak.geometry.verticesNeedUpdate = true;
+                        }
+                    }).to(streak.geometry.vertices[0], lifeSpan, {
+                        x: newX,
+                        y: newY,
+                        z: newZ,
+                        ease: Linear.easeNone,
+                        onUpdate: () => {
+                            streak.geometry.verticesNeedUpdate = true;
+                        }, onComplete: () => {
+                            streak.geometry.dispose();
+                            streak.material.dispose();
+                            scene.remove(streak);
+                        }
+                    }, "-="+lifeSpan/1.2);
                 })();
             }
         }
@@ -491,19 +532,15 @@ class Projectiles {
                 { wallType = "posEdge" }
                 switch(wallType) {
                     case "y":
-                        console.log("TYPE Y");
                         turn = 0;
                         return xPos > yPos ? [from[0] - xPos, from[1] + xLengthToHit, turn] : [from[0] - xPos, from[1] + yPos, turn];
                     case "x":
-                        console.log("TYPE X");
                         turn = -90 * (Math.PI/180);
                         return xPos > yPos ? [from[0] - xPos, from[1] + yPos, turn] : [from[0] - xLengthToHit, from[1] + yPos, turn];
                     case "posEdge":
-                        console.log("TYPE POSEDGE");
-                        turn = -45 * (Math.PI/180);
-                        break;
+                        turn = xLengthToHit - Math.floor(xLengthToHit) < 0.5 ? 0 : -90 * (Math.PI/180);
+                        return xPos > yPos ? [from[0] - xPos, from[1] + xLengthToHit, turn] : [from[0] - xPos, from[1] + yPos, turn];
                     case "negEdge":
-                        console.log("TYPE NEGEDGE");
                         turn = -45 * (Math.PI/180);
                         break;
                 }
@@ -511,27 +548,73 @@ class Projectiles {
         }
     }
 
-    setBurnSpot(posWOffset, scene, obstacle) {
-        let darkSpot = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone()),
+    setBurnSpot(posWOffset, scene, obstacle, camera) {
+        let darkSpot1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.burnMarkTexture,transparent:true})),
+            darkSpot2 = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone()),
+            smoke1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.smokeTexture,transparent:true,opacity:((Math.random() * 2) + 1) / 10})),
+            darkSpotGroup = new THREE.Group(),
+            offsetRandomizer = Math.random() / 100,
+            offset1 = this.getBurnSpotOffset(obstacle.dir, "mark", offsetRandomizer),
+            offset2 = this.getBurnSpotOffset(obstacle.dir, "burn", offsetRandomizer),
             tl = new TimelineMax(),
-            startColor = {color:"#ffffff"};
-        darkSpot.material.opacity = 1;
-        darkSpot.material.color.set(startColor.color);
-        console.log("darkSpot",darkSpot);
-        darkSpot.scale.set(5,5,1);
-        darkSpot.rotation.set(1.5708/2, 1.5708, 0);
-        let darkSpotGroup = new THREE.Group();
-        darkSpotGroup.add(darkSpot);
+            tlSmoke = new TimelineMax(),
+            burnSize1 = Math.random() * 9,
+            burnSize2 = Math.random() + 0.7;
+        if(burnSize1 < 3) burnSize1 = 3;
+        if(burnSize2 < 1) burnSize2 = 1;
+        
+        darkSpot1.material.opacity = 1;
+        darkSpot1.scale.set(burnSize1,burnSize1,1);
+        darkSpot1.rotation.set(1.5708/2, 1.5708, 0);
+        darkSpot2.material.opacity = 1;
+        darkSpot2.material.color.set("#ff862d");
+        darkSpot2.scale.set(burnSize2,burnSize2,1);
+        darkSpot2.rotation.set(1.5708/2, 1.5708, 0);
+        darkSpotGroup.add(darkSpot1);
+        darkSpotGroup.add(darkSpot2);
         darkSpotGroup.position.set(posWOffset[0], posWOffset[1], 1);
         darkSpotGroup.rotation.z = obstacle.hitMicroPos[2];
+        darkSpotGroup.children[0].position.x = offset1[0];
+        darkSpotGroup.children[0].position.y = offset1[1];
+        darkSpotGroup.children[1].position.x = offset2[0];
+        darkSpotGroup.children[1].position.y = offset2[1];
+        
+        smoke1.scale.set(0.3,5,1);
+        smoke1.quaternion.copy(camera.quaternion);
+        smoke1.position.set(posWOffset[0] + offset1[1], posWOffset[1], 1);
+
         scene.add(darkSpotGroup);
-        tl.to(startColor, 1, {color:"#000000", onUpdate: () => {
-            darkSpot.material.color.set(startColor.color);
-        }})
-        .to(darkSpot.material, 2, {opacity:0, onComplete: () => {
-            darkSpot.material.dispose();
-            scene.remove(darkSpot);
-        }});
+        scene.add(smoke1);
+
+        tl.to(darkSpot2.material, 2, {opacity:0})
+          .to(darkSpot1.material, 3, {opacity:0}, "-=1");
+        
+        tlSmoke.to(smoke1.position, 3, {z: 3})
+               .to(smoke1.material, 2, {opacity: 0}, "-=2")
+               .to(smoke1.scale, 3, {x: 8, y: 8}, "-=3");
+        
+        setTimeout(() => {
+            darkSpot1.geometry.dispose();
+            darkSpot1.material.dispose();
+            scene.remove(darkSpot1);
+            darkSpot2.geometry.dispose();
+            darkSpot2.material.dispose();
+            scene.remove(darkSpot2);
+            scene.remove(darkSpotGroup);
+            smoke1.geometry.dispose();
+            smoke1.material.dispose();
+            scene.remove(smoke1);
+        }, 4000);
+    }
+
+    getBurnSpotOffset(dir, elem, randomizer) {
+        switch(dir) {
+            case 3:
+                if(elem == "mark") return [0.1 + randomizer, -0.1 + randomizer];
+                return [0.12 + randomizer, -0.08 + randomizer];
+            default:
+                return [randomizer, randomizer];
+        }
     }
 }
 
