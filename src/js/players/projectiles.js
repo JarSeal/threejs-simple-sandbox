@@ -39,10 +39,8 @@ class Projectiles {
             angle = calculateAngle(from, target);
         let tileMap = sceneState.shipMap[sceneState.floor];
         let solidObstacle = this.calculateSolidObstacle(from, target, speedPerTile, tileMap);
-        if(solidObstacle.dir == 3) {
-            target[0] = solidObstacle.hitMicroPos[0];
-            target[1] = solidObstacle.hitMicroPos[1];
-        }
+        target[0] = solidObstacle.hitMicroPos[0];
+        target[1] = solidObstacle.hitMicroPos[1];
         let name = "projectileLaserViolet"+performance.now(),
             xDist = Math.abs(from[0] - target[0]),
             yDist = Math.abs(from[1] - target[1]),
@@ -59,13 +57,11 @@ class Projectiles {
         let tempTarget = [];
         tempTarget.push(target[0] + (target[0] > from[0] ? xAdder : -xAdder));
         tempTarget.push(target[1] + (target[1] > from[1] ? yAdder : -yAdder));
-        if(solidObstacle.dir == 3) {
             dist = solidObstacle.dist;
             xAdder = solidObstacle.hitMicroPos[0];
             yAdder = solidObstacle.hitMicroPos[1];
             tempTarget[0] = xAdder;
             tempTarget[1] = yAdder;
-        }
         let speed = dist * speedPerTile;
         setTimeout(() => {
             let deleteTimer;
@@ -129,7 +125,6 @@ class Projectiles {
             hitMicroPos = [],
             xDist = Math.abs(from[0] - target[0]),
             yDist = Math.abs(from[1] - target[1]),
-            quarterRadiansTurn = Math.PI / 4,
             angle = xDist < yDist ? Math.atan(xDist / yDist) : Math.atan(yDist / xDist);
         speed *= 1000;
         // Check if the projectile travels on a straight line
@@ -144,6 +139,7 @@ class Projectiles {
                             distanceByAxis = [from[0], from[1] - i];
                             travelTimeToHit = i * speed;
                             hitPos = [from[0], from[1] - i];
+                            hitMicroPos = [from[0], from[1] - i, angle];
                             break;
                         }
                     }
@@ -155,6 +151,7 @@ class Projectiles {
                             distanceByAxis = [from[0], from[1] + i];
                             travelTimeToHit = i * speed;
                             hitPos = [from[0], from[1] + i];
+                            hitMicroPos = [from[0], from[1] + i, angle];
                             break;
                         }
                     }
@@ -168,6 +165,7 @@ class Projectiles {
                             distanceByAxis = [from[0] - i, from[1]];
                             travelTimeToHit = i * speed;
                             hitPos = [from[0] - i, from[1]];
+                            hitMicroPos = [from[0] - i, from[1], angle];
                             break;
                         }
                     }
@@ -179,6 +177,7 @@ class Projectiles {
                             distanceByAxis = [from[0] + i, from[1]];
                             travelTimeToHit = i * speed;
                             hitPos = [from[0] + i, from[1]];
+                            hitMicroPos = [from[0] + i, from[1], angle];
                             break;
                         }
                     }
@@ -207,6 +206,14 @@ class Projectiles {
                         );
                         distanceByAxis = [from[0] - xPos, from[1] - yPos];
                         travelTimeToHit = distanceToHit * speed;
+
+                        hitPos = [from[0] - xPos, from[1] - yPos]; // - and -
+                        distanceToHit = Math.sqrt(
+                            Math.pow((xDist < yDist ? yPos * Math.tan(angle) : xPos), 2) + Math.pow((xDist < yDist ? yPos : xPos * Math.tan(angle)), 2)
+                        );
+                        hitMicroPos = this.getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap);
+                        distanceByAxis = [from[0] - xPos, from[1] - yPos];
+                        travelTimeToHit = distanceToHit * speed;
                         break;
                     }
                 }
@@ -225,20 +232,8 @@ class Projectiles {
                         hitPos = [from[0] - xPos, from[1] + yPos]; // - and +
                         distanceToHit = Math.sqrt(
                             Math.pow((xDist < yDist ? yPos * Math.tan(angle) : xPos), 2) + Math.pow((xDist < yDist ? yPos : xPos * Math.tan(angle)), 2)
-                        ); // THIS WORKS
-                        // distanceToHit = Math.sqrt(
-                        //     Math.pow(yPos * Math.tan(angle), 2) + Math.pow(yPos, 2)
-                        // ); // THIS WORKS
+                        );
                         hitMicroPos = this.getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap);
-                        // if(xPos < yPos) {
-                        //     hitMicroPos = [from[0] - xLengthToHit, from[1] + yPos]; // Do the real microPos calculation here
-                        // } else {
-                        //     hitMicroPos = [from[0] - xPos, from[1] + xLengthToHit]; // Do the real microPos calculation here
-                        // }
-                        
-                        // distanceToHit = Math.sqrt( // Do the real calculation of the distance to hit here (according to micro pos)
-                        //     Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
-                        // );
                         distanceByAxis = [from[0] - xPos, from[1] + yPos];
                         travelTimeToHit = distanceToHit * speed;
                         break;
@@ -393,7 +388,6 @@ class Projectiles {
                         new THREE.Vector3(posWOffset[0], posWOffset[1], 1),
                     );
                     let streak = new THREE.Line(streakGeo, new THREE.LineBasicMaterial({color: 0xffffff}));
-                    console.log(streak.geometry);
                     scene.add(streak);
                     tl.to(streak.geometry.vertices[1], lifeSpan, {
                         x: newX,
@@ -525,6 +519,26 @@ class Projectiles {
             xLengthToHit = Math.sin(angle) * distanceToHit,
             turn;
         switch(dir) {
+            case 1:
+                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
+                if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
+                { wallType = "posEdge" }
+                switch(wallType) {
+                    case "y":
+                        turn = 0;
+                        return xPos > yPos ? [from[0] - xPos, from[1] - xLengthToHit, turn] : [from[0] - xPos, from[1] - yPos, turn];
+                    case "x":
+                        turn = 90 * (Math.PI/180);
+                        return xPos > yPos ? [from[0] - xPos, from[1] - yPos, turn] : [from[0] - xLengthToHit, from[1] - yPos, turn];
+                    case "posEdge":
+                        turn = xLengthToHit - Math.floor(xLengthToHit) < 0.5 ? 0 : -90 * (Math.PI/180);
+                        return xPos > yPos ? [from[0] - xPos, from[1] - xLengthToHit, turn] : [from[0] - xPos, from[1] - yPos, turn];
+                    case "negEdge":
+                        turn = 45 * (Math.PI/180);
+                        break;
+                }
+                return [from[0] - xPos, from[1] - yPos, turn];
             case 3:
                 if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
                 if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
@@ -589,9 +603,10 @@ class Projectiles {
         tl.to(darkSpot2.material, 2, {opacity:0})
           .to(darkSpot1.material, 3, {opacity:0}, "-=1");
         
-        tlSmoke.to(smoke1.position, 3, {z: 3})
+        let smokeLife = this._randomFloatInBetween(2.0, 3.8);
+        tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
                .to(smoke1.material, 2, {opacity: 0}, "-=2")
-               .to(smoke1.scale, 3, {x: 8, y: 8}, "-=3");
+               .to(smoke1.scale, smokeLife, {x: 8, y: 8}, "-="+smokeLife);
         
         setTimeout(() => {
             darkSpot1.geometry.dispose();
@@ -609,6 +624,9 @@ class Projectiles {
 
     getBurnSpotOffset(dir, elem, randomizer) {
         switch(dir) {
+            case 1:
+                if(elem == "mark") return [0.1 + randomizer, 0.13 + randomizer];
+                return [0.12 + randomizer, 0.15 + randomizer];
             case 3:
                 if(elem == "mark") return [0.1 + randomizer, -0.1 + randomizer];
                 return [0.12 + randomizer, -0.08 + randomizer];
