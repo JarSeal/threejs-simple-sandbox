@@ -83,7 +83,7 @@ function addWallDOff(data) {
             if(!meta[y][x]) { meta[y].push([]); }
         }
     }
-    northWall = {dOff: [0,0.5,2.5,0.5,0,0,0,0]};
+    northWall = {dOff: [0,0.5,0.5,0.5,0,0,0,0]};
     meta[0][1] = meta[0][2] = meta[0][3] = meta[0][4] = meta[0][5] = meta[0][6] = meta[0][7] = northWall;
     southWall = {dOff: [0,0,0,0,0,-0.5,-0.5,-0.5]};
     meta[9][1] = meta[9][2] = meta[9][3] = meta[9][4] = meta[9][5] = meta[9][6] = meta[9][7] = southWall;
@@ -98,7 +98,6 @@ function addWallDOff(data) {
             }
         }
     }
-    console.log('TILEMAP META',tilemap);
     return tilemap;
 }
 

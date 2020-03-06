@@ -1,7 +1,8 @@
 import { calculateAngle } from "../util";
 
 class Projectiles {
-    constructor() {
+    constructor(scene) {
+        this.scene = scene;
         this.projectileGeoInside = new THREE.PlaneBufferGeometry();
         this.projectileGeoOutside = new THREE.PlaneBufferGeometry();
         this.projectileMatInside = new THREE.MeshBasicMaterial({
@@ -34,15 +35,87 @@ class Projectiles {
             'S'
         );
 
-        let tl = new TimelineMax();
         let speedPerTile = 0.1, // in seconds
-            angle = calculateAngle(from, target);
+            raycaster = new THREE.Raycaster(),
+            startPoint = new THREE.Vector3(from[0], from[1], 1),
+            direction = new THREE.Vector3(),
+            hitObject = this.scene.getObjectByName("level-props").children[0];
+        direction.subVectors(new THREE.Vector3(target[0], target[1], 1), startPoint).normalize();;
+        raycaster.set(startPoint, direction, true);
+        let intersects = raycaster.intersectObject(hitObject, true);
+        let angle = 0,
+            name = "projectileLaserViolet"+performance.now();
+        console.log('INTERSECTS',intersects);
+        if(intersects.length) {
+            let geometry = new THREE.Geometry();
+            geometry.vertices.push(startPoint);
+            geometry.vertices.push(new THREE.Vector3(intersects[0].point.x, intersects[0].point.y, 1));
+            let material = new THREE.LineBasicMaterial({ color : 0xff0000 });
+            let line = new THREE.Line(geometry, material);
+            scene.add(line);
+
+            let targetPos = [intersects[0].point.x, intersects[0].point.y];
+            angle = calculateAngle(from, targetPos);
+            let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
+            meshInside.scale.set(0.35, 0.05, 1);
+            meshInside.name = name + "-inside";
+            let meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
+            meshOutside.scale.set(0.51, 0.21, 1);
+            meshOutside.position.set(0, 0, -0.01);
+            meshOutside.name = name + "-outside";
+            let projectileGroup = new THREE.Group();
+            projectileGroup.name = name + "-group";
+            projectileGroup.add(meshInside);
+            projectileGroup.add(meshOutside);
+            projectileGroup.rotation.z = angle + 1.5708;
+            projectileGroup.position.set(from[0], from[1], 1);
+            scene.add(projectileGroup);
+
+            let tl = new TimelineMax();
+            let speed = intersects[0].distance * speedPerTile;
+            let tileMap = sceneState.shipMap[sceneState.floor];
+            let solidObstacle = this.calculateSolidObstacle(from, target, speedPerTile, tileMap);
+            tl.startTime = performance.now();
+            tl.to(projectileGroup.position, speed, {
+                x: targetPos[0],
+                y: targetPos[1],
+                ease: Linear.easeNone,
+                onUpdate: () => {
+                    if(tl.startTime + solidObstacle.timeOfHit < performance.now()) { // Solid obstacle hit!
+                        tl.progress(1);
+                        tl.kill(); // Stop animation
+                        // Create blast sparks
+                        this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap, targetPos);
+                        // Delete objects and group
+                        scene.remove(line);
+                        scene.remove(meshInside);
+                        scene.remove(projectileGroup);
+                    }
+                },
+                onComplete: () => {
+                    tl.progress(1);
+                    // Create blast sparks
+                    this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap, targetPos);
+                    // Delete objects and group
+                    scene.remove(line);
+                    scene.remove(meshInside);
+                    scene.remove(projectileGroup);
+                }
+            });
+
+        }
+
+        return;
+
+        let tl = new TimelineMax();
+        angle = calculateAngle(from, target);
+        console.log("angle", angle);
         let tileMap = sceneState.shipMap[sceneState.floor];
         let solidObstacle = this.calculateSolidObstacle(from, target, speedPerTile, tileMap);
+        console.log('anothre',solidObstacle.angle);
         target[0] = solidObstacle.hitMicroPos[0];
         target[1] = solidObstacle.hitMicroPos[1];
-        let name = "projectileLaserViolet"+performance.now(),
-            xDist = Math.abs(from[0] - target[0]),
+        let xDist = Math.abs(from[0] - target[0]),
             yDist = Math.abs(from[1] - target[1]),
             xAdder = 0,
             yAdder = 0;
@@ -199,6 +272,7 @@ class Projectiles {
                         xPos = i;
                         yPos = Math.round(xPos * Math.tan(angle));
                     }
+                    // Projectile has hit a
                     if(this.checkIfWall(from[0] - xPos, from[1] - yPos, tileMap)) { // - and -
                         hitPos = [from[0] - xPos, from[1] - yPos]; // - and -
                         distanceToHit = Math.sqrt(
@@ -211,7 +285,7 @@ class Projectiles {
                         distanceToHit = Math.sqrt(
                             Math.pow((xDist < yDist ? yPos * Math.tan(angle) : xPos), 2) + Math.pow((xDist < yDist ? yPos : xPos * Math.tan(angle)), 2)
                         );
-                        hitMicroPos = this.getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap);
+                        hitMicroPos = this.getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap, target);
                         distanceByAxis = [from[0] - xPos, from[1] - yPos];
                         travelTimeToHit = distanceToHit * speed;
                         break;
@@ -233,7 +307,7 @@ class Projectiles {
                         distanceToHit = Math.sqrt(
                             Math.pow((xDist < yDist ? yPos * Math.tan(angle) : xPos), 2) + Math.pow((xDist < yDist ? yPos : xPos * Math.tan(angle)), 2)
                         );
-                        hitMicroPos = this.getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap);
+                        hitMicroPos = this.getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap, target);
                         distanceByAxis = [from[0] - xPos, from[1] + yPos];
                         travelTimeToHit = distanceToHit * speed;
                         break;
@@ -253,8 +327,9 @@ class Projectiles {
                     if(this.checkIfWall(from[0] + xPos, from[1] + yPos, tileMap)) { // + and +
                         hitPos = [from[0] + xPos, from[1] + yPos]; // + and +
                         distanceToHit = Math.sqrt(
-                            Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
+                            Math.pow((xDist < yDist ? yPos * Math.tan(angle) : xPos), 2) + Math.pow((xDist < yDist ? yPos : xPos * Math.tan(angle)), 2)
                         );
+                        hitMicroPos = this.getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap, target);
                         distanceByAxis = [from[0] + xPos, from[1] + yPos];
                         travelTimeToHit = distanceToHit * speed;
                         break;
@@ -273,9 +348,13 @@ class Projectiles {
                     }
                     if(this.checkIfWall(from[0] + xPos, from[1] - yPos, tileMap)) { // + and -
                         hitPos = [from[0] + xPos, from[1] - yPos]; // + and -
+                        // distanceToHit = Math.sqrt(
+                        //     Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
+                        // );
                         distanceToHit = Math.sqrt(
-                            Math.pow(from[0] - hitPos[0], 2) + Math.pow(from[1] - hitPos[1], 2)
+                            Math.pow((xDist < yDist ? yPos * Math.tan(angle) : xPos), 2) + Math.pow((xDist < yDist ? yPos : xPos * Math.tan(angle)), 2)
                         );
+                        hitMicroPos = this.getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap, target);
                         distanceByAxis = [from[0] + xPos, from[1] - yPos];
                         travelTimeToHit = distanceToHit * speed;
                         break;
@@ -302,11 +381,10 @@ class Projectiles {
         return tileMap[x][y].type === 2;
     }
 
-    hitObstacle(obstacle, type, scene, projectileName, camera, tileMap) {
-        let pos = [obstacle.hitMicroPos[0], obstacle.hitMicroPos[1]],
+    hitObstacle(obstacle, type, scene, projectileName, camera, tileMap, targetPos) {
+        let pos = [targetPos[0], targetPos[1]],
             dir = obstacle.dir,
-            posWOffset = [pos[0], pos[1]],
-            dOff = tileMap[Math.round(obstacle.obstaclePos[0])][Math.round(obstacle.obstaclePos[1])].dOff,
+            posWOffset = [targetPos[0], targetPos[1]],
             minFloorParticles = 6,
             maxFloorParticles = 20,
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles),
@@ -314,31 +392,28 @@ class Projectiles {
             streaks = this._randomIntInBetween(2, 6);
         switch(dir) {
             case 0:
-                posWOffset = [pos[0], pos[1] + 0.4];
-                if(dOff) { posWOffset = [pos[0], pos[1] + dOff[dir]]; }
+                posWOffset = [pos[0], pos[1] + 0.02];
                 break;
             case 1:
-                posWOffset = [pos[0] + 0.4, pos[1] + 0.4];
+                posWOffset = [pos[0] + 0.02, pos[1] + 0.02];
                 break;
             case 2:
-                posWOffset = [pos[0] + 0.4, pos[1]];
-                if(dOff) { posWOffset = [pos[0] + dOff[dir], pos[1]]; }
+                posWOffset = [pos[0] + 0.02, pos[1]];
                 break;
             case 3:
-                posWOffset = [pos[0] + 0.4, pos[1] - 0.4];
+                posWOffset = [pos[0] + 0.02, pos[1] - 0.02];
                 break;
             case 4:
-                posWOffset = [pos[0], pos[1] - 0.4];
+                posWOffset = [pos[0], pos[1] - 0.02];
                 break;
             case 5:
-                posWOffset = [pos[0] - 0.4, pos[1] - 0.4];
+                posWOffset = [pos[0] - 0.02, pos[1] - 0.02];
                 break;
             case 6:
-                posWOffset = [pos[0] - 0.4, pos[1]];
-                if(dOff) { posWOffset = [pos[0] + dOff[dir], pos[1]]; }
+                posWOffset = [pos[0] - 0.02, pos[1]];
                 break;
             case 7:
-                posWOffset = [pos[0] - 0.4, pos[1] + 0.4];
+                posWOffset = [pos[0] - 0.02, pos[1] + 0.02];
                 break;
         }
         if(type == 'solid') {
@@ -514,25 +589,66 @@ class Projectiles {
         }
     }
 
-    getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap) {
+    getMicroPos(distanceToHit, angle, from, xPos, yPos, dir, hitPos, tileMap, target) {
         let wallType,
             xLengthToHit = Math.sin(angle) * distanceToHit,
-            turn;
+            turn,
+            hitTile = tileMap[Math.round(hitPos[0])][Math.round(hitPos[1])],
+            objectId = hitTile.module.objectId,
+            hitObject = this.scene.getObjectByName(objectId).children[0];
+        console.log("HITPIOS",hitTile,hitObject.matrixWorld);
+        console.log("PPOSSSS", from, target, objectId);
+        // let raycaster = new THREE.Raycaster();
+
+        // let startPoint = new THREE.Vector3(from[0], from[1], 1);
+        // let direction = new THREE.Vector3();
+        // direction.subVectors( new THREE.Vector3(target[0], target[1], 1), startPoint ).normalize();;
+        // //direction.normalize();
+
+        // //hitObject.updateMatrixWorld();
+        
+        // raycaster.set(startPoint, direction, true);
+        // let intersects = raycaster.intersectObject(hitObject);
+        // console.log('INTERSECTS',intersects,hitObject);
+
+        // let distance = -20;
+        // let pointB = new THREE.Vector3();
+        // pointB.addVectors(startPoint, direction.multiplyScalar(distance));
+        // pointB.z = 1;
+
+        // if(intersects.length) {
+        //     let geometry = new THREE.Geometry();
+        //     geometry.vertices.push( startPoint );
+        //     geometry.vertices.push( new THREE.Vector3(intersects[0].point.x, intersects[0].point.y, 1) );
+        //     let material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+        //     let line = new THREE.Line( geometry, material );
+        //     this.scene.add( line );
+        // }
+
+        // let geometry2 = new THREE.Geometry();
+        // geometry2.vertices.push( startPoint );
+        // geometry2.vertices.push( new THREE.Vector3(target[0], target[1], 1) );
+        // let material2 = new THREE.LineBasicMaterial( { color : 0xffff00 } );
+        // let line2 = new THREE.Line( geometry2, material2 );
+        // this.scene.add( line2 );
+
         switch(dir) {
             case 1:
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
-                if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
+                if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = "x"; } else
                 if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
                 { wallType = "posEdge" }
                 switch(wallType) {
                     case "y":
                         turn = 0;
+                        console.log("TURN");
                         return xPos > yPos ? [from[0] - xPos, from[1] - xLengthToHit, turn] : [from[0] - xPos, from[1] - yPos, turn];
                     case "x":
                         turn = 90 * (Math.PI/180);
                         return xPos > yPos ? [from[0] - xPos, from[1] - yPos, turn] : [from[0] - xLengthToHit, from[1] - yPos, turn];
                     case "posEdge":
-                        turn = xLengthToHit - Math.floor(xLengthToHit) < 0.5 ? 0 : -90 * (Math.PI/180);
+                        turn = xLengthToHit - Math.floor(xLengthToHit) < 0.5 ? -180 : 90 * (Math.PI/180);
+                        console.log("TUR2N");
                         return xPos > yPos ? [from[0] - xPos, from[1] - xLengthToHit, turn] : [from[0] - xPos, from[1] - yPos, turn];
                     case "negEdge":
                         turn = 45 * (Math.PI/180);
@@ -559,6 +675,27 @@ class Projectiles {
                         break;
                 }
                 return [from[0] - xPos, from[1] + yPos, turn];
+            case 5:
+                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
+                if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
+                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
+                { wallType = "posEdge" }
+                console.log('WLLTYYP',wallType);
+                switch(wallType) {
+                    case "y":
+                        turn = 180 * (Math.PI/180);
+                        return xPos > yPos ? [from[0] - xPos, from[1] - xLengthToHit, turn] : [from[0] - xPos, from[1] - yPos, turn];
+                    case "x":
+                        turn = -90 * (Math.PI/180);
+                        return xPos > yPos ? [from[0] - xPos, from[1] + yPos, turn] : [from[0] - xLengthToHit, from[1] + yPos, turn];
+                    case "posEdge":
+                        turn = xLengthToHit - Math.floor(xLengthToHit) < 0.5 ? 180 * (Math.PI/180) : -90 * (Math.PI/180);
+                        return xPos > yPos ? [from[0] - xPos, from[1] - xLengthToHit, turn] : [from[0] - xPos, from[1] - yPos, turn];
+                    case "negEdge":
+                        turn = 135 * (Math.PI/180);
+                        break;
+                }
+                return [from[0] + xPos, from[1] + yPos, turn];
         }
     }
 
