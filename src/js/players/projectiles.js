@@ -75,27 +75,17 @@ class Projectiles {
             let speed = intersects[0].distance * speedPerTile;
             let tileMap = sceneState.shipMap[sceneState.floor];
             let solidObstacle = this.calculateSolidObstacle(from, target, speedPerTile, tileMap);
+            let projectileLife = this.getProjectileLife(intersects, from, target, speedPerTile, tileMap);
             tl.startTime = performance.now();
+            tl.timeOfHit = tl.startTime + speed;
             tl.to(projectileGroup.position, speed, {
                 x: targetPos[0],
                 y: targetPos[1],
                 ease: Linear.easeNone,
-                onUpdate: () => {
-                    if(tl.startTime + solidObstacle.timeOfHit < performance.now()) { // Solid obstacle hit!
-                        tl.progress(1);
-                        tl.kill(); // Stop animation
-                        // Create blast sparks
-                        this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap, targetPos);
-                        // Delete objects and group
-                        scene.remove(line);
-                        scene.remove(meshInside);
-                        scene.remove(projectileGroup);
-                    }
-                },
                 onComplete: () => {
                     tl.progress(1);
                     // Create blast sparks
-                    this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap, targetPos);
+                    this.hitObstacle(solidObstacle, 'solid', scene, name, camera, tileMap, targetPos, projectileLife);
                     // Delete objects and group
                     scene.remove(line);
                     scene.remove(meshInside);
@@ -185,6 +175,68 @@ class Projectiles {
                 if(removeThis) scene.remove(removeThis);
             },4000); // Back up to cleanup the projectile (if the projectile goes into space or something else)
         }, 0); // Delay before the shot takes of (maybe needed, maybe not..)
+    }
+
+    getProjectileLife(intersects, from, target, speedPerTile, tileMap) {
+        let life = {
+            speed: speedPerTile * intersects[0].distance,
+            dir: 0,
+            turn: 0,
+        },
+        hitPos = [Math.round(intersects[0].point.x), Math.round(intersects[0].point.y)],
+        wallType;
+
+        // Check if the projectile travels on a straight line
+        if(from[0] === target[0] || from[1] === target[1]) {
+            // Straight
+            if(from[0] === target[0]) {
+                if(from[1] > target[1]) {
+                    life.dir = 0;
+                    life.turn = 90 * (Math.PI/180);
+                } else {
+                    life.dir = 4;
+                    life.turn = -90 * (Math.PI/180);
+                }
+            } else {
+                if(from[0] > target[0]) {
+                    life.dir = 2;
+                    life.turn = 0;
+                } else {
+                    life.dir = 6;
+                    life.turn = 180 * (Math.PI/180);
+                }
+            }
+        } else {
+            // Diagonal shot
+            if(from[1] > target[1] && from[0] > target[0]) {
+                life.dir = 1;
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
+                if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = "x"; } else
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
+                { wallType = "posEdge" }
+                switch(wallType) {
+                    case "y":
+                        life.turn = 0;
+                    case "x":
+                        life.turn = 90 * (Math.PI/180);
+                    case "posEdge":
+                        life.turn = 90 * (Math.PI/180);
+                    case "negEdge":
+                        life.turn = 45 * (Math.PI/180);
+                }
+            } else
+            if(from[1] < target[1] && from[0] > target[0]) {
+                life.dir = 3;
+            } else
+            if(from[1] < target[1] && from[0] < target[0]) {
+                life.dir = 5;
+            } else
+            if(from[1] > target[1] && from[0] < target[0]) {
+                life.dir = 7;
+            }
+        }
+
+        return life;
     }
 
     calculateSolidObstacle(from, target, speed, tileMap) {
@@ -381,7 +433,7 @@ class Projectiles {
         return tileMap[x][y].type === 2;
     }
 
-    hitObstacle(obstacle, type, scene, projectileName, camera, tileMap, targetPos) {
+    hitObstacle(obstacle, type, scene, projectileName, camera, tileMap, targetPos, projectileLife) {
         let pos = [targetPos[0], targetPos[1]],
             dir = obstacle.dir,
             posWOffset = [targetPos[0], targetPos[1]],
@@ -417,7 +469,7 @@ class Projectiles {
                 break;
         }
         if(type == 'solid') {
-            this.setBurnSpot(posWOffset, scene, obstacle, camera);
+            this.setBurnSpot(projectileLife, posWOffset, scene, camera);
             for(i=0; i<floorParticles; i++) {
                 (() => {
                     let sparkName = projectileName + "-" + i,
@@ -598,6 +650,7 @@ class Projectiles {
             hitObject = this.scene.getObjectByName(objectId).children[0];
         console.log("HITPIOS",hitTile,hitObject.matrixWorld);
         console.log("PPOSSSS", from, target, objectId);
+
         // let raycaster = new THREE.Raycaster();
 
         // let startPoint = new THREE.Vector3(from[0], from[1], 1);
@@ -699,14 +752,14 @@ class Projectiles {
         }
     }
 
-    setBurnSpot(posWOffset, scene, obstacle, camera) {
+    setBurnSpot(projectileLife, posWOffset, scene, camera) {
         let darkSpot1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.burnMarkTexture,transparent:true})),
             darkSpot2 = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone()),
             smoke1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.smokeTexture,transparent:true,opacity:((Math.random() * 2) + 1) / 10})),
             darkSpotGroup = new THREE.Group(),
             offsetRandomizer = Math.random() / 100,
-            offset1 = this.getBurnSpotOffset(obstacle.dir, "mark", offsetRandomizer),
-            offset2 = this.getBurnSpotOffset(obstacle.dir, "burn", offsetRandomizer),
+            offset1 = this.getBurnSpotOffset(projectileLife.dir, "mark", offsetRandomizer),
+            offset2 = this.getBurnSpotOffset(projectileLife.dir, "burn", offsetRandomizer),
             tl = new TimelineMax(),
             tlSmoke = new TimelineMax(),
             burnSize1 = Math.random() * 9,
@@ -724,7 +777,7 @@ class Projectiles {
         darkSpotGroup.add(darkSpot1);
         darkSpotGroup.add(darkSpot2);
         darkSpotGroup.position.set(posWOffset[0], posWOffset[1], 1);
-        darkSpotGroup.rotation.z = obstacle.hitMicroPos[2];
+        darkSpotGroup.rotation.z = projectileLife.turn;
         darkSpotGroup.children[0].position.x = offset1[0];
         darkSpotGroup.children[0].position.y = offset1[1];
         darkSpotGroup.children[1].position.x = offset2[0];
@@ -760,6 +813,7 @@ class Projectiles {
     }
 
     getBurnSpotOffset(dir, elem, randomizer) {
+        return [randomizer, randomizer];
         switch(dir) {
             case 1:
                 if(elem == "mark") return [0.1 + randomizer, 0.13 + randomizer];
