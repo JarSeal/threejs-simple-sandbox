@@ -17,12 +17,24 @@ class TileMapRoot {
                 curSecondaryState: null,
                 curSecondaryTarget: null,
             },
+            consequences: {
+                targetsPlayers: {},
+                targetsDoors: {},
+                hittersProjectiles: {},
+                hittersBeams: {},
+            },
             initTime: null,
             floor: 0,
             moduleData: [],
             moduleMap: [],
             tileMap: [],
             astarMap: [],
+            timeSpeed: 1,
+            particles: 0,
+            settings: {
+                maxSimultaneousParticles: 500,
+                useTransparency: true,
+            },
         };
         this.init();
     }

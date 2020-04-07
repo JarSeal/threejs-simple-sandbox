@@ -119,7 +119,7 @@ class PlayerController {
             // Moving straigth in an axis
             speed = player.speed * startEndMultiplier;
         }
-        player.curSpeed = speed;
+        player.curSpeed = speed * this.sceneState.timeSpeed;
         player.moveStart = performance.now();
         player.animatingPos = true;
         player.newPosSet = false;
@@ -135,7 +135,6 @@ class PlayerController {
             player.pos = realPosition.pos;
             player.mesh.position.x = realPosition.pos[0];
             player.mesh.position.y = realPosition.pos[1];
-            console.log('REAL POSITION', realPosition);
         }
         tl.to(player.mesh.position, player.curSpeed / 1000, {
             x: route[player.routeIndex].x,

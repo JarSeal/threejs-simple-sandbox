@@ -41,7 +41,8 @@ class Projectiles {
         //     'S'
         // );
 
-        let speedPerTile = 0.1, // in seconds
+        let speedPerTile = 0.1 * sceneState.timeSpeed, // in seconds
+            maxDistance = 10,
             raycaster = new THREE.Raycaster(),
             startPoint = new THREE.Vector3(from[0], from[1], 1),
             direction = new THREE.Vector3(),
@@ -51,46 +52,63 @@ class Projectiles {
         let intersects = raycaster.intersectObject(hitObject, true);
         let angle = 0,
             name = "projectileLaserViolet" + performance.now();
+        let speed = intersects[0].distance * speedPerTile;
+        let tileMap = sceneState.shipMap[sceneState.floor];
+        let targetPos = [];
+        let projectileLife = this.getProjectileLife(intersects, from, target, speedPerTile, tileMap);
         if(intersects.length) {
             //let helperLine = this.showProjectileHelper(startPoint, intersects, scene);
-            let targetPos = [intersects[0].point.x, intersects[0].point.y];
+            targetPos = [intersects[0].point.x, intersects[0].point.y];
             angle = calculateAngle(from, targetPos);
-            let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
-            meshInside.scale.set(0.35, 0.05, 1);
-            meshInside.name = name + "-inside";
-            let meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
-            meshOutside.scale.set(0.51, 0.21, 1);
-            meshOutside.position.set(0, 0, -0.01);
-            meshOutside.name = name + "-outside";
-            let projectileGroup = new THREE.Group();
-            projectileGroup.name = name + "-group";
-            projectileGroup.add(meshInside);
-            projectileGroup.add(meshOutside);
-            projectileGroup.rotation.z = angle + 1.5708;
-            projectileGroup.position.set(from[0], from[1], 1);
-            scene.add(projectileGroup);
-
-            let tl = new TimelineMax();
-            let speed = intersects[0].distance * speedPerTile;
-            let tileMap = sceneState.shipMap[sceneState.floor];
-            let projectileLife = this.getProjectileLife(intersects, from, target, speedPerTile, tileMap);
-            tl.startTime = performance.now();
-            tl.timeOfHit = tl.startTime + speed;
-            tl.to(projectileGroup.position, speed, {
-                x: targetPos[0],
-                y: targetPos[1],
-                ease: Linear.easeNone,
-                onComplete: () => {
-                    tl.progress(1);
-                    // Create blast sparks for solid obstacle
-                    this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
-                    // Delete objects and group
-                    scene.remove(meshInside);
-                    scene.remove(projectileGroup);
-                    // scene.remove(helperLine);
-                }
-            });
+        } else {
+            let xDist = Math.abs(target[0] - from[0]);
+            let yDist = Math.abs(target[1] - from[1]);
+            angle = calculateAngle(from, target);
+            if(xDist > yDist) {
+                ratio = yDist / xDist;
+                projectileLife.dir > 4 ? targetPos.push(from[0] + maxDistance) : targetPos.push(from[0] - maxDistance);
+            } else {
+                ratio = xDist / yDist;
+            }
+            targetPos = [];
         }
+        let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
+        meshInside.scale.set(0.35, 0.05, 1);
+        meshInside.name = name + "-inside";
+        let meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
+        meshOutside.scale.set(0.51, 0.21, 1);
+        meshOutside.position.set(0, 0, -0.01);
+        meshOutside.name = name + "-outside";
+        let projectileGroup = new THREE.Group();
+        projectileGroup.name = name + "-group";
+        projectileGroup.add(meshInside);
+        projectileGroup.add(meshOutside);
+        projectileGroup.rotation.z = angle + 1.5708;
+        projectileGroup.position.set(from[0], from[1], 1);
+        scene.add(projectileGroup);
+        let tl = new TimelineMax();
+        tl.startTime = performance.now();
+        tl.to(projectileGroup.position, speed, {
+            x: targetPos[0],
+            y: targetPos[1],
+            ease: Linear.easeNone,
+            onComplete: () => {
+                tl.progress(1);
+                // Create blast sparks for solid obstacle
+                this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
+                // Delete objects and group
+                scene.remove(meshInside);
+                scene.remove(projectileGroup);
+                // scene.remove(helperLine);
+            }
+        });
+    }
+
+    getProjectileRoute(from, target, speedPerTile, tileMap, distance) {
+        if(!distance) {
+            distance = Math.sqrt(Math.pow(Math.abs(from[0] - target[0]), 2) + Math.pow(Math.abs(from[1] - target[1]), 2));
+        }
+        
     }
 
     getProjectileLife(intersects, from, target, speedPerTile, tileMap) {
@@ -100,6 +118,8 @@ class Projectiles {
             turn: 0,
             xOffset: 0,
             yOffset: 0,
+            route: this.getProjectileRoute(from, target, speedPerTile, tileMap, intersects[0].distance),
+            special: false,
         },
         hitPos = [Math.round(intersects[0].point.x), Math.round(intersects[0].point.y)],
         wallType,
@@ -153,6 +173,7 @@ class Projectiles {
                         } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
                             life.turn = 0;
                             life.xOffset = defaultOffset;
+                            life.special = true;
                             break;
                         } else {
                             life.turn = this.preCountedTurns.ninety;
@@ -186,6 +207,7 @@ class Projectiles {
                         } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
                             life.turn = 0;
                             life.xOffset = defaultOffset;
+                            life.special = true;
                             break;
                         } else {
                             life.turn = -this.preCountedTurns.ninety;
@@ -219,6 +241,7 @@ class Projectiles {
                         } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
                             life.turn = this.preCountedTurns.hundredEighty;
                             life.xOffset = -defaultOffset;
+                            life.special = true;
                             break;
                         } else {
                             life.turn = -this.preCountedTurns.ninety;
@@ -252,6 +275,7 @@ class Projectiles {
                         } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
                             life.turn = this.preCountedTurns.hundredEighty;
                             life.xOffset = -defaultOffset;
+                            life.special = true;
                             break;
                         } else {
                             life.turn = this.preCountedTurns.ninety;
@@ -297,8 +321,8 @@ class Projectiles {
                     scene.add(spark);
                     let tl = new TimelineMax(),
                         lifeSpan = this._randomFloatInBetween(0.1, 1.2),
-                        newX = posWOffset[0] + this.random2dAmount(dir, 'x', tileMap, pos),
-                        newY = posWOffset[1] + this.random2dAmount(dir, 'y', tileMap, pos);
+                        newX = posWOffset[0] + this.random2dAmount(dir, 'x', tileMap, pos, projectileLife.special),
+                        newY = posWOffset[1] + this.random2dAmount(dir, 'y', tileMap, pos, projectileLife.special);
                     tl.to(scene.getObjectByName(sparkName).position, lifeSpan, {x: newX, y: newY})
                       .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: this.sparkSize, ease: Bounce.easeOut}, "-="+lifeSpan)
                       .to(startColor, lifeSpan / 4, {color:"#ffff00", onUpdate: () => {
@@ -322,8 +346,8 @@ class Projectiles {
                 (() => {
                     let tl = new TimelineMax(),
                         lifeSpan = this._randomFloatInBetween(0.1, 0.2),
-                        newX = posWOffset[0] + this.random2dAmount(dir, 'x', tileMap, pos),
-                        newY = posWOffset[1] + this.random2dAmount(dir, 'y', tileMap, pos),
+                        newX = posWOffset[0] + this.random2dAmount(dir, 'x', tileMap, pos, projectileLife.special),
+                        newY = posWOffset[1] + this.random2dAmount(dir, 'y', tileMap, pos, projectileLife.special),
                         newZ = this._randomFloatInBetween(0.8, 1.6),
                         streakGeo = new THREE.Geometry();
                     streakGeo.vertices.push(
@@ -367,7 +391,7 @@ class Projectiles {
         return Math.floor(Math.random() * (max - min + 1) + min) / 10;
     }
 
-    random2dAmount(dir, axis, tileMap, hitPos) {
+    random2dAmount(dir, axis, tileMap, hitPos, special) {
         let min = 0.4,
             max = 1.6,
             amount = this._randomFloatInBetween(min, max);
@@ -381,7 +405,7 @@ class Projectiles {
                 if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) {
                     return amount;
                 } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) {
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) || special) {
                     if(axis == 'y') {
                         return Math.round(Math.random() * 10) < 9 ? -amount : amount;
                     }
@@ -402,7 +426,7 @@ class Projectiles {
                     if(axis == 'y') { return -amount; }
                     return amount;
                 } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) {
+                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) || special) {
                     if(axis == 'y') {
                         return Math.round(Math.random() * 10) < 9 ? amount : -amount;
                     }
@@ -422,7 +446,7 @@ class Projectiles {
                 if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) {
                     return -amount;
                 } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) {
+                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) || special) {
                     if(axis == 'y') {
                         return Math.round(Math.random() * 10) < 9 ? amount : -amount;
                     }
@@ -443,7 +467,7 @@ class Projectiles {
                     if(axis == 'y') { return amount; }
                     return -amount;
                 } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) {
+                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) || special) {
                     if(axis == 'y') {
                         return Math.round(Math.random() * 10) < 9 ? -amount : amount;
                     }
