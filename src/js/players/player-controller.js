@@ -20,7 +20,8 @@ class PlayerController {
     createHero(sceneState, scene) {
         let hero = getPlayer();
         sceneState.players.hero = hero;
-        sceneState.players.hero.pos = [34,29,0];
+        sceneState.players.hero.pos = [35,43,0];
+        sceneState.players.hero.microPos = [35,43,0];
         let group = new THREE.Group();
 
         let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
@@ -118,7 +119,7 @@ class PlayerController {
             // Moving straigth in an axis
             speed = player.speed * startEndMultiplier;
         }
-        player.curSpeed = speed;
+        player.curSpeed = speed * this.sceneState.timeSpeed;
         player.moveStart = performance.now();
         player.animatingPos = true;
         player.newPosSet = false;
@@ -134,20 +135,21 @@ class PlayerController {
             player.pos = realPosition.pos;
             player.mesh.position.x = realPosition.pos[0];
             player.mesh.position.y = realPosition.pos[1];
-            console.log('REAL POSITION', realPosition);
         }
         tl.to(player.mesh.position, player.curSpeed / 1000, {
             x: route[player.routeIndex].x,
             y: route[player.routeIndex].y,
             ease: ease,
             onUpdate: () => {
+                player.microPos = [player.mesh.position.x, player.mesh.position.y, player.pos[2]];
                 if(!player.newPosSet && player.newPosTimestamp < performance.now()) {
-                    player.pos = [route[player.routeIndex].x, route[player.routeIndex].y];
+                    player.pos = [route[player.routeIndex].x, route[player.routeIndex].y, player.pos[2]];
                     player.newPosSet = true;
                 }
             },
             onComplete: () => {
-                player.pos = [route[player.routeIndex].x, route[player.routeIndex].y];
+                player.pos = [route[player.routeIndex].x, route[player.routeIndex].y, player.pos[2]];
+                player.microPos = player.pos;
                 player.moveStart = null;
                 if(player.newRoute.length) {
                     player.route = player.newRoute.slice(0);
@@ -186,7 +188,7 @@ class PlayerController {
                 eta = route[i].arriving + route[0].startTimeLocal;
                 if(eta < now) {
                     curIndex = i;
-                    curPos = [route[i].x, route[i].y];
+                    curPos = [route[i].x, route[i].y, this.sceneState.players.hero.pos[2]];
                 }
             }
         }

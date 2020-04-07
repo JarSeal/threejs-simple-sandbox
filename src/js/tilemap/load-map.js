@@ -25,15 +25,28 @@ class LoadTileMap {
             turn;
         
         this.ship = this.createTileMap(rawShip, this.mapLengths, floor);
-        console.log('THESHIP',this.ship);
         this.createClickableTiles(scene);
         sceneState.moduleMap = rawShip;
         sceneState.shipMap = this.ship;
         sceneState.astarMap = this.createAstarMap(this.ship, sceneState);
 
         // Create modulesLoader (loads the 3D assets)
+        let groups = {},
+            distinctModuleIds = [];
         for(m=0; m<modulesLength; m++) {
             turn = modules[m].turn || 0;
+            let moduleFound = false,
+                moduleId = "m" + modules[m].module[0] + "l" + modules[m].level;
+            for(let d=0; d<distinctModuleIds.length; d++) {
+                if(distinctModuleIds[d] == moduleId) {
+                    moduleFound = true;
+                    break;
+                }
+            }
+            if(!moduleFound) {
+                groups[moduleId] = new THREE.Group();
+                distinctModuleIds.push(moduleId);
+            }
             let modulePart = Object.assign(
                 {},
                 {
@@ -84,154 +97,38 @@ class LoadTileMap {
                         if(module.turn !== 0) {
                             object.rotation.y = deg90 * module.turn;
                         }
-                        // let clonedMaterial = object.children[0].material.clone();
-                        // object.children[0].material = clonedMaterial;  // Makes materials unique
                         object.position.y = module.pos[0] + module.aligners[module.turn][0];
                         object.position.x = module.pos[1] + module.aligners[module.turn][1];
                         object.userData.moduleType = module.type;
                         object.userData.moduleIndex = module.index;
                         let geometry = object.children[0].geometry;
                         let uvs = geometry.attributes.uv.array;
-                        geometry.addAttribute( 'uv2', new THREE.BufferAttribute( uvs, 2 ) );
+                        geometry.addAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
 
-                        let moduleGroup = new THREE.Group();
-                        moduleGroup.name = 'module-' + module.module + '-l' + module.level + '-i' + module.index;
-                        moduleGroup.add(object);
+                        // let moduleGroup = new THREE.Group();
+                        // moduleGroup.name = self.createObjectId(module.module, module.level, module.index);
+                        // moduleGroup.add(object);
+                        
+                        object.name = self.createObjectId(module.module, module.level, module.index, module.part);
+                        groups["m" + module.module + "l" + module.level].add(object);
 
-                        // let lights = self.addLights(module, objLoader, loader, loaders, checkIfAllLoaded, sceneState);
-                        // moduleGroup.add(lights);
-
-                        self.sceneState.moduleData.push(Object.assign(
-                            {},
-                            module,
-                            {mesh: moduleGroup}
-                        ));
-                        scene.add(moduleGroup);
                         if(loaders.modulesLength == loader + 1) {
                             // Last module loaded
                             loaders.modulesLoaded = true;
                             checkIfAllLoaded(loaders, sceneState);
-                        }
-                    });
-                });
-                
-                return;
-                new Promise((resolve) => {
-                    mtlLoader.setMaterialOptions({color:0xff0000});
-                    mtlLoader.load(module.models[module.part].mtlFile, (materials) => {
-                        materials.preload();
-                        console.log("testing", module.part,materials);
-                        materials.materials[module.models[module.part].mtlId].lightMap = new THREE.TextureLoader().load( "/images/objects/"+module.models[module.part].lightMap, () => {
-                            resolve(materials);
-                        });
-                    });
-                })
-                .then((materials) => {
-
-                    materials.materials[module.models[module.part].mtlId].lightMapIntensity = 2;
-                    materials.materials[module.models[module.part].mtlId].lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-
-                    materials.materials[module.models[module.part].mtlId].shininess = 10;
-                    materials.materials[module.models[module.part].mtlId].bumpScale = 0.145;
-                    materials.materials[module.models[module.part].mtlId].bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                    materials.materials[module.models[module.part].mtlId].map.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                    objLoader.setMaterials(materials);
-                    objLoader.load(module.models[module.part].objFile, (object) => {
-                        let deg90 = 1.5708;
-                        object.rotation.x = deg90;
-                        if(module.turn !== 0) {
-                            object.rotation.y = deg90 * module.turn;
-                        }
-                        // let clonedMaterial = object.children[0].material.clone();
-                        // object.children[0].material = clonedMaterial;  // Makes materials unique
-                        object.position.y = module.pos[0] + module.aligners[module.turn][0];
-                        object.position.x = module.pos[1] + module.aligners[module.turn][1];
-                        object.userData.moduleType = module.type;
-                        object.userData.moduleIndex = module.index;
-                        let geometry = object.children[0].geometry;
-                        let uvs = geometry.attributes.uv.array;
-                        geometry.addAttribute( 'uv2', new THREE.BufferAttribute( uvs, 2 ) );
-
-                        let moduleGroup = new THREE.Group();
-                        moduleGroup.name = 'module-' + module.module + '-l' + module.level + '-i' + module.index;
-                        moduleGroup.add(object);
-
-                        // let lights = self.addLights(module, objLoader, loader, loaders, checkIfAllLoaded, sceneState);
-                        // moduleGroup.add(lights);
-
-                        self.sceneState.moduleData.push(Object.assign(
-                            {},
-                            module,
-                            {mesh: moduleGroup}
-                        ));
-                        scene.add(moduleGroup);
-                        if(loaders.modulesLength == loader + 1) {
-                            // Last module loaded
-                            loaders.modulesLoaded = true;
-                            checkIfAllLoaded(loaders, sceneState);
+                            let levelPropsGroup = new THREE.Group();
+                            levelPropsGroup.name = "level-props";
+                            for(var prop in groups) {
+                                if(Object.prototype.hasOwnProperty.call(groups, prop)) {
+                                    levelPropsGroup.add(groups[prop]);
+                                }
+                            }
+                            scene.add(levelPropsGroup);
                         }
                     });
                 });
             })(this, modulesLoader[loader], loader, this.loaders, this.checkIfAllLoaded, this.sceneState);
         }
-    }
-
-    addLights(module, objLoader, loaderIndex, loaders, checkIfAllLoaded, sceneState) {
-        let propLights = module.lights,
-            propTypes = {};
-        for(let i=0; i<propLights.length; i++) {
-            propTypes[propLights[i].type] = true;
-        }
-
-        let lightPropsGroup = new THREE.Group();
-
-        if(propTypes.capsule) {
-            objLoader.load("light-capsule.obj", (object) => {
-                let deg90 = 1.5708,
-                    newObject,geometry,material,mesh,glowMesh,outsideUniforms,insideUniforms,turn;
-                for(let i=0; i<propLights.length; i++) {
-                    newObject = object.clone();
-                    material = new THREE.MeshLambertMaterial({color: propLights[i].color, emissive: propLights[i].color});
-                    if(propLights[i].glow) {
-                        geometry = new THREE.Geometry().fromBufferGeometry(newObject.children[0].geometry);
-                        geometry.mergeVertices();
-                        mesh = new THREE.Mesh(geometry, material);
-                        if(module.turn == 1 || module.turn == 3) { mesh.rotation.z = deg90; }
-                        mesh.position.y = module.pos[0] + propLights[i].aligners[module.turn][0];
-                        mesh.position.x = module.pos[1] + propLights[i].aligners[module.turn][1];
-                        mesh.position.z = propLights[i].z;
-                        glowMesh = new THREE.glowShader.GeometricGlowMesh(mesh);
-                        mesh.add(glowMesh.object3d);
-                        outsideUniforms	= glowMesh.outsideMesh.material.uniforms;
-                        outsideUniforms.glowColor.value.set(propLights[i].color);
-                        outsideUniforms.coeficient.value = (0.0005);
-                        outsideUniforms.power.value = (6.4);
-                        insideUniforms	= glowMesh.insideMesh.material.uniforms;
-                        insideUniforms.glowColor.value.set(propLights[i].color);
-                    } else {
-                        mesh = new THREE.Mesh(object.children[0].geometry, material);
-                        propLights[i].turn ? turn = deg90 : turn = 0;
-                        if(module.turn == 1 || module.turn == 3) {
-                            mesh.rotation.z = deg90 + turn;
-                        } else {
-                            mesh.rotation.z = turn;
-                        }
-                        mesh.position.y = module.pos[0] + propLights[i].aligners[module.turn][0];
-                        mesh.position.x = module.pos[1] + propLights[i].aligners[module.turn][1];
-                        mesh.position.z = propLights[i].z;
-                    }
-                    mesh.name = 'proplight-capsule-' + module.module + '-l' + module.level + '-i' + module.index;
-                    lightPropsGroup.add(mesh);
-                    if(loaders.modulesLength == loaderIndex + 1 &&
-                       propLights.length == i + 1) {
-                        loaders.propLightsLoaded = true;
-                        checkIfAllLoaded(loaders, sceneState);
-                    }
-                }
-            });
-        }
-
-        return lightPropsGroup;
     }
 
     checkIfAllLoaded(loaders, sceneState) {
@@ -271,6 +168,7 @@ class LoadTileMap {
                                 absolutePos: [x,y],
                                 relativePos: [curX,curY],
                                 name: curModuleData.name,
+                                objectId: this.createObjectId(curModule.module[0], curModule.level, curModule.module[1]),
                             }},
                             curModuleData.tilemap[curY][curX]
                         );
@@ -293,6 +191,10 @@ class LoadTileMap {
             }
         }
         return [thisFloor];
+    }
+
+    createObjectId(moduleId, level, moduleIndex, modulePart) {
+        return 'module-' + moduleId + '-l' + level + '-i' + moduleIndex + "-" + (modulePart || "interior");
     }
 
     createClickableTiles(scene) {

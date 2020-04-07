@@ -21,7 +21,7 @@ class TileMapCamera {
         this.backPlane;
         this.stars = [];
         this.starMaterials = [];
-        this.projectiles = new Projectiles();
+        this.projectiles = new Projectiles(scene);
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.init(scene);
@@ -319,16 +319,9 @@ class TileMapCamera {
                     this.sceneState.players.hero.newRoute = resultRoute;
                 }
             } else if(this.sceneState.ui.curSecondaryState) {
-                // let newShotMaterial = new THREE.Sprite(this.guns[0].material.clone()),
-                //     newShot = new THREE.Group();
-                // newShotMaterial.scale.set(1, 0.22, 1);
-                // newShot.add(newShotMaterial);
-                // newShot.rotation.z = this.sceneState.players.hero.mesh.rotation.z;
-                // newShot.position.set(this.sceneState.players.hero.pos[0], this.sceneState.players.hero.pos[1], 1);
-                // this.scene.add(newShot);
-
                 this.sceneState.ui.curSecondaryState = null;
                 this.sceneState.ui.curSecondaryTarget = [dx,dy];
+
                 // Add tile click marker and animate it
                 tile = this.scene.tileClick.oneTarget;
                 tile.position.x = dx;
@@ -338,11 +331,12 @@ class TileMapCamera {
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
                 
                 this.projectiles.shootProjectile(
-                    this.sceneState.players.hero.pos,
+                    this.sceneState.players.hero.microPos,
                     this.sceneState.ui.curSecondaryTarget,
                     this.scene,
                     this.sceneState,
-                    this.AppUiLayer
+                    this.AppUiLayer,
+                    this.camera
                 );
             }
         }
