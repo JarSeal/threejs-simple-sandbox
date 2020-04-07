@@ -41,7 +41,7 @@ class Projectiles {
         //     'S'
         // );
 
-        let speedPerTile = 0.1 * sceneState.timeSpeed, // in seconds
+        let speedPerTile = 0.085 * sceneState.timeSpeed, // in seconds
             maxDistance = 10,
             raycaster = new THREE.Raycaster(),
             startPoint = new THREE.Vector3(from[0], from[1], 1),
