@@ -190,10 +190,12 @@ class CombatView {
                         appElem.appendChild(this.listParentElem);
                         appElem.insertAdjacentHTML('afterbegin',
                             '<div id="settings-modal">'+
+                                '<button id="settings-modal-close"></button>'+
                                 '<div class="modal-content">Sisältöä'+
                                 '</div>'+
                             '</div>'
-                        )
+                        );
+                        document.getElementById("settings-modal-close").onclick = this.toggleSettings;
                     },
                 }
             ];
