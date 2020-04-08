@@ -170,11 +170,11 @@ class CombatView {
                         this.listParentElem.appendChild(this.listUlElem);
                         appElem.appendChild(this.listParentElem);
                     },
-                    toggleSettings: (e) => {
+                    toggleSettings: (e, settingsTemplate) => {
                         e.stopPropagation();
                         if(this.settingsOpen === undefined) this.settingsOpen = true;
                         this.settingsOpen = !this.settingsOpen;
-                        console.log("TOGGLING");
+                        settingsTemplate();
                         if(this.settingsOpen) {
                             document.getElementById('settings-modal').classList.remove("settings-modal--open");
                         } else {
@@ -185,17 +185,63 @@ class CombatView {
                         let appElem = document.getElementById("mainApp"),
                             settingsButton = document.createElement("div");
                         settingsButton.setAttribute("id", "settings-button");
-                        settingsButton.onclick = this.toggleSettings;
+                        settingsButton.onclick = (e) => {this.toggleSettings(e, this.createSettingsTemplate);};
                         this.listParentElem.appendChild(settingsButton);
                         appElem.appendChild(this.listParentElem);
                         appElem.insertAdjacentHTML('afterbegin',
                             '<div id="settings-modal">'+
                                 '<button id="settings-modal-close"></button>'+
-                                '<div class="modal-content">Sisältöä'+
-                                '</div>'+
+                                '<div class="modal-content" id="settings-modal-content"></div>'+
                             '</div>'
                         );
-                        document.getElementById("settings-modal-close").onclick = this.toggleSettings;
+                        document.getElementById("settings-modal-close").onclick = (e) => {this.toggleSettings(e, this.createSettingsTemplate);};
+                    },
+                    createSettingsTemplate: () => {
+                        let modalContent = document.getElementById("settings-modal-content");
+                        let dropDownMaxParticlesClick = (e) => {
+                            let value = 0,
+                                dropDownElem = document.getElementById("select-max-particles");
+                            if(e.target.className != "drop-down__selected") {
+                                value = parseInt(e.target.outerText);
+                                dropDownElem.firstElementChild.innerHTML = value;
+                                this.sceneState.settings.maxSimultaneousParticles = value;
+                            }
+                            if(this.dropDownOpen === undefined) this.dropDownOpen = false;
+                            this.dropDownOpen = !this.dropDownOpen;
+                            if(this.dropDownOpen) {
+                                dropDownElem.classList.remove("drop-down--open");
+                            } else {
+                                dropDownElem.classList.add("drop-down--open");
+                            }
+                        };
+                        if(this.templateCreated === undefined) this.templateCreated = false;
+                        if(this.templateCreated) {
+                            // Remove template and listeners
+                            let maxParticleDropDown = document.getElementById("select-max-particles");
+                            maxParticleDropDown.removeEventListener("click", dropDownMaxParticlesClick);
+                            modalContent.innerHTML = "";
+                        } else {
+                            // Add template and listeners
+                            modalContent.insertAdjacentHTML('afterbegin',
+                                '<ul class="settings-list">'+
+                                    '<li class="sl-item">'+
+                                        '<div class="sl-label">'+
+                                            '<h3>Max particles:</h3>'+
+                                            '<ul class="drop-down" id="select-max-particles">'+
+                                                '<li class="drop-down__selected">'+this.sceneState.settings.maxSimultaneousParticles+'</li>'+
+                                                '<li>20</li>'+
+                                                '<li>100</li>'+
+                                                '<li>500</li>'+
+                                                '<li>1000</li>'+
+                                            '</ul>'+
+                                        '</div>'+
+                                    '</li>'+
+                                '</ul>'
+                            );
+                            let maxParticleDropDown = document.getElementById("select-max-particles");
+                            maxParticleDropDown.addEventListener("click", dropDownMaxParticlesClick);
+                        }
+                        this.templateCreated = !this.templateCreated;
                     },
                 }
             ];
