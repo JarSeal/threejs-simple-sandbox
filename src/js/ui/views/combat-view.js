@@ -123,6 +123,7 @@ class CombatView {
                             removeThese = [];
                         if(!this.created) {
                             this.createLogList();
+                            this.createSettings();
                             this.created = true;
                         }
                         for(i=0; i<logListLength; i++) {
@@ -168,6 +169,31 @@ class CombatView {
                         this.listParentElem.appendChild(toggleButton);
                         this.listParentElem.appendChild(this.listUlElem);
                         appElem.appendChild(this.listParentElem);
+                    },
+                    toggleSettings: (e) => {
+                        e.stopPropagation();
+                        if(this.settingsOpen === undefined) this.settingsOpen = true;
+                        this.settingsOpen = !this.settingsOpen;
+                        console.log("TOGGLING");
+                        if(this.settingsOpen) {
+                            document.getElementById('settings-modal').classList.remove("settings-modal--open");
+                        } else {
+                            document.getElementById('settings-modal').classList.add("settings-modal--open");
+                        }
+                    },
+                    createSettings: function() {
+                        let appElem = document.getElementById("mainApp"),
+                            settingsButton = document.createElement("div");
+                        settingsButton.setAttribute("id", "settings-button");
+                        settingsButton.onclick = this.toggleSettings;
+                        this.listParentElem.appendChild(settingsButton);
+                        appElem.appendChild(this.listParentElem);
+                        appElem.insertAdjacentHTML('afterbegin',
+                            '<div id="settings-modal">'+
+                                '<div class="modal-content">Sisältöä'+
+                                '</div>'+
+                            '</div>'
+                        )
                     },
                 }
             ];

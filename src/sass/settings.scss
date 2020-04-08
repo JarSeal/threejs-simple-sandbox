@@ -1,0 +1,22 @@
+#settings-button {
+    display: block;
+    width: 36px;
+    height: 36px;
+    background: #999;
+    cursor: pointer;
+    position: absolute;
+    top: 14px;
+    right: 7px;
+    border-radius: 50%;
+}
+
+#settings-modal {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    z-index: 200;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #fff;
+}
