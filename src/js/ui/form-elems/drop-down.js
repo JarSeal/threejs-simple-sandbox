@@ -38,7 +38,7 @@ class DropDown {
     }
 
     getId() {
-        return 'select-max-particles-' + this.key;
+        return 'drop-down-' + this.key;
     }
 
     render() {

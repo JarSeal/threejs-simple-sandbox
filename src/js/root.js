@@ -36,6 +36,10 @@ class TileMapRoot {
                 maxSimultaneousParticles: 500,
                 useTransparency: true,
             },
+            defaultSettings: {
+                maxSimultaneousParticles: 500,
+                useTransparency: true,
+            },
             localStorage: new LStorage(),
         };
         this.init();

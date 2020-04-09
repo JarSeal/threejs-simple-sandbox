@@ -1,4 +1,5 @@
 import DropDown from "../form-elems/drop-down.js";
+import OnOff from "../form-elems/on-off.js";
 
 class CombatView {
     constructor(sceneState) {
@@ -171,23 +172,29 @@ class CombatView {
                         this.listParentElem.appendChild(this.listUlElem);
                         appElem.appendChild(this.listParentElem);
                     },
-                    toggleSettings: (e, settingsTemplate, settingsUI) => {
+                    toggleSettings: (e, settingsTemplate, settingsUI, resetSettings, toggleSettings) => {
                         e.stopPropagation();
                         if(this.settingsOpen === undefined) this.settingsOpen = true;
                         this.settingsOpen = !this.settingsOpen;
-                        settingsTemplate(settingsUI);
+                        if(settingsTemplate !== undefined) {
+                            settingsTemplate(settingsUI, resetSettings, toggleSettings);
+                        }
                         if(this.settingsOpen) {
                             document.getElementById('settings-modal').classList.remove("settings-modal--open");
                         } else {
                             document.getElementById('settings-modal').classList.add("settings-modal--open");
                         }
                     },
+                    resetSettings: (e) => {
+                        let defaults = this.sceneState.defaultSettings;
+                        this.sceneState.settings = Object.assign({}, defaults);
+                    },
                     settingsUI: {},
                     createSettings: function() {
                         let appElem = document.getElementById("mainApp"),
                             settingsButton = document.createElement("div");
                         settingsButton.setAttribute("id", "settings-button");
-                        settingsButton.onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI);};
+                        settingsButton.onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings, this.toggleSettings);};
                         this.listParentElem.appendChild(settingsButton);
                         appElem.appendChild(this.listParentElem);
                         appElem.insertAdjacentHTML('afterbegin',
@@ -196,16 +203,19 @@ class CombatView {
                                 '<div class="modal-content" id="settings-modal-content"></div>'+
                             '</div>'
                         );
-                        document.getElementById("settings-modal-close").onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI);};
+                        document.getElementById("settings-modal-close").onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings);};
                     },
-                    settingsTemplate: (settingsUI) => {
+                    settingsTemplate: (settingsUI, resetSettings, toggleSettings) => {
                         let modalContent = document.getElementById("settings-modal-content");
+                        let removeTemplate = () => {
+                            settingsUI.maxParticles.removeListeners();
+                            settingsUI.useTransparency.removeListeners();
+                            settingsUI = {};
+                            modalContent.innerHTML = "";
+                        };
                         if(this.templateCreated === undefined) this.templateCreated = false;
                         if(this.templateCreated) {
-                            // Remove template and listeners
-                            settingsUI.maxParticles.removeListeners();
-                            settingsUI.maxParticles = null;
-                            modalContent.innerHTML = "";
+                            removeTemplate();
                         } else {
                             // Add template
                             settingsUI.maxParticles = new DropDown(this.sceneState, "maxSimultaneousParticles", "int", [
@@ -215,6 +225,7 @@ class CombatView {
                                 {title: "500", value: 500},
                                 {title: "1000", value: 1000},
                             ]);
+                            settingsUI.useTransparency = new OnOff(this.sceneState, "useTransparency");
                             modalContent.insertAdjacentHTML('afterbegin',
                                 '<ul class="settings-list">'+
                                     '<li class="sl-item">'+
@@ -223,9 +234,31 @@ class CombatView {
                                             settingsUI.maxParticles.render() +
                                         '</div>'+
                                     '</li>'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Use transparency:</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.useTransparency.render() +
+                                        '</div>'+
+                                    '</li>'+
+
+                                    '<li class="sl-item sl-item--empty"></li>'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Reset to default:</h3>'+
+                                        '<div class="sl-setting">'+
+                                            '<button class="settings-button" id="reset-to-default">Reset</button>'+
+                                        '</div>'+
+                                    '</li>'+
                                 '</ul>'
                             );
                             settingsUI.maxParticles.addListeners();
+                            settingsUI.useTransparency.addListeners();
+                            
+                            document.getElementById("reset-to-default").addEventListener("click", (e) => {
+                                resetSettings(e);
+                                removeTemplate();
+                                toggleSettings(e);
+                                this.templateCreated = false;
+                            });
                         }
                         this.templateCreated = !this.templateCreated;
                     },
