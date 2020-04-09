@@ -32,10 +32,7 @@ class TileMapRoot {
             astarMap: [],
             timeSpeed: 1,
             particles: 0,
-            settings: {
-                maxSimultaneousParticles: 500,
-                useTransparency: true,
-            },
+            settings: {},
             defaultSettings: {
                 maxSimultaneousParticles: 500,
                 useTransparency: true,
@@ -118,9 +115,10 @@ class TileMapRoot {
 
     getLocalSettingsData() {
         // Get settings data from local storage
-        let settings = this.sceneState.settings;
+        let settings = this.sceneState.settings,
+            defaults = this.sceneState.defaultSettings;
         for (var key in settings) {
-            let lsValue = this.sceneState.localStorage.getItem(key, settings[key]),
+            let lsValue = this.sceneState.localStorage.getItem(key, defaults[key]),
                 curVal = this.sceneState.settings[key];
             if(typeof curVal == 'number') {
                 lsValue = parseInt(lsValue);
