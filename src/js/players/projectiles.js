@@ -1,8 +1,9 @@
 import { calculateAngle } from "../util";
 
 class Projectiles {
-    constructor(scene) {
+    constructor(scene, sceneState) {
         this.scene = scene;
+        this.sceneState = sceneState;
         this.projectileGeoInside = new THREE.PlaneBufferGeometry();
         this.projectileGeoOutside = new THREE.PlaneBufferGeometry();
         this.projectileMatInside = new THREE.MeshBasicMaterial({
@@ -72,20 +73,28 @@ class Projectiles {
             }
             targetPos = [];
         }
+        let particles = 0;
         let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
         meshInside.scale.set(0.35, 0.05, 1);
         meshInside.name = name + "-inside";
-        let meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
-        meshOutside.scale.set(0.51, 0.21, 1);
-        meshOutside.position.set(0, 0, -0.01);
-        meshOutside.name = name + "-outside";
         let projectileGroup = new THREE.Group();
         projectileGroup.name = name + "-group";
         projectileGroup.add(meshInside);
-        projectileGroup.add(meshOutside);
+        particles++;
+
+        let meshOutside = null;
+        if(this.sceneState.settings.useTransparency) {
+            meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
+            meshOutside.scale.set(0.51, 0.21, 1);
+            meshOutside.position.set(0, 0, -0.01);
+            meshOutside.name = name + "-outside";
+            projectileGroup.add(meshOutside);
+            particles++;
+        }
         projectileGroup.rotation.z = angle + 1.5708;
         projectileGroup.position.set(from[0], from[1], 1);
         scene.add(projectileGroup);
+        this.sceneState.particles += particles; // ADD PARTICLE(S)
         let tl = new TimelineMax();
         tl.startTime = performance.now();
         tl.to(projectileGroup.position, speed, {
@@ -98,7 +107,9 @@ class Projectiles {
                 this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
                 // Delete objects and group
                 scene.remove(meshInside);
+                scene.remove(meshOutside);
                 scene.remove(projectileGroup);
+                this.sceneState.particles -= particles; // ADD PARTICLE(S)
                 // scene.remove(helperLine);
             }
         });
@@ -303,11 +314,19 @@ class Projectiles {
         let pos = [targetPos[0], targetPos[1]],
             dir = projectileLife.dir,
             posWOffset = [targetPos[0] + projectileLife.xOffset, targetPos[1] + projectileLife.yOffset],
-            minFloorParticles = 6,
+            minFloorParticles = 3,
             maxFloorParticles = 20,
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles),
             i = 0,
-            streaks = this._randomIntInBetween(2, 6);
+            streaks = this._randomIntInBetween(2, 6),
+            particles = floorParticles + streaks,
+            maxParticles = this.sceneState.settings.maxSimultaneousParticles,
+            curParticles = this.sceneState.particles;
+            if(curParticles + particles > maxParticles) {
+                floorParticles = maxParticles - curParticles;
+                streaks = 0;
+            }
+            this.sceneState.particles += floorParticles + streaks;
         if(type == 'solid') {
             this.setBurnSpot(projectileLife, posWOffset, scene, camera);
             for(i=0; i<floorParticles; i++) {
@@ -339,6 +358,7 @@ class Projectiles {
                             removeThis.material.dispose();
                             scene.remove(removeThis);
                         }
+                        this.sceneState.particles--;
                     }, lifeSpan * 1000 * 2);
                 })();
             }
@@ -375,6 +395,7 @@ class Projectiles {
                             streak.geometry.dispose();
                             streak.material.dispose();
                             scene.remove(streak);
+                            this.sceneState.particles--;
                         }
                     }, "-="+lifeSpan/1.2);
                 })();
@@ -507,6 +528,7 @@ class Projectiles {
         darkSpot2.rotation.set(1.5708/2, 1.5708, 0);
         darkSpotGroup.add(projectileLife.dir === 0 ? darkSpot2 : darkSpot1);
         darkSpotGroup.add(projectileLife.dir === 0 ? darkSpot1 : darkSpot2);
+        this.sceneState.particles += 2;
         darkSpotGroup.position.set(posWOffset[0], posWOffset[1], 1);
         darkSpotGroup.rotation.z = projectileLife.turn;
         darkSpotGroup.children[0].position.x = offset1[0];
@@ -517,6 +539,7 @@ class Projectiles {
         smoke1.scale.set(0.3,5,1);
         smoke1.quaternion.copy(camera.quaternion);
         smoke1.position.set(posWOffset[0], posWOffset[1], 1);
+        this.sceneState.particles++;
 
         scene.add(darkSpotGroup);
         scene.add(smoke1);
@@ -540,6 +563,7 @@ class Projectiles {
             smoke1.geometry.dispose();
             smoke1.material.dispose();
             scene.remove(smoke1);
+            this.sceneState.particles -= 3;
         }, 4000);
     }
 
