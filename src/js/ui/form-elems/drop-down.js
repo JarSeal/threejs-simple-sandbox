@@ -1,8 +1,10 @@
+
 class DropDown {
-    constructor(sceneState, key, values) {
+    constructor(sceneState, key, typeOfValue, values) {
         this.sceneState = sceneState;
         this.dropDownOpen = false;
         this.key = key;
+        this.typeOfValue = typeOfValue;
         this.values = values;
         this.outsideClick = (e) => {
             if(e.target && e.target.className && e.target.className != "drop-down-choice" && e.target.className != "drop-down__selected") {
@@ -15,12 +17,16 @@ class DropDown {
         this.dropDownClick = (e) => {
             let value = 0,
                 dropDownElem = document.getElementById(this.getId());
-            console.log(e);
             if(this.dropDownOpen) {
                 if(e.target && e.target.className && e.target.className != "drop-down__selected") {
-                    value = parseInt(e.target.outerText);
+                    if(this.typeOfValue == "int") {
+                        value = parseInt(e.target.outerText);
+                    } else {
+                        value = e.target.outerText;
+                    }
                     dropDownElem.firstElementChild.innerHTML = value;
-                    this.sceneState.settings.maxSimultaneousParticles = value;
+                    this.sceneState.settings[this.key] = value;
+                    this.sceneState.localStorage.setItem(this.key, value);
                 }
                 dropDownElem.classList.remove("drop-down--open");
             } else {

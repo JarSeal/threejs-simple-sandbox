@@ -1,5 +1,6 @@
 import Scene from './scene.js';
 import AppUiLayer from './ui/app-ui-layer.js';
+import LStorage from './ui/local-storage.js';
 
 class TileMapRoot {
     constructor() {
@@ -35,6 +36,7 @@ class TileMapRoot {
                 maxSimultaneousParticles: 500,
                 useTransparency: true,
             },
+            localStorage: new LStorage(),
         };
         this.init();
     }
@@ -42,6 +44,8 @@ class TileMapRoot {
     init() {
         this.sceneState.initTime = this.getInitTime();
         const appUiLayer = new AppUiLayer(this.sceneState);
+
+        this.getLocalSettingsData();
 
         const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor('#000000');
@@ -105,6 +109,22 @@ class TileMapRoot {
             ms: now,
             dayName: "Mon",
             dayNameNumber: 1
+        }
+    }
+
+    getLocalSettingsData() {
+        // Get settings data from local storage
+        let settings = this.sceneState.settings;
+        for (var key in settings) {
+            let lsValue = this.sceneState.localStorage.getItem(key, settings[key]),
+                curVal = this.sceneState.settings[key];
+            if(typeof curVal == 'number') {
+                lsValue = parseInt(lsValue);
+            } else if(typeof curVal == 'boolean') {
+                lsValue = lsValue == 'false' ? false : true;
+            }
+            // else leave as is (string)
+            this.sceneState.settings[key] = lsValue;
         }
     }
 }
