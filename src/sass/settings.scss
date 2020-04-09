@@ -72,3 +72,28 @@
 .modal-content {
     padding: 100px 50px;
 }
+
+.settings-list {
+    display: block;
+    width: 100%;
+    list-style: none;
+    padding: 0;
+}
+.sl-item {
+    display: block;
+    width: 100%;
+    padding: 10px 0;
+    h3 {
+        display: inline-block;
+        width: 60%;
+        padding-right: 10px;
+        font-size: 1.2rem;
+        font-weight: 400;
+    }
+}
+.sl-setting {
+    display: inline-block;
+    width: 40%;
+    padding-left: 10px;
+    font-weight: 1.2rem;
+}

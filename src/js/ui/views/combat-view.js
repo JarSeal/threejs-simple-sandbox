@@ -1,3 +1,4 @@
+import DropDown from "../form-elems/drop-down.js";
 
 class CombatView {
     constructor(sceneState) {
@@ -170,22 +171,23 @@ class CombatView {
                         this.listParentElem.appendChild(this.listUlElem);
                         appElem.appendChild(this.listParentElem);
                     },
-                    toggleSettings: (e, settingsTemplate) => {
+                    toggleSettings: (e, settingsTemplate, settingsUI) => {
                         e.stopPropagation();
                         if(this.settingsOpen === undefined) this.settingsOpen = true;
                         this.settingsOpen = !this.settingsOpen;
-                        settingsTemplate();
+                        settingsTemplate(settingsUI);
                         if(this.settingsOpen) {
                             document.getElementById('settings-modal').classList.remove("settings-modal--open");
                         } else {
                             document.getElementById('settings-modal').classList.add("settings-modal--open");
                         }
                     },
+                    settingsUI: {},
                     createSettings: function() {
                         let appElem = document.getElementById("mainApp"),
                             settingsButton = document.createElement("div");
                         settingsButton.setAttribute("id", "settings-button");
-                        settingsButton.onclick = (e) => {this.toggleSettings(e, this.createSettingsTemplate);};
+                        settingsButton.onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI);};
                         this.listParentElem.appendChild(settingsButton);
                         appElem.appendChild(this.listParentElem);
                         appElem.insertAdjacentHTML('afterbegin',
@@ -194,52 +196,36 @@ class CombatView {
                                 '<div class="modal-content" id="settings-modal-content"></div>'+
                             '</div>'
                         );
-                        document.getElementById("settings-modal-close").onclick = (e) => {this.toggleSettings(e, this.createSettingsTemplate);};
+                        document.getElementById("settings-modal-close").onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI);};
                     },
-                    createSettingsTemplate: () => {
+                    settingsTemplate: (settingsUI) => {
                         let modalContent = document.getElementById("settings-modal-content");
-                        let dropDownMaxParticlesClick = (e) => {
-                            let value = 0,
-                                dropDownElem = document.getElementById("select-max-particles");
-                            if(e.target.className != "drop-down__selected") {
-                                value = parseInt(e.target.outerText);
-                                dropDownElem.firstElementChild.innerHTML = value;
-                                this.sceneState.settings.maxSimultaneousParticles = value;
-                            }
-                            if(this.dropDownOpen === undefined) this.dropDownOpen = false;
-                            this.dropDownOpen = !this.dropDownOpen;
-                            if(this.dropDownOpen) {
-                                dropDownElem.classList.remove("drop-down--open");
-                            } else {
-                                dropDownElem.classList.add("drop-down--open");
-                            }
-                        };
                         if(this.templateCreated === undefined) this.templateCreated = false;
                         if(this.templateCreated) {
                             // Remove template and listeners
-                            let maxParticleDropDown = document.getElementById("select-max-particles");
-                            maxParticleDropDown.removeEventListener("click", dropDownMaxParticlesClick);
+                            settingsUI.maxParticles.removeListeners();
+                            settingsUI.maxParticles = null;
                             modalContent.innerHTML = "";
                         } else {
-                            // Add template and listeners
+                            // Add template
+                            settingsUI.maxParticles = new DropDown(this.sceneState, "maxSimultaneousParticles", [
+                                {title: "20", value: 20},
+                                {title: "50", value: 50},
+                                {title: "200", value: 200},
+                                {title: "500", value: 500},
+                                {title: "1000", value: 1000},
+                            ]);
                             modalContent.insertAdjacentHTML('afterbegin',
                                 '<ul class="settings-list">'+
                                     '<li class="sl-item">'+
-                                        '<div class="sl-label">'+
-                                            '<h3>Max particles:</h3>'+
-                                            '<ul class="drop-down" id="select-max-particles">'+
-                                                '<li class="drop-down__selected">'+this.sceneState.settings.maxSimultaneousParticles+'</li>'+
-                                                '<li>20</li>'+
-                                                '<li>100</li>'+
-                                                '<li>500</li>'+
-                                                '<li>1000</li>'+
-                                            '</ul>'+
+                                        '<h3>Max particles:</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.maxParticles.render() +
                                         '</div>'+
                                     '</li>'+
                                 '</ul>'
                             );
-                            let maxParticleDropDown = document.getElementById("select-max-particles");
-                            maxParticleDropDown.addEventListener("click", dropDownMaxParticlesClick);
+                            settingsUI.maxParticles.addListeners();
                         }
                         this.templateCreated = !this.templateCreated;
                     },
