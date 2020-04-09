@@ -29,7 +29,9 @@ class LStorage {
 
     removeItem(key) {
         if(!this.localStorageAvailable) return false;
-        localStorage.removeItem(key);
+        if(this.checkIfItemExists(key)) {
+            localStorage.removeItem(key);
+        }
         return true;
     }
 

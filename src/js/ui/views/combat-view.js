@@ -188,6 +188,9 @@ class CombatView {
                     resetSettings: (e) => {
                         let defaults = this.sceneState.defaultSettings;
                         this.sceneState.settings = Object.assign({}, defaults);
+                        for (var key in defaults) {
+                            this.sceneState.localStorage.removeItem(key);
+                        }
                     },
                     settingsUI: {},
                     createSettings: function() {

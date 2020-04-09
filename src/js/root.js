@@ -115,11 +115,10 @@ class TileMapRoot {
 
     getLocalSettingsData() {
         // Get settings data from local storage
-        let settings = this.sceneState.settings,
-            defaults = this.sceneState.defaultSettings;
-        for (var key in settings) {
+        let defaults = this.sceneState.defaultSettings;
+        for (var key in defaults) {
             let lsValue = this.sceneState.localStorage.getItem(key, defaults[key]),
-                curVal = this.sceneState.settings[key];
+                curVal = defaults[key];
             if(typeof curVal == 'number') {
                 lsValue = parseInt(lsValue);
             } else if(typeof curVal == 'boolean') {
