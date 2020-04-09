@@ -1,0 +1,126 @@
+#settings-button {
+    display: block;
+    width: 36px;
+    height: 36px;
+    background: #999;
+    cursor: pointer;
+    position: absolute;
+    top: 14px;
+    right: 7px;
+    border-radius: 50%;
+}
+
+#settings-modal {
+    display: block;
+    transform: translate3d(0,0,0);
+    width: 100vw;
+    height: 100vh;
+    z-index: 200;
+    position: fixed;
+    bottom: 100%;
+    transition: bottom 0.3s ease-in-out;
+    left: 0;
+    background-color: #fff;
+    overflow: auto;
+}
+.settings-modal {
+    &--open {
+        bottom: 0 !important;
+    }
+}
+
+#settings-modal-close {
+    display: block;
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    transition: transform 0.2s ease-in-out;
+    &:before,
+    &:after {
+        display: block;
+        content: "";
+        width: 100%;
+        height: 5px;
+        border-radius: 2px;
+        background-color: #999;
+        position: absolute;
+        left: 0;
+        top: 22px;
+        transition: background-color 0.2s ease-in-out;
+    }
+    &:before { transform: rotate(45deg); }
+    &:after { transform: rotate(-45deg); }
+    &:hover,
+    &:focus {
+        outline: none;
+        &:before,
+        &:after {
+            background-color: #666;
+        }
+    }
+    &:hover,
+    &:active {
+        background-color: transparent;
+        outline: none;
+        transform: scale3d(0.8, 0.8, 1) rotate(90deg);
+    }
+}
+
+.modal-content {
+    padding: 100px 50px;
+}
+
+.settings-list {
+    display: block;
+    width: 100%;
+    list-style: none;
+    padding: 0;
+}
+.sl-item {
+    display: block;
+    width: 100%;
+    padding: 10px 0;
+    h3 {
+        display: inline-block;
+        width: 60%;
+        padding-right: 10px;
+        font-size: 15px;
+        font-weight: 400;
+        margin: 7px 0 0 0;
+    }
+    + .sl-item {
+        border-top: 1px solid #f8f8f8;
+    }
+    &--empty {
+        border-top: none;
+        height: 44px;
+    }
+}
+.sl-setting {
+    display: inline-block;
+    width: 40%;
+    padding-left: 10px;
+    font-weight: 15px;
+    text-align: right;
+    vertical-align: top;
+}
+
+.settings-button {
+    cursor: pointer;
+    display: inline-block;
+    width: auto;
+    padding: 7px 12px;
+    background-color: #999;
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    border-radius: 4px;
+}
