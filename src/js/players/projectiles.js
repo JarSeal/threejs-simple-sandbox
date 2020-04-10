@@ -109,7 +109,7 @@ class Projectiles {
                 scene.remove(meshInside);
                 scene.remove(meshOutside);
                 scene.remove(projectileGroup);
-                this.sceneState.particles -= particles; // ADD PARTICLE(S)
+                this.sceneState.particles -= particles; // REMOVE PARTICLE(S)
                 // scene.remove(helperLine);
             }
         });
@@ -119,7 +119,6 @@ class Projectiles {
         if(!distance) {
             distance = Math.sqrt(Math.pow(Math.abs(from[0] - target[0]), 2) + Math.pow(Math.abs(from[1] - target[1]), 2));
         }
-        
     }
 
     getProjectileLife(intersects, from, target, speedPerTile, tileMap) {
@@ -324,6 +323,7 @@ class Projectiles {
             curParticles = this.sceneState.particles;
             if(curParticles + particles > maxParticles) {
                 floorParticles = maxParticles - curParticles;
+                if(floorParticles < 0) floorParticles = 0;
                 streaks = 0;
             }
             this.sceneState.particles += floorParticles + streaks;
@@ -513,7 +513,8 @@ class Projectiles {
             tl = new TimelineMax(),
             tlSmoke = new TimelineMax(),
             burnSize1 = Math.random() * 9,
-            burnSize2 = Math.random() + 0.5;
+            burnSize2 = Math.random() + 0.5,
+            particles = 0;
         if(burnSize1 < 3) burnSize1 = 3;
         if(burnSize2 < 1) burnSize2 = 1;
         
@@ -528,7 +529,7 @@ class Projectiles {
         darkSpot2.rotation.set(1.5708/2, 1.5708, 0);
         darkSpotGroup.add(projectileLife.dir === 0 ? darkSpot2 : darkSpot1);
         darkSpotGroup.add(projectileLife.dir === 0 ? darkSpot1 : darkSpot2);
-        this.sceneState.particles += 2;
+        particles += 2;
         darkSpotGroup.position.set(posWOffset[0], posWOffset[1], 1);
         darkSpotGroup.rotation.z = projectileLife.turn;
         darkSpotGroup.children[0].position.x = offset1[0];
@@ -539,7 +540,7 @@ class Projectiles {
         smoke1.scale.set(0.3,5,1);
         smoke1.quaternion.copy(camera.quaternion);
         smoke1.position.set(posWOffset[0], posWOffset[1], 1);
-        this.sceneState.particles++;
+        particles++;
 
         scene.add(darkSpotGroup);
         scene.add(smoke1);
@@ -551,6 +552,8 @@ class Projectiles {
         tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
                .to(smoke1.material, 2, {opacity: 0}, "-=2")
                .to(smoke1.scale, smokeLife, {x: 8, y: 8}, "-="+smokeLife);
+
+        this.sceneState.particles += particles;
         
         setTimeout(() => {
             darkSpot1.geometry.dispose();
@@ -563,7 +566,7 @@ class Projectiles {
             smoke1.geometry.dispose();
             smoke1.material.dispose();
             scene.remove(smoke1);
-            this.sceneState.particles -= 3;
+            this.sceneState.particles -= particles;
         }, 4000);
     }
 
