@@ -82,14 +82,15 @@ class Projectiles {
         projectileGroup.add(meshInside);
         particles++;
 
-        let meshOutside = null;
-        if(this.sceneState.settings.useTransparency) {
-            meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
-            meshOutside.scale.set(0.51, 0.21, 1);
-            meshOutside.position.set(0, 0, -0.01);
-            meshOutside.name = name + "-outside";
-            projectileGroup.add(meshOutside);
-            particles++;
+        let meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
+        meshOutside.scale.set(0.51, 0.21, 1);
+        meshOutside.position.set(0, 0, -0.01);
+        meshOutside.name = name + "-outside";
+        projectileGroup.add(meshOutside);
+        particles++;
+        if(!this.sceneState.settings.useOpacity) {
+            meshOutside.material.opacity = 1;
+            meshOutside.material.color.setHex(0X664646);
         }
         projectileGroup.rotation.z = angle + 1.5708;
         projectileGroup.position.set(from[0], from[1], 1);
@@ -505,7 +506,8 @@ class Projectiles {
     setBurnSpot(projectileLife, posWOffset, scene, camera) {
         let darkSpot1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.burnMarkTexture,transparent:true})),
             darkSpot2 = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone()),
-            smoke1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.smokeTexture,transparent:true,opacity:((Math.random() * 2) + 1) / 10})),
+            smoke1Opacity = this.sceneState.settings.useOpacity ? ((Math.random() * 7) + 1) / 10 : 1,
+            smoke1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.smokeTexture,transparent:true,opacity:smoke1Opacity})),
             darkSpotGroup = new THREE.Group(),
             randomizer = Math.random() / 50,
             offset1 = this.getBurnSpotOffset(projectileLife, "mark", randomizer),
@@ -545,15 +547,26 @@ class Projectiles {
         scene.add(darkSpotGroup);
         scene.add(smoke1);
 
-        tl.to(darkSpot2.material, 2, {opacity:0})
-          .to(darkSpot1.material, 3, {opacity:0}, "-=1");
+        if(this.sceneState.settings.useOpacity) {
+            tl.to(darkSpot2.material, 2, {opacity:0})
+              .to(darkSpot1.material, 3, {opacity:0}, "-=1");
+        } else {
+            tl.to(darkSpot2.scale, 2, {x: 0.001, y: 0.001})
+              .to(darkSpot1.scale, 3, {x: 0.001, y: 0.001}, "-=1");
+        }
         
         let smokeLife = this._randomFloatInBetween(2.0, 3.8);
-        tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
-               .to(smoke1.material, 2, {opacity: 0}, "-=2")
-               .to(smoke1.scale, smokeLife, {x: 8, y: 8}, "-="+smokeLife);
+        if(this.sceneState.settings.useOpacity) {
+            tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
+                   .to(smoke1.material, 2, {opacity: 0}, "-=2")
+                   .to(smoke1.scale, smokeLife, {x: 8, y: 8}, "-="+smokeLife);
+        } else {
+            tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
+                   .to(smoke1.scale, smokeLife / 3, {x: 3, y: 3}, "-="+smokeLife)
+                   .to(smoke1.scale, smokeLife / 1.5, {x: 0.001, y: 0.001}, "-="+smokeLife / 1.25);
+        }
 
-        this.sceneState.particles += particles;
+        this.sceneState.particles += particles
         
         setTimeout(() => {
             darkSpot1.geometry.dispose();

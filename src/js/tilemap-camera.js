@@ -89,7 +89,6 @@ class TileMapCamera {
         let w = document.documentElement.clientWidth,
             h = document.documentElement.clientHeight;
         this.aspectRatio = w / h;
-        console.log(this.aspectRatio,w,h);
     }
 
     centerCamera() {
