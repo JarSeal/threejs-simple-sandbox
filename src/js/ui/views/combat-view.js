@@ -212,7 +212,7 @@ class CombatView {
                         let modalContent = document.getElementById("settings-modal-content");
                         let removeTemplate = () => {
                             settingsUI.maxParticles.removeListeners();
-                            settingsUI.useTransparency.removeListeners();
+                            settingsUI.useOpacity.removeListeners();
                             settingsUI = {};
                             modalContent.innerHTML = "";
                         };
@@ -228,7 +228,7 @@ class CombatView {
                                 {title: "500", value: 500},
                                 {title: "1000", value: 1000},
                             ]);
-                            settingsUI.useTransparency = new OnOff(this.sceneState, "useTransparency");
+                            settingsUI.useOpacity = new OnOff(this.sceneState, "useOpacity");
                             modalContent.insertAdjacentHTML('afterbegin',
                                 '<ul class="settings-list">'+
                                     '<li class="sl-item">'+
@@ -240,7 +240,7 @@ class CombatView {
                                     '<li class="sl-item">'+
                                         '<h3>Use transparency:</h3>'+
                                         '<div class="sl-setting">'+
-                                            settingsUI.useTransparency.render() +
+                                            settingsUI.useOpacity.render() +
                                         '</div>'+
                                     '</li>'+
 
@@ -254,7 +254,7 @@ class CombatView {
                                 '</ul>'
                             );
                             settingsUI.maxParticles.addListeners();
-                            settingsUI.useTransparency.addListeners();
+                            settingsUI.useOpacity.addListeners();
                             
                             document.getElementById("reset-to-default").addEventListener("click", (e) => {
                                 resetSettings(e);

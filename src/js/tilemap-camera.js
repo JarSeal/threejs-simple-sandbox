@@ -21,7 +21,7 @@ class TileMapCamera {
         this.backPlane;
         this.stars = [];
         this.starMaterials = [];
-        this.projectiles = new Projectiles(scene);
+        this.projectiles = new Projectiles(scene, sceneState);
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.init(scene);
@@ -89,7 +89,6 @@ class TileMapCamera {
         let w = document.documentElement.clientWidth,
             h = document.documentElement.clientHeight;
         this.aspectRatio = w / h;
-        console.log(this.aspectRatio,w,h);
     }
 
     centerCamera() {
