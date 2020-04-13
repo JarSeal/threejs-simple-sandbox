@@ -1,6 +1,7 @@
 import Scene from './scene.js';
 import AppUiLayer from './ui/app-ui-layer.js';
 import LStorage from './ui/local-storage.js';
+import Consequences from './players/consequences.js';
 
 class TileMapRoot {
     constructor() {
@@ -18,12 +19,7 @@ class TileMapRoot {
                 curSecondaryState: null,
                 curSecondaryTarget: null,
             },
-            consequences: {
-                targetsPlayers: {},
-                targetsDoors: {},
-                hittersProjectiles: {},
-                hittersBeams: {},
-            },
+            consequences: new Consequences(),
             initTime: null,
             floor: 0,
             moduleData: [],

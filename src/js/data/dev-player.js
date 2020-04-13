@@ -4,6 +4,7 @@
 export function getPlayer() {
     return {
         name: "DEV PLAYER",
+        id: "devPlayer001",
         pos: [],
         microPos: [],
         newPosSet: false,

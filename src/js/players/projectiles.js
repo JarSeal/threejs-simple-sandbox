@@ -73,6 +73,7 @@ class Projectiles {
             }
             targetPos = [];
         }
+        this.sceneState.consequences.addProjectile(from, targetPos, speedPerTile, projectileLife);
         let particles = 0;
         let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
         meshInside.scale.set(0.35, 0.05, 1);

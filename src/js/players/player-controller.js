@@ -22,8 +22,9 @@ class PlayerController {
         sceneState.players.hero = hero;
         sceneState.players.hero.pos = [35,43,0];
         sceneState.players.hero.microPos = [35,43,0];
+        sceneState.consequences.addPlayer(sceneState.players.hero);
+        
         let group = new THREE.Group();
-
         let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
         let heroMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
         let heroMesh = new THREE.Mesh(heroGeometry, heroMaterial);
