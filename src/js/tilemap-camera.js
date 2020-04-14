@@ -381,12 +381,14 @@ class TileMapCamera {
             i,
             startEndMultiplier,
             speed,
-            cumulativeTime = 0;
+            nextSpeed,
+            cumulativeTime = 0,
+            startTime = this.sceneState.initTime.s + performance.now() / 1000;
+        console.log(startTime);
         for(i=0; i<routeLength; i++) {
             if(i === 0) {
                 // Player starts to move
                 startEndMultiplier = player.startMultiplier;
-                route[0]['startTimeLocal'] = performance.now();
             } else if(i == routeLength - 1) {
                 // Player ends the movement
                 startEndMultiplier = player.endMultiplier;
@@ -394,6 +396,7 @@ class TileMapCamera {
                 // Default speed
                 startEndMultiplier = 1;
             }
+
             if( (i === 0 && player.pos[0] !== route[0].x && player.pos[1] !== route[0].y) ||
                 (i !== 0 && route[i - 1].x !== route[i].x && route[i - 1].y !== route[i].y)) {
                 // Moving diagonally
@@ -402,13 +405,31 @@ class TileMapCamera {
                 // Moving straigth in an axis
                 speed = player.speed * startEndMultiplier;
             }
+            
             if(i === 0) {
                 cumulativeTime += speed / 2;
             } else {
                 cumulativeTime += speed;
             }
-            route[i].arriving = cumulativeTime;
+            route[i]['enterTime'] = startTime + cumulativeTime / 1000;
+            if(i != route.length - 1) {
+                if(i + 1 == routeLength - 1) {
+                    startEndMultiplier = player.endMultiplier;
+                } else {
+                    startEndMultiplier = 1;
+                }
+                if(route[i + 1].x !== route[i].x && route[i + 1].y !== route[i].y) {
+                    // Diagonal
+                    nextSpeed = player.speed * 1.5 * startEndMultiplier;
+                } else {
+                    // straigth
+                    nextSpeed = player.speed * startEndMultiplier;
+                }
+                route[i]['leaveTime'] = route[i].enterTime + nextSpeed / 1000;
+            }
+            if(i == route.length - 1) console.log("total time",cumulativeTime,"playerspeed",player.startMultiplier);
         }
+        console.log('ROUTE',route);
         return route;
     }
 

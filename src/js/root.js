@@ -40,6 +40,7 @@ class TileMapRoot {
 
     init() {
         this.sceneState.initTime = this.getInitTime();
+        console.log(this.sceneState.initTime);
         const appUiLayer = new AppUiLayer(this.sceneState);
 
         this.getLocalSettingsData();
@@ -102,8 +103,8 @@ class TileMapRoot {
         let now = performance.now(),
             unixTimestamp = Date.now();
         return {
-            s: unixTimestamp,
-            ms: now,
+            s: unixTimestamp + now / 1000,
+            performanceStart: now,
             dayName: "Mon",
             dayNameNumber: 1
         }

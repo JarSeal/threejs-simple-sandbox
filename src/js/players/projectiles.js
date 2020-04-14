@@ -73,7 +73,7 @@ class Projectiles {
             }
             targetPos = [];
         }
-        this.sceneState.consequences.addProjectile(from, targetPos, speedPerTile, projectileLife);
+        this.sceneState.consequences.addProjectile(name, projectileLife.route);
         let particles = 0;
         let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
         meshInside.scale.set(0.35, 0.05, 1);
@@ -117,23 +117,94 @@ class Projectiles {
         });
     }
 
-    getProjectileRoute(from, target, speedPerTile, tileMap, distance) {
-        if(!distance) {
-            distance = Math.sqrt(Math.pow(Math.abs(from[0] - target[0]), 2) + Math.pow(Math.abs(from[1] - target[1]), 2));
+    getProjectileRoute(from, target, speedPerTile, tileMap, distance, dir) {
+        let route = [],
+            startTime = performance.now() + speedPerTile * 0.5,
+            tiles = 0,
+            startFractions = from[0] - Math.floor(from[0]),
+            xLength = 0,
+            yLength = 0,
+            i = 0;
+        switch(dir) {
+            case 0:
+                tiles = from[1] - target[1];
+                for(i=0; i<tiles; i++) {
+                    let enterTime = startTime + (i + 1) * speedPerTile;
+                    route.push({
+                        pos: [from[0], from[1] - (i + 1)],
+                        enterTime: enterTime,
+                        leaveTime: enterTime + speedPerTile,
+                    });
+                }
+                break;
+            case 2:
+                tiles = from[0] - target[0];
+                console.log("TIHI",tiles,startFractions,1-startFractions);
+                for(i=0; i<tiles; i++) {
+                    let enterTime = startFractions && i == 1 ?
+                        startTime + speedPerTile * (1 - startFractions) :
+                        startTime + i * speedPerTile;
+                    route.push({
+                        pos: [Math.round(from[0] - (i + 1)), from[1]],
+                        enterTime: enterTime,
+                        leaveTime: startFractions && i === 0 ?
+                            enterTime + speedPerTile * (1 - startFractions) :
+                            enterTime + speedPerTile,
+                    });
+                }
+                let totalRouteTime = route[route.length-1].enterTime - route[0].enterTime;
+                let lineDistanceTime = distance * speedPerTile - speedPerTile * 0.5;
+                console.log('TIMES', totalRouteTime, lineDistanceTime, totalRouteTime - lineDistanceTime);
+                break;
+            case 4:
+                    tiles = target[1] - from[1];
+                    for(i=0; i<tiles; i++) {
+                        let enterTime = startTime + (i + 1) * speedPerTile;
+                        route.push({
+                            pos: [from[0], from[1] + (i + 1)],
+                            enterTime: enterTime,
+                            leaveTime: enterTime + speedPerTile,
+                        });
+                    }
+                    break;
+            case 6:
+                    tiles = target[0] - from[0];
+                    for(i=0; i<tiles; i++) {
+                        let enterTime = startTime + (i + 1) * speedPerTile;
+                        route.push({
+                            pos: [from[0] + (i + 1), from[1]],
+                            enterTime: enterTime,
+                            leaveTime: enterTime + speedPerTile,
+                        });
+                    }
+                    break;
+            case 1:
+                xLength = from[0] - target[0];
+                yLength = from[1] - target[1];
+                tiles = xLength > yLength ? xLength : yLength;
+                for(i=0; i<tiles; i++) {
+                    
+                }
+                break;
         }
+
+        return route;
     }
 
     getProjectileLife(intersects, from, target, speedPerTile, tileMap) {
+        let distance = intersects.length ?
+            intersects[0].distance :
+            Math.sqrt(Math.pow(Math.abs(from[0] - target[0]), 2) + Math.pow(Math.abs(from[1] - target[1]), 2));
         let life = {
-            speed: speedPerTile * intersects[0].distance,
+            speed: speedPerTile * distance,
             dir: 0,
             turn: 0,
             xOffset: 0,
             yOffset: 0,
-            route: this.getProjectileRoute(from, target, speedPerTile, tileMap, intersects[0].distance),
+            route: [],
             special: false,
         },
-        hitPos = [Math.round(intersects[0].point.x), Math.round(intersects[0].point.y)],
+        hitPos = intersects.length ? [Math.round(intersects[0].point.x), Math.round(intersects[0].point.y)] : [],
         wallType,
         defaultOffset = 0.05;
 
@@ -300,6 +371,8 @@ class Projectiles {
                 }
             }
         }
+
+        life.route = this.getProjectileRoute(from, hitPos, speedPerTile, tileMap, distance, life.dir);
 
         return life;
     }

@@ -13,13 +13,15 @@ class Consequences {
         this.players.push(player);
     }
 
-    movePlayer() {
+    movePlayer(playerId, route) {
 
     }
 
-    addProjectile(from, target, speed, life) {
-        console.log(from, target, speed, life);
+    addProjectile(projectileId, route) {
+        console.log('projectile', projectileId, route);
     }
+
+    
 }
 
 export default Consequences;
