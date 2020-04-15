@@ -314,6 +314,7 @@ class TileMapCamera {
                     this.sceneState.players.hero.routeIndex = 0;
                     this.sceneState.players.hero.animatingPos = false;
                     this.sceneState.players.hero.moving = true;
+                    this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute, this.sceneState.players.hero.pos);
                 } else if(this.sceneState.players.hero.moving) {
                     this.sceneState.players.hero.newRoute = resultRoute;
                 }
@@ -384,7 +385,6 @@ class TileMapCamera {
             nextSpeed,
             cumulativeTime = 0,
             startTime = this.sceneState.initTime.s + performance.now() / 1000;
-        console.log(startTime);
         for(i=0; i<routeLength; i++) {
             if(i === 0) {
                 // Player starts to move
@@ -412,6 +412,7 @@ class TileMapCamera {
                 cumulativeTime += speed;
             }
             route[i]['enterTime'] = startTime + cumulativeTime / 1000;
+            route[i]['speed'] = speed;
             if(i != route.length - 1) {
                 if(i + 1 == routeLength - 1) {
                     startEndMultiplier = player.endMultiplier;
@@ -427,9 +428,7 @@ class TileMapCamera {
                 }
                 route[i]['leaveTime'] = route[i].enterTime + nextSpeed / 1000;
             }
-            if(i == route.length - 1) console.log("total time",cumulativeTime,"playerspeed",player.startMultiplier);
         }
-        console.log('ROUTE',route);
         return route;
     }
 

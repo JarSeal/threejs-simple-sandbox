@@ -28,7 +28,7 @@ class LoadTileMap {
         this.createClickableTiles(scene);
         sceneState.moduleMap = rawShip;
         sceneState.shipMap = this.ship;
-        sceneState.consequences.addMap(this.ship[sceneState.floor]);
+        sceneState.consequences.addMapAndInitTime(this.ship[sceneState.floor], this.sceneState.initTime.s);
         sceneState.astarMap = this.createAstarMap(this.ship, sceneState);
 
         // Create modulesLoader (loads the 3D assets)

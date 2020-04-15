@@ -83,13 +83,11 @@ class PlayerController {
             tl = new TimelineMax(),
             tlRotate = new TimelineMax(),
             ease,
-            startEndMultiplier,
             speed,
             newDir = calculateAngle(
                 player.pos,
                 [route[player.routeIndex].x, route[player.routeIndex].y]
             );
-            //newDir = this.getNewDirectionForMove(player, route);
         if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
             // prevent unnecessary spin moves :)
             newDir < 0 ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2 :
@@ -102,67 +100,42 @@ class PlayerController {
                 player.dir = newDir;
             }
         });
-        if(player.routeIndex === 0) {
-            // Player starts to move
-            startEndMultiplier = player.startMultiplier;
-        } else if(player.routeIndex == routeLength - 1) {
-            // Player ends the movement
-            startEndMultiplier = player.endMultiplier;
-        } else {
-            // Default speed
-            startEndMultiplier = 1;
-        }
-        if(player.pos[0] !== route[player.routeIndex].x &&
-            player.pos[1] !== route[player.routeIndex].y) {
-            // Moving diagonally
-            speed = player.speed * 1.5 * startEndMultiplier;
-        } else {
-            // Moving straigth in an axis
-            speed = player.speed * startEndMultiplier;
-        }
+        speed = route[player.routeIndex].speed * this.sceneState.timeSpeed;
         player.curSpeed = speed * this.sceneState.timeSpeed;
-        player.moveStart = performance.now();
         player.animatingPos = true;
-        player.newPosSet = false;
-        player.newPosTimestamp = speed / 2 + player.moveStart;
         if(player.routeIndex === 0) {
             routeLength == 1 ? ease = Sine.easeInOut : ease = Sine.easeIn;
         } else {
             player.routeIndex == routeLength - 1 ? ease = Sine.easeOut : ease = Power0.easeNone;
         }
-        let realPosition = this.getRealPosition(player.route, player.routeIndex, speed);
+        let realPosition = this.getRealPosition(player.route, player.routeIndex);
         if(player.routeIndex != routeLength && realPosition.routeIndex) {
             player.routeIndex = realPosition.routeIndex;
             player.pos = realPosition.pos;
             player.mesh.position.x = realPosition.pos[0];
             player.mesh.position.y = realPosition.pos[1];
         }
-        tl.to(player.mesh.position, player.curSpeed / 1000, {
+        tl.to(player.mesh.position, speed / 1000, {
             x: route[player.routeIndex].x,
             y: route[player.routeIndex].y,
             ease: ease,
             onUpdate: () => {
                 player.microPos = [player.mesh.position.x, player.mesh.position.y, player.pos[2]];
-                if(!player.newPosSet && player.newPosTimestamp < performance.now()) {
-                    player.pos = [route[player.routeIndex].x, route[player.routeIndex].y, player.pos[2]];
-                    player.newPosSet = true;
-                }
             },
             onComplete: () => {
                 player.pos = [route[player.routeIndex].x, route[player.routeIndex].y, player.pos[2]];
                 player.microPos = player.pos;
-                player.moveStart = null;
                 if(player.newRoute.length) {
                     player.route = player.newRoute.slice(0);
                     player.newRoute = [];
                     player.routeIndex = 0;
+                    this.sceneState.consequences.movePlayer(player.id, player.route, player.pos);
                 } else {
                     player.routeIndex++;
                 }
 
                 // Check if full destination is reached
                 if(player.routeIndex == routeLength) {
-                    player.moveStart = null;
                     player.moving = false;
                     player.route = [];
                     player.routeIndex = 0;
@@ -176,24 +149,18 @@ class PlayerController {
     }
 
     getRealPosition(route, index) {
-        let now,
-            curIndex,
-            curPos,
+        let curIndex = 0,
+            curPos = [],
             routeLength = route.length,
-            i;
-        now = performance.now();
-        let eta = route[index].arriving + route[0].startTimeLocal;
-        if(eta < now) {
-            for(i=index+1; i<routeLength; i++) {
-                // Check how much player is behind of eta
-                eta = route[i].arriving + route[0].startTimeLocal;
-                if(eta < now) {
-                    curIndex = i;
-                    curPos = [route[i].x, route[i].y, this.sceneState.players.hero.pos[2]];
-                }
+            i,
+            timeNow = this.sceneState.initTime.s + performance.now() / 1000;
+        for(i=index+1; i<routeLength; i++) {
+            // Check how much player is behind of eta
+            if((route[i].enterTime < timeNow && route[i].leaveTime > timeNow) || (i == routeLength - 1 && route[i].enterTime < timeNow)) {
+                curIndex = i;
+                curPos = [route[i].x, route[i].y, this.sceneState.players.hero.pos[2]];
             }
         }
-        //console.log('HAP',index,eta,now, now - eta);
         return {
             routeIndex: curIndex,
             pos: curPos
