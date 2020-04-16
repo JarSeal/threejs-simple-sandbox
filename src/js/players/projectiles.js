@@ -32,8 +32,7 @@ class Projectiles {
         };
     }
 
-    shootProjectile(from, target, scene, sceneState, AppUiLayer, camera) {
-        if(from[0] === target[0] && from[1] === target[1]) return; // Do not shoot your own legs
+    shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
         
         // AppUiLayer.logMessage(
         //     performance.now(),
@@ -41,6 +40,37 @@ class Projectiles {
         //     'Shots fired..',
         //     'S'
         // );
+
+        let from,
+            i = 0,
+            playerRoute = shooter.route,
+            playerRouteLength = playerRoute.length,
+            curRouteSpot,
+            timeNow = this.sceneState.initTime.s + performance.now() / 1000;
+        if(shooter.microPos) {
+            if(playerRouteLength) {
+                for(i=0; i<playerRouteLength; i++) {
+                    curRouteSpot = playerRoute[i];
+                    if((curRouteSpot.enterTime < timeNow && curRouteSpot.leaveTime > timeNow) || (curRouteSpot.enterTime < timeNow && i == playerRouteLength - 1)) {
+                        console.log('route spot for enter and leave found');
+                        if(Math.round(shooter.microPos[0]) === curRouteSpot.x && Math.round(shooter.microPos[1]) === curRouteSpot.y) {
+                            console.log("NEVER HERE");
+                            from = [shooter.microPos[0], shooter.microPos[1]];
+                        } else {
+                            //from = [playerRoute[i].x, playerRoute[i].y];
+                        }
+                        break;
+                    }
+                }
+            } else {
+                from = [shooter.microPos[0], shooter.microPos[1]];
+            }
+        } else {
+            from = [shooter.pos[0], shooter.pos[1]];
+        }
+        console.log("TUUT1");
+        if(from[0] === target[0] && from[1] === target[1]) return; // Do not shoot your own legs
+        console.log("TUUT2");
 
         let speedPerTile = 0.085 * sceneState.timeSpeed, // in seconds
             maxDistance = 10,

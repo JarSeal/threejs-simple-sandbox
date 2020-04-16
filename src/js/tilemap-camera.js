@@ -303,6 +303,7 @@ class TileMapCamera {
                     newGraph.grid[dx][dy],
                     { closest: true }
                 );
+                //resultRoute.unshift({x:playerPos[0],y:playerPos[1]});
                 resultRoute = this.predictPositions(resultRoute, this.sceneState.players.hero);
                 let endTime = performance.now();
                 console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute, this.sceneState);
@@ -331,12 +332,12 @@ class TileMapCamera {
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
                 
                 this.projectiles.shootProjectile(
-                    this.sceneState.players.hero.microPos,
+                    this.sceneState.players.hero,
                     this.sceneState.ui.curSecondaryTarget,
                     this.scene,
                     this.sceneState,
                     this.AppUiLayer,
-                    this.camera
+                    this.camera,
                 );
             }
         }
@@ -407,12 +408,11 @@ class TileMapCamera {
             }
             
             if(i === 0) {
-                cumulativeTime += speed / 2;
+                route[i]['enterTime'] = startTime + (speed / 2) / 1000;
             } else {
-                cumulativeTime += speed;
+                route[i]['enterTime'] = route[i - 1].leaveTime;
             }
-            route[i]['enterTime'] = startTime + cumulativeTime / 1000;
-            route[i]['speed'] = speed;
+            //route[i]['enterTime'] = startTime + cumulativeTime / 1000;
             if(i != route.length - 1) {
                 if(i + 1 == routeLength - 1) {
                     startEndMultiplier = player.endMultiplier;
@@ -426,9 +426,16 @@ class TileMapCamera {
                     // straigth
                     nextSpeed = player.speed * startEndMultiplier;
                 }
+                if(i === 0 || i + 1 == routeLength - 1) {
+                    nextSpeed = (nextSpeed / 2) + (speed / 2);
+                }
                 route[i]['leaveTime'] = route[i].enterTime + nextSpeed / 1000;
+                route[i]['speed'] = (route[i].leaveTime - route[i].enterTime) * 1000;
+            } else {
+                route[i]['speed'] = speed;
             }
         }
+        console.log('routti', route);
         return route;
     }
 
@@ -437,4 +444,4 @@ class TileMapCamera {
     }
 }
 
-export default TileMapCamera
+export default TileMapCamera;

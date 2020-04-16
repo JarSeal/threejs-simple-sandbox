@@ -121,6 +121,10 @@ class PlayerController {
             ease: ease,
             onUpdate: () => {
                 player.microPos = [player.mesh.position.x, player.mesh.position.y, player.pos[2]];
+                realPosition = this.getRealPosition(player.route, player.routeIndex);
+                if(player.pos[0] !== realPosition.pos[0] || player.pos[1] !== realPosition.pos[1]) {
+                    player.pos = realPosition.pos;
+                }
             },
             onComplete: () => {
                 player.pos = [route[player.routeIndex].x, route[player.routeIndex].y, player.pos[2]];
