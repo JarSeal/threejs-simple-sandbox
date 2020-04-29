@@ -276,6 +276,8 @@ class TileMapCamera {
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
+                if(dx === this.sceneState.players.hero.pos[0] && dy === this.sceneState.players.hero.pos[1]) return;
+
                 if(!this.sceneState.players.hero.moving) {
                     this.AppUiLayer.logMessage(
                         performance.now(),
@@ -294,8 +296,8 @@ class TileMapCamera {
                 let playerPos = [this.sceneState.players.hero.pos[0], this.sceneState.players.hero.pos[1]];
                 if(this.sceneState.players.hero.moving) {
                     playerPos = [
-                        this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].x,
-                        this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].y,
+                        this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].xInt,
+                        this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].yInt,
                     ];
                 }
                 let resultRoute = astar.search(
@@ -303,8 +305,8 @@ class TileMapCamera {
                     newGraph.grid[dx][dy],
                     { closest: true }
                 );
-                //resultRoute.unshift({x:playerPos[0],y:playerPos[1]});
-                resultRoute = this.predictPositions(resultRoute, this.sceneState.players.hero);
+                resultRoute.unshift({x:playerPos[0],y:playerPos[1]});
+                resultRoute = this.predictAndDividePositions(resultRoute, this.sceneState.players.hero);
                 let endTime = performance.now();
                 console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute, this.sceneState);
 
@@ -317,6 +319,8 @@ class TileMapCamera {
                     this.sceneState.players.hero.moving = true;
                     this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute, this.sceneState.players.hero.pos);
                 } else if(this.sceneState.players.hero.moving) {
+                    let now = this.sceneState.initTime.s + performance.now() / 1000;
+                    resultRoute[0].createdTime = now;
                     this.sceneState.players.hero.newRoute = resultRoute;
                 }
             } else if(this.sceneState.ui.curSecondaryState) {
@@ -378,65 +382,82 @@ class TileMapCamera {
         return false;
     }
 
-    predictPositions(route, player) {
+    predictAndDividePositions(route, player) {
         let routeLength = route.length,
             i,
-            startEndMultiplier,
             speed,
-            nextSpeed,
-            cumulativeTime = 0,
-            startTime = this.sceneState.initTime.s + performance.now() / 1000;
+            duration = 0,
+            nextX = 0,
+            nextY = 0,
+            startTime = this.sceneState.initTime.s + performance.now() / 1000,
+            previousTime = 0,
+            dividedRoute = [];
         for(i=0; i<routeLength; i++) {
             if(i === 0) {
-                // Player starts to move
-                startEndMultiplier = player.startMultiplier;
+                speed = player.pos[0] !== route[1].x && player.pos[1] !== route[1].y ?
+                    player.speed * 1.5 * player.startMultiplier :
+                    player.speed * player.startMultiplier;
+                duration = (speed / 2) / 1000;
+                nextX = player.pos[0] + (route[i + 1].x - player.pos[0]) / 2;
+                nextY = player.pos[1] + (route[i + 1].y - player.pos[1]) / 2;
+                dividedRoute.push({
+                    x: nextX,
+                    y: nextY,
+                    xInt: route[i].x,
+                    yInt: route[i].y,
+                    enterTime: 0,
+                    leaveTime: startTime + duration,
+                    duration: duration,
+                });
+                previousTime = startTime + duration;
             } else if(i == routeLength - 1) {
-                // Player ends the movement
-                startEndMultiplier = player.endMultiplier;
+                speed = route[i - 1].x !== route[i].x && route[i - 1].y !== route[i].y ?
+                    player.speed * 1.5 * player.endMultiplier :
+                    player.speed * player.endMultiplier;
+                duration = (speed / 2) / 1000;
+                dividedRoute.push({
+                    x: route[i].x,
+                    y: route[i].y,
+                    xInt: route[i].x,
+                    yInt: route[i].y,
+                    enterTime: previousTime,
+                    leaveTime: previousTime + duration,
+                    duration: duration,
+                });
             } else {
-                // Default speed
-                startEndMultiplier = 1;
-            }
-
-            if( (i === 0 && player.pos[0] !== route[0].x && player.pos[1] !== route[0].y) ||
-                (i !== 0 && route[i - 1].x !== route[i].x && route[i - 1].y !== route[i].y)) {
-                // Moving diagonally
-                speed = player.speed * 1.5 * startEndMultiplier;
-            } else {
-                // Moving straigth in an axis
-                speed = player.speed * startEndMultiplier;
-            }
-            
-            if(i === 0) {
-                route[i]['enterTime'] = startTime + (speed / 2) / 1000;
-            } else {
-                route[i]['enterTime'] = route[i - 1].leaveTime;
-            }
-            //route[i]['enterTime'] = startTime + cumulativeTime / 1000;
-            if(i != route.length - 1) {
-                if(i + 1 == routeLength - 1) {
-                    startEndMultiplier = player.endMultiplier;
-                } else {
-                    startEndMultiplier = 1;
-                }
-                if(route[i + 1].x !== route[i].x && route[i + 1].y !== route[i].y) {
-                    // Diagonal
-                    nextSpeed = player.speed * 1.5 * startEndMultiplier;
-                } else {
-                    // straigth
-                    nextSpeed = player.speed * startEndMultiplier;
-                }
-                if(i === 0 || i + 1 == routeLength - 1) {
-                    nextSpeed = (nextSpeed / 2) + (speed / 2);
-                }
-                route[i]['leaveTime'] = route[i].enterTime + nextSpeed / 1000;
-                route[i]['speed'] = (route[i].leaveTime - route[i].enterTime) * 1000;
-            } else {
-                route[i]['speed'] = speed;
+                speed = route[i - 1].x !== route[i].x && route[i - 1].y !== route[i].y ?
+                    player.speed * 1.5 :
+                    player.speed;
+                duration = (speed / 2) / 1000;
+                dividedRoute.push({
+                    x: route[i].x,
+                    y: route[i].y,
+                    xInt: route[i].x,
+                    yInt: route[i].y,
+                    enterTime: previousTime,
+                    leaveTime: previousTime + duration,
+                    duration: duration,
+                });
+                previousTime += duration;
+                speed = route[i + 1].x !== route[i].x && route[i + 1].y !== route[i].y ?
+                    player.speed * 1.5 :
+                    player.speed;
+                duration = (speed / 2) / 1000;
+                nextX = route[i].x + (route[i + 1].x - route[i].x) / 2;
+                nextY = route[i].y + (route[i + 1].y - route[i].y) / 2;
+                dividedRoute.push({
+                    x: nextX,
+                    y: nextY,
+                    xInt: route[i].x,
+                    yInt: route[i].y,
+                    enterTime: previousTime,
+                    leaveTime: previousTime + duration,
+                    duration: duration,
+                });
+                previousTime += duration;
             }
         }
-        console.log('routti', route);
-        return route;
+        return dividedRoute;
     }
 
     getCamera() {

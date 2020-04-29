@@ -47,30 +47,28 @@ class Projectiles {
             playerRouteLength = playerRoute.length,
             curRouteSpot,
             timeNow = this.sceneState.initTime.s + performance.now() / 1000;
-        if(shooter.microPos) {
-            if(playerRouteLength) {
-                for(i=0; i<playerRouteLength; i++) {
-                    curRouteSpot = playerRoute[i];
-                    if((curRouteSpot.enterTime < timeNow && curRouteSpot.leaveTime > timeNow) || (curRouteSpot.enterTime < timeNow && i == playerRouteLength - 1)) {
-                        console.log('route spot for enter and leave found');
-                        if(Math.round(shooter.microPos[0]) === curRouteSpot.x && Math.round(shooter.microPos[1]) === curRouteSpot.y) {
-                            console.log("NEVER HERE");
-                            from = [shooter.microPos[0], shooter.microPos[1]];
-                        } else {
-                            //from = [playerRoute[i].x, playerRoute[i].y];
-                        }
-                        break;
-                    }
-                }
-            } else {
-                from = [shooter.microPos[0], shooter.microPos[1]];
-            }
-        } else {
-            from = [shooter.pos[0], shooter.pos[1]];
-        }
-        console.log("TUUT1");
-        if(from[0] === target[0] && from[1] === target[1]) return; // Do not shoot your own legs
-        console.log("TUUT2");
+        // if(shooter.microPos) {
+        //     if(playerRouteLength) {
+        //         for(i=0; i<playerRouteLength; i++) {
+        //             curRouteSpot = playerRoute[i];
+        //             if((curRouteSpot.enterTime < timeNow && curRouteSpot.leaveTime > timeNow) ||
+        //                (curRouteSpot.enterTime < timeNow && i == playerRouteLength - 1)) {
+        //                 let microPos = this.getMicroPos(timeNow, curRouteSpot, shooter.dir);
+        //                 console.log('COMPARE micor',shooter.microPos,microPos);
+        //                 from = microPos;
+        //                 break;
+        //             }
+        //         }
+        //     } else {
+        //         // TODO: use here the consequences position for the shooter
+        //         from = [shooter.microPos[0], shooter.microPos[1]];
+        //     }
+        // } else {
+        //     from = [shooter.pos[0], shooter.pos[1]];
+        // }
+        from = [shooter.microPos[0], shooter.microPos[1]];
+        if(from[0] < -256 || from[0] > 256 || from[1] < -256 || from[1] > 256) return;
+        if((from[0] === target[0] && from[1] === target[1]) || (shooter.pos[0] === target[0] && shooter.pos[1] === target[1])) return; // Do not shoot your own legs
 
         let speedPerTile = 0.085 * sceneState.timeSpeed, // in seconds
             maxDistance = 10,
@@ -129,11 +127,13 @@ class Projectiles {
         this.sceneState.particles += particles; // ADD PARTICLE(S)
         let tl = new TimelineMax();
         tl.startTime = performance.now();
+        let timeToComplete = performance.now();
         tl.to(projectileGroup.position, speed, {
             x: targetPos[0],
             y: targetPos[1],
             ease: Linear.easeNone,
             onComplete: () => {
+                console.log('TIME TO COMPLETE', (performance.now() - timeToComplete) / 1000);
                 tl.progress(1);
                 // Create blast sparks for solid obstacle
                 this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
@@ -147,13 +147,20 @@ class Projectiles {
         });
     }
 
-    getProjectileRoute(from, target, speedPerTile, tileMap, distance, dir) {
+    getProjectileRoute(from, target, targetPos, speedPerTile, tileMap, distance, dir) {
         let route = [],
             startTime = performance.now() + speedPerTile * 0.5,
             tiles = 0,
-            startFractions = from[0] - Math.floor(from[0]),
+            startFractions = from[0] - Math.floor(from[0]), // This means the shooter is moving
             xLength = 0,
             yLength = 0,
+            xLen,
+            yLen,
+            angle,
+            loopLength,
+            pos,
+            travel = 0.2,
+            enterTime,
             i = 0;
         switch(dir) {
             case 0:
@@ -182,9 +189,10 @@ class Projectiles {
                             enterTime + speedPerTile,
                     });
                 }
-                let totalRouteTime = route[route.length-1].enterTime - route[0].enterTime;
-                let lineDistanceTime = distance * speedPerTile - speedPerTile * 0.5;
-                console.log('TIMES', totalRouteTime, lineDistanceTime, totalRouteTime - lineDistanceTime);
+                let wallOffset = distance * speedPerTile - (route[route.length-1].enterTime - route[0].enterTime);
+                route[route.length-1].leaveTime = route[route.length-1].enterTime + wallOffset;
+                let totalRouteTime = route[route.length-1].leaveTime - route[0].enterTime;
+                console.log('TIMES', totalRouteTime, wallOffset, distance * speedPerTile);
                 break;
             case 4:
                     tiles = target[1] - from[1];
@@ -200,7 +208,7 @@ class Projectiles {
             case 6:
                     tiles = target[0] - from[0];
                     for(i=0; i<tiles; i++) {
-                        let enterTime = startTime + (i + 1) * speedPerTile;
+                        enterTime = startTime + (i + 1) * speedPerTile;
                         route.push({
                             pos: [from[0] + (i + 1), from[1]],
                             enterTime: enterTime,
@@ -209,12 +217,62 @@ class Projectiles {
                     }
                     break;
             case 1:
-                xLength = from[0] - target[0];
-                yLength = from[1] - target[1];
-                tiles = xLength > yLength ? xLength : yLength;
-                for(i=0; i<tiles; i++) {
-                    
+                xLength = Math.abs(from[0] - targetPos[0]);
+                yLength = Math.abs(from[1] - targetPos[1]);
+                xLen = yLength > xLength ? yLength : xLength;
+                yLen = yLength > xLength ? xLength : yLength;
+                angle = Math.atan2(yLen, xLen);
+                loopLength = Math.ceil(distance / travel);
+                for(i=0; i<loopLength; i++) {
+                    if(yLength > xLength) {
+                        pos = [
+                            Math.round(from[0] - Math.sin(angle) * travel * i),
+                            Math.round(from[1] - Math.cos(angle) * travel * i),
+                        ];
+                    } else {
+                        pos = [
+                            Math.round(from[0] - Math.cos(angle) * travel * i),
+                            Math.round(from[1] - Math.sin(angle) * travel * i),
+                        ];
+                    }
+                    if(!route.length || route[route.length-1].pos[0] !== pos[0] || route[route.length-1].pos[1] !== pos[1]) {
+                        // ADD NEW ROUTE TILE (and enterTime)
+                        enterTime = startTime + i * travel * speedPerTile;
+                        route.push({
+                            pos: pos,
+                            enterTime: enterTime,
+                        });
+                        if(route.length > 1) {
+                            route[route.length - 2].leaveTime = enterTime;
+                        }
+                    }
                 }
+                if(route.length) {
+                    route[route.length-1].leaveTime = startTime + distance * speedPerTile;
+                }
+                break;
+            case 3:
+                xLength = Math.abs(from[0] - target[0]);
+                yLength = Math.abs(from[1] - target[1]);
+                xLen = yLength > xLength ? yLength : xLength;
+                yLen = yLength > xLength ? xLength : yLength;
+                angle = Math.atan2(yLen, xLen);
+                loopLength = Math.ceil(Math.cos(angle) * distance);
+                let oppositeLength = 0,
+                    d = 0;
+                console.log(7 * Math.tan(53 * (Math.PI/180)), "LOOPLENGTH", loopLength);
+                for(d=0; d<loopLength; d++) {
+                    oppositeLength = (d + 1) * Math.tan(angle);
+                    let curPos = [];
+                    if(yLength > xLength) {
+                        curPos = [Math.round(oppositeLength), d + 1];
+                    } else {
+                        curPos = [d + 1, Math.round(oppositeLength)];
+                    }
+                    route.push(curPos);
+                    console.log('OPPOLen', oppositeLength);
+                }
+                console.log("Diagonal 3 shot:", xLength, yLength, angle, route);
                 break;
         }
 
@@ -402,7 +460,8 @@ class Projectiles {
             }
         }
 
-        life.route = this.getProjectileRoute(from, hitPos, speedPerTile, tileMap, distance, life.dir);
+        let hitPosAccurate = intersects.length ? [intersects[0].point.x, intersects[0].point.y] : hitPos;
+        life.route = this.getProjectileRoute(from, hitPos, hitPosAccurate, speedPerTile, tileMap, distance, life.dir);
 
         return life;
     }
@@ -720,6 +779,46 @@ class Projectiles {
         let line = new THREE.Line(geometry, material);
         scene.add(line);
         return line;
+    }
+
+    getMicroPos(now, routeMove, playerDir) {
+        let dir = 0,
+            Pi = Math.PI,
+            negHalfPi = Pi / -2,
+            halfPi = Pi / 2,
+            microMove = (routeMove.leaveTime - now) / routeMove.duration,
+            microPos = [];
+        if(playerDir > 0) {
+            if(playerDir == Pi) {
+                dir = 4;
+            } else {
+                if(playerDir == halfPi) {
+                    dir = 6;
+                } else {
+                    if(playerDir > halfPi) {
+                        dir = 5;
+                    } else {
+                        dir = 7;
+                    }
+                }
+            }
+        } else {
+            if(playerDir === 0) {
+                dir = 0;
+                microPos = [routeMove.x, routeMove.y + microMove];
+            } else {
+                if(playerDir == negHalfPi) {
+                    dir = 2;
+                } else {
+                    if(playerDir > negHalfPi) {
+                        dir = 1;
+                    } else {
+                        dir = 3;
+                    }
+                }
+            }
+        }
+        return microPos;
     }
 }
 
