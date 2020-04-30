@@ -55,7 +55,7 @@ class Projectiles {
         raycaster.set(startPoint, direction, true);
         let intersects = raycaster.intersectObject(hitObject, true);
         let angle = 0,
-            name = "projectileLaserViolet" + performance.now();
+            name = "proje-" + shooter.id + "-" + performance.now();
         let speed = intersects[0].distance * speedPerTile;
         let tileMap = sceneState.shipMap[sceneState.floor];
         let targetPos = [];
@@ -76,7 +76,7 @@ class Projectiles {
             }
             targetPos = [];
         }
-        this.sceneState.consequences.addProjectile(name, projectileLife.route);
+        this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route);
         let particles = 0;
         let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
         meshInside.scale.set(0.35, 0.05, 1);
@@ -107,6 +107,18 @@ class Projectiles {
             x: targetPos[0],
             y: targetPos[1],
             ease: Linear.easeNone,
+            onUpdate: () => {
+                let hitter = this.sceneState.consequences.checkHitTime(name, this.sceneState.initTime.s);
+                if(hitter) {
+                    console.log("HIT",hitter);
+                    this.sceneState.consequences.removeFromHitList(name);
+                    scene.remove(meshInside);
+                    scene.remove(meshOutside);
+                    scene.remove(projectileGroup);
+                    this.sceneState.particles -= particles;
+                    tl.kill();
+                }
+            },
             onComplete: () => {
                 console.log('TIME TO COMPLETE', (performance.now() - timeToComplete) / 1000);
                 tl.progress(1);
@@ -124,7 +136,7 @@ class Projectiles {
 
     getProjectileRoute(from, target, targetPos, speedPerTile, distance, dir) {
         let route = [],
-            startTime = performance.now() + speedPerTile * 0.5,
+            startTime = this.sceneState.initTime.s + performance.now() / 1000,
             xLength = 0,
             yLength = 0,
             xLen,

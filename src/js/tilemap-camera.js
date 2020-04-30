@@ -317,7 +317,7 @@ class TileMapCamera {
                     this.sceneState.players.hero.routeIndex = 0;
                     this.sceneState.players.hero.animatingPos = false;
                     this.sceneState.players.hero.moving = true;
-                    this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute, this.sceneState.players.hero.pos);
+                    this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute);
                 } else if(this.sceneState.players.hero.moving) {
                     let now = this.sceneState.initTime.s + performance.now() / 1000;
                     resultRoute[0].createdTime = now;

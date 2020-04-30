@@ -24,6 +24,18 @@ class PlayerController {
         sceneState.players.hero.microPos = [35,43,0];
         sceneState.consequences.addPlayer(sceneState.players.hero);
         
+        // TEMP DUDE
+        sceneState.consequences.addPlayer({id:"testPLAYER",pos:[33,45,0]}); // TEMP PLAYER
+        let tempGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
+        let tempMaterial = new THREE.MeshPhongMaterial({color: 0xffEE44});
+        let tempMesh = new THREE.Mesh(tempGeometry, tempMaterial);
+        tempMesh.scale.x = 0.5;
+        tempMesh.scale.y = 0.5;
+        tempMesh.position.x = 33;
+        tempMesh.position.y = 45;
+        tempMesh.position.z = 0.5;
+        scene.add(tempMesh);
+        
         let group = new THREE.Group();
         let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
         let heroMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
