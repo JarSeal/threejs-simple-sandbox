@@ -102,7 +102,6 @@ class Projectiles {
         this.sceneState.particles += particles; // ADD PARTICLE(S)
         let tl = new TimelineMax();
         tl.startTime = performance.now();
-        let timeToComplete = performance.now();
         tl.to(projectileGroup.position, speed, {
             x: targetPos[0],
             y: targetPos[1],
@@ -110,8 +109,8 @@ class Projectiles {
             onUpdate: () => {
                 let hitter = this.sceneState.consequences.checkHitTime(name, this.sceneState.initTime.s);
                 if(hitter) {
-                    console.log("HIT",hitter);
-                    this.sceneState.consequences.removeFromHitList(name);
+                    this.sceneState.consequences.doHitConsequence(name, hitter);
+                    this.hitObstacle(hitter.target, scene, name, camera, tileMap, hitter.hitPos, projectileLife);
                     scene.remove(meshInside);
                     scene.remove(meshOutside);
                     scene.remove(projectileGroup);
@@ -120,11 +119,9 @@ class Projectiles {
                 }
             },
             onComplete: () => {
-                console.log('TIME TO COMPLETE', (performance.now() - timeToComplete) / 1000);
                 tl.progress(1);
-                // Create blast sparks for solid obstacle
+                this.sceneState.consequences.removeProjectile(name);
                 this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
-                // Delete objects and group
                 scene.remove(meshInside);
                 scene.remove(meshOutside);
                 scene.remove(projectileGroup);
@@ -143,6 +140,7 @@ class Projectiles {
             yLen,
             angle,
             pos,
+            posExact,
             travel = 0.2, // How much should the hypotenuse be travelled before the next check
             loopLength = Math.ceil(distance / travel),
             enterTime,
@@ -157,78 +155,126 @@ class Projectiles {
         for(i=0; i<loopLength; i++) {
             switch(dir) {
                 case 0:
-                    pos = [
+                    posExact = [
                         from[0],
-                        Math.round(from[1] - travel * i),
+                        from[1] - travel * i,
+                    ];
+                    pos = [
+                        posExact[0],
+                        Math.round(posExact[1]),
                     ];
                     break;
                 case 2:
-                    pos = [
-                        Math.round(from[0] - travel * i),
+                    posExact = [
+                        from[0] - travel * i,
                         from[1],
+                    ];
+                    pos = [
+                        Math.round(posExact[0]),
+                        posExact[1],
                     ];
                     break;
                 case 4:
-                    pos = [
+                    posExact = [
                         from[0],
-                        Math.round(from[0] + travel * i),
+                        from[1] + travel * i,
+                    ];
+                    pos = [
+                        posExact[0],
+                        Math.round(posExact[1]),
                     ];
                     break;
                 case 6:
-                    pos = [
-                        Math.round(from[0] + travel * i),
+                    posExact = [
+                        from[0] + travel * i,
                         from[1],
+                    ];
+                    pos = [
+                        Math.round(posExact[0]),
+                        posExact[1],
                     ];
                     break;
                 case 1:
                     if(yLength > xLength) {
+                        posExact = [
+                            from[0] - Math.sin(angle) * travel * i,
+                            from[1] - Math.cos(angle) * travel * i,
+                        ];
                         pos = [
-                            Math.round(from[0] - Math.sin(angle) * travel * i),
-                            Math.round(from[1] - Math.cos(angle) * travel * i),
+                            Math.round(posExact[0]),
+                            Math.round(posExact[1]),
                         ];
                     } else {
+                        posExact = [
+                            from[0] - Math.cos(angle) * travel * i,
+                            from[1] - Math.sin(angle) * travel * i,
+                        ];
                         pos = [
-                            Math.round(from[0] - Math.cos(angle) * travel * i),
-                            Math.round(from[1] - Math.sin(angle) * travel * i),
+                            Math.round(posExact[0]),
+                            Math.round(posExact[1]),
                         ];
                     }
                     break;
                 case 3:
                     if(yLength > xLength) {
+                        posExact = [
+                            from[0] - Math.sin(angle) * travel * i,
+                            from[1] + Math.cos(angle) * travel * i,
+                        ];
                         pos = [
-                            Math.round(from[0] - Math.sin(angle) * travel * i),
-                            Math.round(from[1] + Math.cos(angle) * travel * i),
+                            Math.round(posExact[0]),
+                            Math.round(posExact[1]),
                         ];
                     } else {
+                        posExact = [
+                            from[0] - Math.cos(angle) * travel * i,
+                            from[1] + Math.sin(angle) * travel * i,
+                        ];
                         pos = [
-                            Math.round(from[0] - Math.cos(angle) * travel * i),
-                            Math.round(from[1] + Math.sin(angle) * travel * i),
+                            Math.round(posExact[0]),
+                            Math.round(posExact[1]),
                         ];
                     }
                     break;
                 case 5:
                     if(yLength > xLength) {
+                        posExact = [
+                            from[0] + Math.sin(angle) * travel * i,
+                            from[1] + Math.cos(angle) * travel * i,
+                        ];
                         pos = [
-                            Math.round(from[0] + Math.sin(angle) * travel * i),
-                            Math.round(from[1] + Math.cos(angle) * travel * i),
+                            Math.round(posExact[0]),
+                            Math.round(posExact[1]),
                         ];
                     } else {
+                        posExact = [
+                            from[0] + Math.cos(angle) * travel * i,
+                            from[1] + Math.sin(angle) * travel * i,
+                        ];
                         pos = [
-                            Math.round(from[0] + Math.cos(angle) * travel * i),
-                            Math.round(from[1] + Math.sin(angle) * travel * i),
+                            Math.round(posExact[0]),
+                            Math.round(posExact[1]),
                         ];
                     }
                     break;
                 case 7:
                     if(yLength > xLength) {
+                        posExact = [
+                            from[0] + Math.sin(angle) * travel * i,
+                            from[1] - Math.cos(angle) * travel * i,
+                        ];
                         pos = [
-                            Math.round(from[0] + Math.sin(angle) * travel * i),
-                            Math.round(from[1] - Math.cos(angle) * travel * i),
+                            Math.round(posExact[0]),
+                            Math.round(posExact[1]),
                         ];
                     } else {
+                        posExact = [
+                            from[0] + Math.cos(angle) * travel * i,
+                            from[1] - Math.sin(angle) * travel * i,
+                        ];
                         pos = [
-                            Math.round(from[0] + Math.cos(angle) * travel * i),
-                            Math.round(from[1] - Math.sin(angle) * travel * i),
+                            Math.round(posExact[0]),
+                            Math.round(posExact[1]),
                         ];
                     }
                     break;
@@ -237,7 +283,10 @@ class Projectiles {
                 enterTime = startTime + i * travel * speedPerTile;
                 route.push({
                     pos: pos,
+                    posExact: posExact,
                     enterTime: enterTime,
+                    dir: dir,
+
                 });
                 if(route.length > 1) {
                     route[route.length - 2].leaveTime = enterTime;
@@ -464,40 +513,8 @@ class Projectiles {
             }
             this.sceneState.particles += floorParticles + streaks;
         if(type == 'solid') {
-            this.setBurnSpot(projectileLife, posWOffset, scene, camera);
-            for(i=0; i<floorParticles; i++) {
-                (() => {
-                    let sparkName = projectileName + "-" + i,
-                        startColor = {color:"#ffffff"},
-                        spark = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone());
-                    spark.position.set(posWOffset[0], posWOffset[1], 1);
-                    spark.name = sparkName;
-                    spark.quaternion.copy(camera.quaternion);
-                    scene.add(spark);
-                    let tl = new TimelineMax(),
-                        lifeSpan = this._randomFloatInBetween(0.1, 1.2),
-                        newX = posWOffset[0] + this.random2dAmount(dir, 'x', tileMap, pos, projectileLife.special),
-                        newY = posWOffset[1] + this.random2dAmount(dir, 'y', tileMap, pos, projectileLife.special);
-                    tl.to(scene.getObjectByName(sparkName).position, lifeSpan, {x: newX, y: newY})
-                      .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: this.sparkSize, ease: Bounce.easeOut}, "-="+lifeSpan)
-                      .to(startColor, lifeSpan / 4, {color:"#ffff00", onUpdate: () => {
-                        scene.getObjectByName(sparkName).material.color.set(startColor.color);
-                      }}, "-="+(lifeSpan / 1.5))
-                      .to(startColor, lifeSpan / 4, {color:"#ff0000", onUpdate: () => {
-                        scene.getObjectByName(sparkName).material.color.set(startColor.color);
-                      }}, "-="+(lifeSpan / 4))
-                      .to(scene.getObjectByName(sparkName).scale, lifeSpan, {x: 0.05, y: 0.05, ease: Bounce.easeOut}, "-="+(lifeSpan / 1.5))
-                      .to(scene.getObjectByName(sparkName).material, lifeSpan, {opacity: 0});
-                    setTimeout(() => {
-                        let removeThis = scene.getObjectByName(sparkName);
-                        if(removeThis) {
-                            removeThis.material.dispose();
-                            scene.remove(removeThis);
-                        }
-                        this.sceneState.particles--;
-                    }, lifeSpan * 1000 * 2);
-                })();
-            }
+            this.createBurnSpot(projectileLife, posWOffset, scene, camera);
+            this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName);
             for(i=0; i<streaks; i++) {
                 (() => {
                     let tl = new TimelineMax(),
@@ -536,6 +553,45 @@ class Projectiles {
                     }, "-="+lifeSpan/1.2);
                 })();
             }
+        } else if(type == 'player') {
+            this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, "player", projectileLife, projectileName);
+        }
+    }
+
+    createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName) {
+        let i = 0;
+        for(i=0; i<floorParticles; i++) {
+            (() => {
+                let sparkName = projectileName + "-spark-" + i,
+                    startColor = {color:"#ffffff"},
+                    spark = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone());
+                spark.position.set(posWOffset[0], posWOffset[1], 1);
+                spark.name = sparkName;
+                spark.quaternion.copy(camera.quaternion);
+                scene.add(spark);
+                let tl = new TimelineMax(),
+                    lifeSpan = this._randomFloatInBetween(0.1, 1.2),
+                    newX = posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
+                    newY = posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special);
+                tl.to(scene.getObjectByName(sparkName).position, lifeSpan, {x: newX, y: newY})
+                  .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: this.sparkSize, ease: Bounce.easeOut}, "-="+lifeSpan)
+                  .to(startColor, lifeSpan / 4, {color:"#ffff00", onUpdate: () => {
+                    scene.getObjectByName(sparkName).material.color.set(startColor.color);
+                  }}, "-="+(lifeSpan / 1.5))
+                  .to(startColor, lifeSpan / 4, {color:"#ff0000", onUpdate: () => {
+                    scene.getObjectByName(sparkName).material.color.set(startColor.color);
+                  }}, "-="+(lifeSpan / 4))
+                  .to(scene.getObjectByName(sparkName).scale, lifeSpan, {x: 0.05, y: 0.05, ease: Bounce.easeOut}, "-="+(lifeSpan / 1.5))
+                  .to(scene.getObjectByName(sparkName).material, lifeSpan, {opacity: 0});
+                setTimeout(() => {
+                    let removeThis = scene.getObjectByName(sparkName);
+                    if(removeThis) {
+                        removeThis.material.dispose();
+                        scene.remove(removeThis);
+                    }
+                    this.sceneState.particles--;
+                }, lifeSpan * 1000 * 2);
+            })();
         }
     }
 
@@ -548,10 +604,45 @@ class Projectiles {
         return Math.floor(Math.random() * (max - min + 1) + min) / 10;
     }
 
-    random2dAmount(dir, axis, tileMap, hitPos, special) {
+    random2dAmount(dir, axis, target, hitPos, special) {
         let min = 0.4,
             max = 1.6,
             amount = this._randomFloatInBetween(min, max);
+        if(target === "player" && (dir == 1 || dir == 3 || dir == 5 || dir == 7)) {
+            let xOffset = hitPos[0] - Math.round(hitPos[0]);
+            let yOffset = hitPos[1] - Math.round(hitPos[1]);
+            switch(dir) {
+                case 1:
+                case 7:
+                    if(axis == 'x') {
+                        if(xOffset < 0) {
+                            return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                        } else {
+                            return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                        }
+                    }
+                    if(yOffset < 0) {
+                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                    } else {
+                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                    }
+                case 3:
+                case 5:
+                    if(axis == 'x') {
+                        if(xOffset < 0) {
+                            return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                        } else {
+                            return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                        }
+                    }
+                    if(yOffset < 0) {
+                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                    } else {
+                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                    }
+            }
+        }
+        let tileMap = target;
         switch(dir) {
             case 0:
                 if(axis == 'x') {
@@ -638,7 +729,7 @@ class Projectiles {
         }
     }
 
-    setBurnSpot(projectileLife, posWOffset, scene, camera) {
+    createBurnSpot(projectileLife, posWOffset, scene, camera) {
         let darkSpot1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.burnMarkTexture,transparent:true})),
             darkSpot2 = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone()),
             smoke1Opacity = this.sceneState.settings.useOpacity ? ((Math.random() * 7) + 1) / 10 : 1,
