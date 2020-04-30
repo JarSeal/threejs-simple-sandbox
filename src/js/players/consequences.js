@@ -43,58 +43,61 @@ class Consequences {
     createHitList(index) {
         const playerKeys = Object.keys(this.players);
         let pr = 0,
-            projLength,
-            projectile,
+            projLength = this.projectiles.length;
+        if(index === undefined) {
+            // Go through all projectiles
+            for(pr=0; pr<projLength; pr++) {
+                this.addToHitList(this.projectiles[pr]);
+            }
+        } else {
+            // Add only one (the latest) projectile's hits to hitList
+            this.addToHitList(index);
+        }
+    }
+
+    addToHitList(index) {
+        if(!this.projectiles || !index || !this.projectiles[index]) return;
+        const playerKeys = Object.keys(this.players);
+        let projectile = this.projectiles[index],
             r = 0,
-            routeLength,
+            routeLength = projectile.route.length,
             pl = 0,
             playersLength = playerKeys.length,
             plR = 0,
             plRLength,
             hitFound = false;
-        if(index === undefined) {
-            projLength = this.projectiles.length;
-            // Go through all projectiles
-            for(pr=0; pr<projLength; pr++) {
-
-            }
-        } else {
-            // Add only one projectile's hits to hitList
-            projectile = this.projectiles[index];
-            routeLength = projectile.route.length;
-            for(r=1; r<routeLength; r++) { // Skip the first tile
-                let prEnterTime = projectile.route[r].enterTime,
-                    prLeaveTime = projectile.route[r].leaveTime,
-                    prPos = projectile.route[r].pos;
-                for(pl=0; pl<playersLength; pl++) {
-                    plRLength = this.players[playerKeys[pl]].length;
-                    for(plR=0; plR<plRLength; plR++) {
-                        let plEnterTime = this.players[playerKeys[pl]][plR].enterTime,
-                            plLeaveTime = this.players[playerKeys[pl]][plR].leaveTime,
-                            plPos = this.players[playerKeys[pl]][plR].pos;
-                        if((plPos[0] === prPos[0] && plPos[1] === prPos[1]) &&
-                           (plLeaveTime === 0 || (prEnterTime < plLeaveTime && prEnterTime > plEnterTime) ||
-                            (plEnterTime < prLeaveTime && plEnterTime > prEnterTime))) {
-                            // Add hit to hitList
-                            this.hitList[projectile.projectileId] = {
-                                type: "projectile",
-                                shooterId: projectile.shooterId,
-                                projectileId: projectile.projectileId,
-                                time: prEnterTime,
-                                target: "player",
-                                targetId: playerKeys[pl],
-                                pos: prPos,
-                                hitPos: projectile.route[r].posExact,
-                                dir: projectile.route[r].dir,
-                            };
-                            hitFound = true;
-                            break;
-                        }
+        for(r=1; r<routeLength; r++) { // Skip the first tile
+            let prEnterTime = projectile.route[r].enterTime,
+                prLeaveTime = projectile.route[r].leaveTime,
+                prPos = projectile.route[r].pos;
+            for(pl=0; pl<playersLength; pl++) {
+                plRLength = this.players[playerKeys[pl]].length;
+                for(plR=0; plR<plRLength; plR++) {
+                    let plEnterTime = this.players[playerKeys[pl]][plR].enterTime,
+                        plLeaveTime = this.players[playerKeys[pl]][plR].leaveTime,
+                        plPos = this.players[playerKeys[pl]][plR].pos;
+                    if((plPos[0] === prPos[0] && plPos[1] === prPos[1]) &&
+                        (plLeaveTime === 0 || (prEnterTime < plLeaveTime && prEnterTime > plEnterTime) ||
+                        (plEnterTime < prLeaveTime && plEnterTime > prEnterTime))) {
+                        // Add hit to hitList
+                        this.hitList[projectile.projectileId] = {
+                            type: "projectile",
+                            shooterId: projectile.shooterId,
+                            projectileId: projectile.projectileId,
+                            time: prEnterTime,
+                            target: "player",
+                            targetId: playerKeys[pl],
+                            pos: prPos,
+                            hitPos: projectile.route[r].posExact,
+                            dir: projectile.route[r].dir,
+                        };
+                        hitFound = true;
+                        break;
                     }
-                    if(hitFound) break;
                 }
                 if(hitFound) break;
             }
+            if(hitFound) break;
         }
     }
 
