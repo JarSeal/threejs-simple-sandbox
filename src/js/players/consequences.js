@@ -41,7 +41,6 @@ class Consequences {
     }
     
     createHitList(index) {
-        const playerKeys = Object.keys(this.players);
         let pr = 0,
             projLength = this.projectiles.length;
         if(index === undefined) {
@@ -56,7 +55,7 @@ class Consequences {
     }
 
     addToHitList(index) {
-        if(!this.projectiles || !index || !this.projectiles[index]) return;
+        if(!this.projectiles || index === undefined || !this.projectiles[index]) return;
         const playerKeys = Object.keys(this.players);
         let projectile = this.projectiles[index],
             r = 0,
@@ -78,7 +77,8 @@ class Consequences {
                         plPos = this.players[playerKeys[pl]][plR].pos;
                     if((plPos[0] === prPos[0] && plPos[1] === prPos[1]) &&
                         (plLeaveTime === 0 || (prEnterTime < plLeaveTime && prEnterTime > plEnterTime) ||
-                        (plEnterTime < prLeaveTime && plEnterTime > prEnterTime))) {
+                        (plEnterTime < prLeaveTime && plEnterTime > prEnterTime)) &&
+                        projectile.shooterId != playerKeys[pl]) {
                         // Add hit to hitList
                         this.hitList[projectile.projectileId] = {
                             type: "projectile",
@@ -116,6 +116,21 @@ class Consequences {
             return hitter;
         }
         return false;
+    }
+
+    checkAllHitTimes(initTime) {
+        const hitListKeys = Object.keys(this.hitList);
+        let hitter,
+            hitListLength = hitListKeys.length,
+            i = 0,
+            id;
+        for(i=0; i<hitListLength; i++) {
+            id = hitListKeys[i];
+            hitter = this.checkHitTime(id, initTime);
+            if(hitter) {
+                this.doHitConsequence(id, hitter);
+            }
+        }
     }
 
     removeProjectile(id) {
