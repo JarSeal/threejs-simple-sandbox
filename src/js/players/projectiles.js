@@ -109,23 +109,24 @@ class Projectiles {
             onUpdate: () => {
                 let hitter = this.sceneState.consequences.checkHitTime(name, this.sceneState.initTime.s);
                 if(hitter) {
-                    this.sceneState.consequences.doHitConsequence(name, hitter);
+                    this.sceneState.consequences.doHitConsequence(name, hitter, scene);
+                    this.sceneState.particles -= particles;
+                    console.log('MIDOARTICLES',this.sceneState.particles);
                     this.hitObstacle(hitter.target, scene, name, camera, tileMap, hitter.hitPos, projectileLife);
-                    scene.remove(meshInside);
-                    scene.remove(meshOutside);
-                    scene.remove(projectileGroup);
+                    tl.kill();
+                    return;
+                }
+                let timeNow = this.sceneState.initTime.s + performance.now() / 1000;
+                if(timeNow > projectileLife.route[projectileLife.route.length - 1].leaveTime + 0.5) {
+                    this.sceneState.consequences.removeProjectile(name, scene);
                     this.sceneState.particles -= particles;
                     tl.kill();
                 }
             },
             onComplete: () => {
-                tl.progress(1);
-                this.sceneState.consequences.removeProjectile(name);
-                this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
-                scene.remove(meshInside);
-                scene.remove(meshOutside);
-                scene.remove(projectileGroup);
                 this.sceneState.particles -= particles; // REMOVE PARTICLE(S)
+                this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
+                this.sceneState.consequences.removeProjectile(name, scene);
                 // scene.remove(helperLine);
             }
         });
@@ -500,61 +501,82 @@ class Projectiles {
             posWOffset = [targetPos[0] + projectileLife.xOffset, targetPos[1] + projectileLife.yOffset],
             minFloorParticles = 3,
             maxFloorParticles = 20,
-            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles),
+            floorParticles,
             i = 0,
-            streaks = this._randomIntInBetween(2, 6),
-            particles = floorParticles + streaks,
+            streaks,
+            particles,
             maxParticles = this.sceneState.settings.maxSimultaneousParticles,
             curParticles = this.sceneState.particles;
+        if(type == 'solid') {
+            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
+            streaks = this._randomIntInBetween(2, 6);
+            particles = floorParticles + streaks;
             if(curParticles + particles > maxParticles) {
                 floorParticles = maxParticles - curParticles;
                 if(floorParticles < 0) floorParticles = 0;
                 streaks = 0;
             }
             this.sceneState.particles += floorParticles + streaks;
-        if(type == 'solid') {
             this.createBurnSpot(projectileLife, posWOffset, scene, camera);
             this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName);
-            for(i=0; i<streaks; i++) {
-                (() => {
-                    let tl = new TimelineMax(),
-                        lifeSpan = this._randomFloatInBetween(0.1, 0.2),
-                        newX = posWOffset[0] + this.random2dAmount(dir, 'x', tileMap, pos, projectileLife.special),
-                        newY = posWOffset[1] + this.random2dAmount(dir, 'y', tileMap, pos, projectileLife.special),
-                        newZ = this._randomFloatInBetween(0.8, 1.6),
-                        streakGeo = new THREE.Geometry();
-                    streakGeo.vertices.push(
-                        new THREE.Vector3(posWOffset[0], posWOffset[1], 1),
-                        new THREE.Vector3(posWOffset[0], posWOffset[1], 1),
-                    );
-                    let streak = new THREE.Line(streakGeo, new THREE.LineBasicMaterial({color: 0xffffff}));
-                    scene.add(streak);
-                    tl.to(streak.geometry.vertices[1], lifeSpan, {
-                        x: newX,
-                        y: newY,
-                        z: newZ,
-                        ease: Linear.easeNone,
-                        onUpdate: () => {
-                            streak.geometry.verticesNeedUpdate = true;
-                        }
-                    }).to(streak.geometry.vertices[0], lifeSpan, {
-                        x: newX,
-                        y: newY,
-                        z: newZ,
-                        ease: Linear.easeNone,
-                        onUpdate: () => {
-                            streak.geometry.verticesNeedUpdate = true;
-                        }, onComplete: () => {
+            this.createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife);
+        } else if(type == 'player') {
+            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
+            streaks = this._randomIntInBetween(2, 6);
+            particles = floorParticles + streaks;
+            if(curParticles + particles > maxParticles) {
+                floorParticles = maxParticles - curParticles;
+                if(floorParticles < 0) floorParticles = 0;
+                streaks = 0;
+            }
+            this.sceneState.particles += floorParticles + streaks;
+            this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, "player", projectileLife, projectileName);
+            this.createStreaks(streaks, scene, posWOffset, pos, "player", projectileLife);
+        }
+    }
+
+    createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife) {
+        let i = 0;
+        for(i=0; i<streaks; i++) {
+            (() => {
+                let tl = new TimelineMax(),
+                    lifeSpan = this._randomFloatInBetween(0.1, 0.2),
+                    newX = posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
+                    newY = posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
+                    newZ = this._randomFloatInBetween(0.8, 1.6),
+                    streakGeo = new THREE.Geometry();
+                streakGeo.vertices.push(
+                    new THREE.Vector3(posWOffset[0], posWOffset[1], 1),
+                    new THREE.Vector3(posWOffset[0], posWOffset[1], 1),
+                );
+                let streak = new THREE.Line(streakGeo, new THREE.LineBasicMaterial({color: 0xffffff}));
+                scene.add(streak);
+                tl.to(streak.geometry.vertices[1], lifeSpan, {
+                    x: newX,
+                    y: newY,
+                    z: newZ,
+                    ease: Linear.easeNone,
+                    onUpdate: () => {
+                        if(streak) streak.geometry.verticesNeedUpdate = true;
+                    }
+                }).to(streak.geometry.vertices[0], lifeSpan, {
+                    x: newX,
+                    y: newY,
+                    z: newZ,
+                    ease: Linear.easeNone,
+                    onUpdate: () => {
+                        if(streak) streak.geometry.verticesNeedUpdate = true;
+                    },
+                    onComplete: () => {
+                        if(streak) {
                             streak.geometry.dispose();
                             streak.material.dispose();
                             scene.remove(streak);
                             this.sceneState.particles--;
                         }
-                    }, "-="+lifeSpan/1.2);
-                })();
-            }
-        } else if(type == 'player') {
-            this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, "player", projectileLife, projectileName);
+                    },
+                }, "-="+lifeSpan/1.2);
+            })();
         }
     }
 
@@ -576,10 +598,16 @@ class Projectiles {
                 tl.to(scene.getObjectByName(sparkName).position, lifeSpan, {x: newX, y: newY})
                   .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: this.sparkSize, ease: Bounce.easeOut}, "-="+lifeSpan)
                   .to(startColor, lifeSpan / 4, {color:"#ffff00", onUpdate: () => {
-                    scene.getObjectByName(sparkName).material.color.set(startColor.color);
+                    let sparkObj = scene.getObjectByName(sparkName);
+                    if(sparkObj) {
+                        sparkObj.material.color.set(startColor.color);
+                    }
                   }}, "-="+(lifeSpan / 1.5))
                   .to(startColor, lifeSpan / 4, {color:"#ff0000", onUpdate: () => {
-                    scene.getObjectByName(sparkName).material.color.set(startColor.color);
+                    let sparkObj = scene.getObjectByName(sparkName);
+                    if(sparkObj) {
+                        sparkObj.material.color.set(startColor.color);
+                    }
                   }}, "-="+(lifeSpan / 4))
                   .to(scene.getObjectByName(sparkName).scale, lifeSpan, {x: 0.05, y: 0.05, ease: Bounce.easeOut}, "-="+(lifeSpan / 1.5))
                   .to(scene.getObjectByName(sparkName).material, lifeSpan, {opacity: 0});
