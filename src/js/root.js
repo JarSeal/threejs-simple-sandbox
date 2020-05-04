@@ -1,6 +1,7 @@
 import Scene from './scene.js';
 import AppUiLayer from './ui/app-ui-layer.js';
 import LStorage from './ui/local-storage.js';
+import Consequences from './players/consequences.js';
 
 class TileMapRoot {
     constructor() {
@@ -18,12 +19,7 @@ class TileMapRoot {
                 curSecondaryState: null,
                 curSecondaryTarget: null,
             },
-            consequences: {
-                targetsPlayers: {},
-                targetsDoors: {},
-                hittersProjectiles: {},
-                hittersBeams: {},
-            },
+            consequences: new Consequences(),
             initTime: null,
             floor: 0,
             moduleData: [],
@@ -44,6 +40,7 @@ class TileMapRoot {
 
     init() {
         this.sceneState.initTime = this.getInitTime();
+        console.log(this.sceneState.initTime);
         const appUiLayer = new AppUiLayer(this.sceneState);
 
         this.getLocalSettingsData();
@@ -106,8 +103,8 @@ class TileMapRoot {
         let now = performance.now(),
             unixTimestamp = Date.now();
         return {
-            s: unixTimestamp,
-            ms: now,
+            s: unixTimestamp + now / 1000,
+            performanceStart: now,
             dayName: "Mon",
             dayNameNumber: 1
         }

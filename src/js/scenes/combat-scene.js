@@ -5,10 +5,13 @@ import PlayerController from './../players/player-controller.js';
 class CombatScene {
     constructor() {
         this.scene;
+        this.sceneState;
         this.camera;
         this.tileMapCamera;
         this.tileMapController;
         this.playerController;
+        this.lastCheckInterval = 2000; // in milliseconds
+        this.lastConsequenceCheck = performance.now();
     }
 
     initView(renderer, sceneState, AppUiLayer) {
@@ -18,6 +21,7 @@ class CombatScene {
         mtlLoader.setPath('/images/objects/');
 
         this.scene = new THREE.Scene();
+        this.sceneState = sceneState;
         
         this.tileMapController = new LoadTileMap(mtlLoader, objLoader, this.scene, renderer, sceneState);
         this.playerController = new PlayerController(sceneState);
@@ -44,6 +48,10 @@ class CombatScene {
     doLoops() {
         this.playerController.setPositions();
         this.tileMapController.moduleAnims(this.scene);
+        if(this.lastConsequenceCheck + this.lastCheckInterval < performance.now()) {
+            this.sceneState.consequences.checkAllHitTimes(this.sceneState.initTime.s, this.scene);
+            this.lastConsequenceCheck = performance.now();
+        }
     }
 }
 

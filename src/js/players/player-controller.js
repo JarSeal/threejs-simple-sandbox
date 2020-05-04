@@ -22,8 +22,22 @@ class PlayerController {
         sceneState.players.hero = hero;
         sceneState.players.hero.pos = [35,43,0];
         sceneState.players.hero.microPos = [35,43,0];
+        sceneState.consequences.addPlayer(sceneState.players.hero);
+        
+        // TEMP DUDE
+        let tempDudePos = [33, 43];
+        sceneState.consequences.addPlayer({id:"testPLAYER",pos:[tempDudePos[0], tempDudePos[1],0]}); // TEMP PLAYER
+        let tempGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
+        let tempMaterial = new THREE.MeshPhongMaterial({color: 0xffEE44});
+        let tempMesh = new THREE.Mesh(tempGeometry, tempMaterial);
+        tempMesh.scale.x = 0.5;
+        tempMesh.scale.y = 0.5;
+        tempMesh.position.x = tempDudePos[0];
+        tempMesh.position.y = tempDudePos[1];
+        tempMesh.position.z = 0.5;
+        scene.add(tempMesh);
+        
         let group = new THREE.Group();
-
         let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
         let heroMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
         let heroMesh = new THREE.Mesh(heroGeometry, heroMaterial);
@@ -81,14 +95,13 @@ class PlayerController {
             routeLength = route.length,
             tl = new TimelineMax(),
             tlRotate = new TimelineMax(),
+            routeIndex = player.routeIndex,
             ease,
-            startEndMultiplier,
             speed,
             newDir = calculateAngle(
                 player.pos,
-                [route[player.routeIndex].x, route[player.routeIndex].y]
+                [route[routeIndex].x, route[routeIndex].y]
             );
-            //newDir = this.getNewDirectionForMove(player, route);
         if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
             // prevent unnecessary spin moves :)
             newDir < 0 ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2 :
@@ -101,73 +114,63 @@ class PlayerController {
                 player.dir = newDir;
             }
         });
-        if(player.routeIndex === 0) {
-            // Player starts to move
-            startEndMultiplier = player.startMultiplier;
-        } else if(player.routeIndex == routeLength - 1) {
-            // Player ends the movement
-            startEndMultiplier = player.endMultiplier;
-        } else {
-            // Default speed
-            startEndMultiplier = 1;
-        }
-        if(player.pos[0] !== route[player.routeIndex].x &&
-            player.pos[1] !== route[player.routeIndex].y) {
-            // Moving diagonally
-            speed = player.speed * 1.5 * startEndMultiplier;
-        } else {
-            // Moving straigth in an axis
-            speed = player.speed * startEndMultiplier;
-        }
+        speed = route[routeIndex].speed * this.sceneState.timeSpeed;
         player.curSpeed = speed * this.sceneState.timeSpeed;
-        player.moveStart = performance.now();
         player.animatingPos = true;
-        player.newPosSet = false;
-        player.newPosTimestamp = speed / 2 + player.moveStart;
-        if(player.routeIndex === 0) {
+        if(routeIndex === 0) {
             routeLength == 1 ? ease = Sine.easeInOut : ease = Sine.easeIn;
         } else {
-            player.routeIndex == routeLength - 1 ? ease = Sine.easeOut : ease = Power0.easeNone;
+            routeIndex == routeLength - 1 ? ease = Sine.easeOut : ease = Power0.easeNone;
         }
-        let realPosition = this.getRealPosition(player.route, player.routeIndex, speed);
-        if(player.routeIndex != routeLength && realPosition.routeIndex) {
+        let realPosition = this.getRealPosition(player.route, routeIndex);
+        if(routeIndex !== realPosition.routeIndex) {
+            routeIndex = realPosition.routeIndex;
             player.routeIndex = realPosition.routeIndex;
             player.pos = realPosition.pos;
             player.mesh.position.x = realPosition.pos[0];
             player.mesh.position.y = realPosition.pos[1];
         }
-        tl.to(player.mesh.position, player.curSpeed / 1000, {
-            x: route[player.routeIndex].x,
-            y: route[player.routeIndex].y,
+        tl.to(player.mesh.position, route[routeIndex].duration, {
+            x: route[routeIndex].x,
+            y: route[routeIndex].y,
             ease: ease,
             onUpdate: () => {
                 player.microPos = [player.mesh.position.x, player.mesh.position.y, player.pos[2]];
-                if(!player.newPosSet && player.newPosTimestamp < performance.now()) {
-                    player.pos = [route[player.routeIndex].x, route[player.routeIndex].y, player.pos[2]];
-                    player.newPosSet = true;
-                }
+                player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
             },
             onComplete: () => {
-                player.pos = [route[player.routeIndex].x, route[player.routeIndex].y, player.pos[2]];
-                player.microPos = player.pos;
-                player.moveStart = null;
-                if(player.newRoute.length) {
+                player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
+                player.microPos = [route[routeIndex].x, route[routeIndex].y, player.pos[2]];
+                let evenX = route[routeIndex].x - route[routeIndex].xInt;
+                let evenY = route[routeIndex].y - route[routeIndex].yInt;
+                if(player.newRoute.length && evenX === 0 && evenY === 0) {
+                    let now = this.sceneState.initTime.s + performance.now(),
+                        delay = now - player.newRoute[0].createdTime,
+                        routeLength = player.newRoute.length,
+                        i = 0;
+                    for(i=0; i<routeLength; i++) {
+                        if(player.newRoute[i].enterTime) {
+                            player.newRoute[i].enterTime += delay;
+                        }
+                        if(player.newRoute[i].leaveTime) {
+                            player.newRoute[i].leaveTime += delay;
+                        }
+                    }
                     player.route = player.newRoute.slice(0);
                     player.newRoute = [];
                     player.routeIndex = 0;
+                    this.sceneState.consequences.movePlayer(player.id, player.route, player.pos);
                 } else {
                     player.routeIndex++;
-                }
-
-                // Check if full destination is reached
-                if(player.routeIndex == routeLength) {
-                    player.moveStart = null;
-                    player.moving = false;
-                    player.route = [];
-                    player.routeIndex = 0;
-                    player.curSpeed = 0;
-                    console.log('ended hero movement');
-                    return; // End animation
+                    // Check if full destination is reached
+                    if(routeIndex == routeLength - 1) {
+                        player.moving = false;
+                        player.route = [];
+                        player.routeIndex = 0;
+                        player.curSpeed = 0;
+                        console.log('ended hero movement');
+                        return; // End animation
+                    }
                 }
                 this.newMove(player);
             },
@@ -175,24 +178,18 @@ class PlayerController {
     }
 
     getRealPosition(route, index) {
-        let now,
-            curIndex,
-            curPos,
+        let curIndex = index,
+            curPos = [],
             routeLength = route.length,
-            i;
-        now = performance.now();
-        let eta = route[index].arriving + route[0].startTimeLocal;
-        if(eta < now) {
-            for(i=index+1; i<routeLength; i++) {
-                // Check how much player is behind of eta
-                eta = route[i].arriving + route[0].startTimeLocal;
-                if(eta < now) {
-                    curIndex = i;
-                    curPos = [route[i].x, route[i].y, this.sceneState.players.hero.pos[2]];
-                }
+            i,
+            timeNow = this.sceneState.initTime.s + performance.now() / 1000;
+        for(i=index+1; i<routeLength; i++) {
+            // Check how much player is behind of eta
+            if((route[i].enterTime < timeNow && route[i].leaveTime > timeNow) || (i == routeLength - 1 && route[i].enterTime < timeNow)) {
+                curIndex = i;
+                curPos = [route[i].xInt, route[i].yInt, this.sceneState.players.hero.pos[2]];
             }
         }
-        //console.log('HAP',index,eta,now, now - eta);
         return {
             routeIndex: curIndex,
             pos: curPos
