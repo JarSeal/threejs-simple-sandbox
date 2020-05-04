@@ -46,7 +46,7 @@ class Projectiles {
         if((from[0] === target[0] && from[1] === target[1]) || (shooter.pos[0] === target[0] && shooter.pos[1] === target[1])) return; // Do not shoot your own legs
 
         let speedPerTile = 0.085 * sceneState.timeSpeed, // in seconds
-            maxDistance = 4,
+            maxDistance = 20,
             raycaster = new THREE.Raycaster(),
             startPoint = new THREE.Vector3(from[0], from[1], 1),
             direction = new THREE.Vector3(),
