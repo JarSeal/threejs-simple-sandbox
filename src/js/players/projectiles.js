@@ -46,7 +46,7 @@ class Projectiles {
         if((from[0] === target[0] && from[1] === target[1]) || (shooter.pos[0] === target[0] && shooter.pos[1] === target[1])) return; // Do not shoot your own legs
 
         let speedPerTile = 0.085 * sceneState.timeSpeed, // in seconds
-            maxDistance = 10,
+            maxDistance = 4,
             raycaster = new THREE.Raycaster(),
             startPoint = new THREE.Vector3(from[0], from[1], 1),
             direction = new THREE.Vector3(),
@@ -56,26 +56,19 @@ class Projectiles {
         let intersects = raycaster.intersectObject(hitObject, true);
         let angle = 0,
             name = "proje-" + shooter.id + "-" + performance.now();
-        let speed = intersects[0].distance * speedPerTile;
         let tileMap = sceneState.shipMap[sceneState.floor];
         let targetPos = [];
-        let projectileLife = this.getProjectileLife(intersects, from, target, speedPerTile, tileMap);
-        if(intersects.length) {
-            //let helperLine = this.showProjectileHelper(startPoint, intersects, scene);
-            targetPos = [intersects[0].point.x, intersects[0].point.y];
-            angle = calculateAngle(from, targetPos);
-        } else {
-            let xDist = Math.abs(target[0] - from[0]);
-            let yDist = Math.abs(target[1] - from[1]);
-            angle = calculateAngle(from, target);
-            if(xDist > yDist) {
-                ratio = yDist / xDist;
-                projectileLife.dir > 4 ? targetPos.push(from[0] + maxDistance) : targetPos.push(from[0] - maxDistance);
-            } else {
-                ratio = xDist / yDist;
-            }
-            targetPos = [];
+        let projectileLife = this.getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance);
+
+        if(!intersects.length || intersects[0].distance > maxDistance) {
+            intersects = projectileLife.intersects;
         }
+
+        //let helperLine = this.showProjectileHelper(startPoint, intersects, scene);
+        targetPos = [intersects[0].point.x, intersects[0].point.y];
+        angle = calculateAngle(from, targetPos);
+
+        let speed = intersects[0].distance * speedPerTile;
         this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route);
         let particles = 0;
         let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
@@ -111,7 +104,6 @@ class Projectiles {
                 if(hitter) {
                     this.sceneState.consequences.doHitConsequence(name, hitter, scene);
                     this.sceneState.particles -= particles;
-                    console.log('MIDOARTICLES',this.sceneState.particles);
                     this.hitObstacle(hitter.target, scene, name, camera, tileMap, hitter.hitPos, projectileLife);
                     tl.kill();
                     return;
@@ -125,14 +117,16 @@ class Projectiles {
             },
             onComplete: () => {
                 this.sceneState.particles -= particles; // REMOVE PARTICLE(S)
-                this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
+                if(!projectileLife.noHit) {
+                    this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
+                }
                 this.sceneState.consequences.removeProjectile(name, scene);
                 // scene.remove(helperLine);
             }
         });
     }
 
-    getProjectileRoute(from, target, targetPos, speedPerTile, distance, dir) {
+    getProjectileRoute(from, targetPos, speedPerTile, distance, dir) {
         let route = [],
             startTime = this.sceneState.initTime.s + performance.now() / 1000,
             xLength = 0,
@@ -301,189 +295,229 @@ class Projectiles {
         return route;
     }
 
-    getProjectileLife(intersects, from, target, speedPerTile, tileMap) {
-        let distance = intersects.length ?
-            intersects[0].distance :
-            Math.sqrt(Math.pow(Math.abs(from[0] - target[0]), 2) + Math.pow(Math.abs(from[1] - target[1]), 2));
+    createIntersector(from, target, maxDistance) {
+        let targetPos = [0,0],
+            dir,
+            angle;
+        if(from[0] === target[0] || from[1] === target[1]) {
+            // Straight
+            if(from[0] === target[0]) {
+                from[1] > target[1] ? dir = 0 : dir = 4;
+                targetPos[0] = from[0];
+                dir == 4 ? targetPos[1] = from[1] + maxDistance : targetPos[1] = from[1] - maxDistance;
+            } else {
+                from[0] > target[0] ? dir = 2 : dir = 6;
+                dir == 6 ? targetPos[0] = from[0] + maxDistance : targetPos[0] = from[0] - maxDistance;
+                targetPos[1] = from[1];
+            }
+        } else {
+            // Diagonal shot
+            if(from[1] > target[1] && from[0] > target[0]) { dir = 1; } else
+            if(from[1] < target[1] && from[0] > target[0]) { dir = 3; } else
+            if(from[1] < target[1] && from[0] < target[0]) { dir = 5; } else
+            if(from[1] > target[1] && from[0] < target[0]) { dir = 7; }
+            angle = calculateAngle(from, target) + 1.5708;
+            let xLength = Math.abs(Math.cos(angle) * maxDistance);
+            let yLength = Math.abs(Math.sin(angle) * maxDistance);
+            dir > 4 ? targetPos[0] = from[0] + xLength : targetPos[0] = from[0] - xLength;
+            dir > 2 && dir < 6 ? targetPos[1] = from[1] + yLength : targetPos[1] = from[1] - yLength;
+        }
+        return {point: {x: targetPos[0], y: targetPos[1]}, distance: maxDistance, dir: dir};
+    }
+
+    getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance) {
+        let noHit = false;
+        if(!intersects.length || intersects[0].distance > maxDistance) {
+            // Does not hit anything
+            intersects = [];
+            intersects.push(this.createIntersector(from, target, maxDistance));
+            noHit = true;
+        }
+        let distance = intersects[0].distance;
         let life = {
             speed: speedPerTile * distance,
-            dir: 0,
+            dir: noHit ? intersects[0].dir : 0,
             turn: 0,
             xOffset: 0,
             yOffset: 0,
             route: [],
             special: false,
+            intersects,
+            noHit: noHit,
         },
-        hitPos = intersects.length ? [Math.round(intersects[0].point.x), Math.round(intersects[0].point.y)] : [],
+        hitPos = [Math.round(intersects[0].point.x), Math.round(intersects[0].point.y)],
         wallType,
         defaultOffset = 0.05;
 
-        // Check if the projectile travels on a straight line
-        if(from[0] === target[0] || from[1] === target[1]) {
-            // Straight
-            if(from[0] === target[0]) {
-                if(from[1] > target[1]) {
-                    life.dir = 0;
-                    life.turn = this.preCountedTurns.ninety;
-                    life.yOffset = defaultOffset;
+        if(!noHit) {
+            // Check if the projectile travels on a straight line
+            if(from[0] === target[0] || from[1] === target[1]) {
+                // Straight
+                if(from[0] === target[0]) {
+                    if(from[1] > target[1]) {
+                        life.dir = 0;
+                        life.turn = this.preCountedTurns.ninety;
+                        life.yOffset = defaultOffset;
+                    } else {
+                        life.dir = 4;
+                        life.turn = -this.preCountedTurns.ninety;
+                        life.yOffset = -defaultOffset;
+                    }
                 } else {
-                    life.dir = 4;
-                    life.turn = -this.preCountedTurns.ninety;
-                    life.yOffset = -defaultOffset;
+                    if(from[0] > target[0]) {
+                        life.dir = 2;
+                        life.turn = 0;
+                        life.xOffset = defaultOffset;
+                    } else {
+                        life.dir = 6;
+                        life.turn = this.preCountedTurns.hundredEighty;
+                        life.xOffset = -defaultOffset;
+                    }
                 }
             } else {
-                if(from[0] > target[0]) {
-                    life.dir = 2;
-                    life.turn = 0;
-                    life.xOffset = defaultOffset;
-                } else {
-                    life.dir = 6;
-                    life.turn = this.preCountedTurns.hundredEighty;
-                    life.xOffset = -defaultOffset;
-                }
-            }
-        } else {
-            // Diagonal shot
-            if(from[1] > target[1] && from[0] > target[0]) {
-                life.dir = 1;
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
-                if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = "x"; } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
-                { wallType = "posEdge" }
-                switch(wallType) {
-                    case "y":
-                        life.turn = 0;
-                        life.xOffset = defaultOffset;
-                        break;
-                    case "x":
-                        life.turn = this.preCountedTurns.ninety;
-                        life.yOffset = defaultOffset;
-                        break;
-                    case "posEdge":
-                        if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25 && intersects[0].point.y > Math.round(intersects[0].point.y) + 0.25) {
+                // Diagonal shot
+                if(from[1] > target[1] && from[0] > target[0]) {
+                    life.dir = 1;
+                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
+                    if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = "x"; } else
+                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
+                    { wallType = "posEdge" }
+                    switch(wallType) {
+                        case "y":
+                            life.turn = 0;
+                            life.xOffset = defaultOffset;
+                            break;
+                        case "x":
+                            life.turn = this.preCountedTurns.ninety;
+                            life.yOffset = defaultOffset;
+                            break;
+                        case "posEdge":
+                            if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25 && intersects[0].point.y > Math.round(intersects[0].point.y) + 0.25) {
+                                life.turn = this.preCountedTurns.fortyFive;
+                                break;
+                            } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
+                                life.turn = 0;
+                                life.xOffset = defaultOffset;
+                                life.special = true;
+                                break;
+                            } else {
+                                life.turn = this.preCountedTurns.ninety;
+                                life.yOffset = defaultOffset;
+                                break;
+                            }
+                        case "negEdge":
                             life.turn = this.preCountedTurns.fortyFive;
                             break;
-                        } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
+                    }
+                } else
+                if(from[1] < target[1] && from[0] > target[0]) {
+                    life.dir = 3;
+                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
+                    if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
+                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
+                    { wallType = "posEdge" }
+                    switch(wallType) {
+                        case "y":
                             life.turn = 0;
                             life.xOffset = defaultOffset;
-                            life.special = true;
                             break;
-                        } else {
-                            life.turn = this.preCountedTurns.ninety;
-                            life.yOffset = defaultOffset;
+                        case "x":
+                            life.turn = -this.preCountedTurns.ninety;
+                            life.yOffset = -defaultOffset;
                             break;
-                        }
-                    case "negEdge":
-                        life.turn = this.preCountedTurns.fortyFive;
-                        break;
-                }
-            } else
-            if(from[1] < target[1] && from[0] > target[0]) {
-                life.dir = 3;
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
-                if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
-                { wallType = "posEdge" }
-                switch(wallType) {
-                    case "y":
-                        life.turn = 0;
-                        life.xOffset = defaultOffset;
-                        break;
-                    case "x":
-                        life.turn = -this.preCountedTurns.ninety;
-                        life.yOffset = -defaultOffset;
-                        break;
-                    case "posEdge":
-                        if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25 && intersects[0].point.y < Math.round(intersects[0].point.y) - 0.25) {
+                        case "posEdge":
+                            if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25 && intersects[0].point.y < Math.round(intersects[0].point.y) - 0.25) {
+                                life.turn = -this.preCountedTurns.fortyFive;
+                                break;
+                            } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
+                                life.turn = 0;
+                                life.xOffset = defaultOffset;
+                                life.special = true;
+                                break;
+                            } else {
+                                life.turn = -this.preCountedTurns.ninety;
+                                life.yOffset = -defaultOffset;
+                                break;
+                            }
+                        case "negEdge":
                             life.turn = -this.preCountedTurns.fortyFive;
                             break;
-                        } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
-                            life.turn = 0;
-                            life.xOffset = defaultOffset;
-                            life.special = true;
+                    }
+                } else
+                if(from[1] < target[1] && from[0] < target[0]) {
+                    life.dir = 5;
+                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "y"; } else 
+                    if(this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
+                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
+                    { wallType = "posEdge" }
+                    switch(wallType) {
+                        case "y":
+                            life.turn = this.preCountedTurns.hundredEighty;
+                            life.xOffset = -defaultOffset;
                             break;
-                        } else {
+                        case "x":
                             life.turn = -this.preCountedTurns.ninety;
                             life.yOffset = -defaultOffset;
                             break;
-                        }
-                    case "negEdge":
-                        life.turn = -this.preCountedTurns.fortyFive;
-                        break;
-                }
-            } else
-            if(from[1] < target[1] && from[0] < target[0]) {
-                life.dir = 5;
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "y"; } else 
-                if(this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
-                { wallType = "posEdge" }
-                switch(wallType) {
-                    case "y":
-                        life.turn = this.preCountedTurns.hundredEighty;
-                        life.xOffset = -defaultOffset;
-                        break;
-                    case "x":
-                        life.turn = -this.preCountedTurns.ninety;
-                        life.yOffset = -defaultOffset;
-                        break;
-                    case "posEdge":
-                        if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25 && intersects[0].point.y < Math.round(intersects[0].point.y) - 0.25) {
+                        case "posEdge":
+                            if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25 && intersects[0].point.y < Math.round(intersects[0].point.y) - 0.25) {
+                                life.turn = -this.preCountedTurns.hundredThirtyFive;
+                                break;
+                            } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
+                                life.turn = this.preCountedTurns.hundredEighty;
+                                life.xOffset = -defaultOffset;
+                                life.special = true;
+                                break;
+                            } else {
+                                life.turn = -this.preCountedTurns.ninety;
+                                life.yOffset = -defaultOffset;
+                                break;
+                            }
+                        case "negEdge":
                             life.turn = -this.preCountedTurns.hundredThirtyFive;
                             break;
-                        } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
+                    }
+                } else
+                if(from[1] > target[1] && from[0] < target[0]) {
+                    life.dir = 7;
+                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "y"; } else 
+                    if(this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = "x"; } else
+                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
+                    { wallType = "posEdge" }
+                    switch(wallType) {
+                        case "y":
                             life.turn = this.preCountedTurns.hundredEighty;
                             life.xOffset = -defaultOffset;
-                            life.special = true;
                             break;
-                        } else {
-                            life.turn = -this.preCountedTurns.ninety;
-                            life.yOffset = -defaultOffset;
-                            break;
-                        }
-                    case "negEdge":
-                        life.turn = -this.preCountedTurns.hundredThirtyFive;
-                        break;
-                }
-            } else
-            if(from[1] > target[1] && from[0] < target[0]) {
-                life.dir = 7;
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "y"; } else 
-                if(this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = "x"; } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
-                { wallType = "posEdge" }
-                switch(wallType) {
-                    case "y":
-                        life.turn = this.preCountedTurns.hundredEighty;
-                        life.xOffset = -defaultOffset;
-                        break;
-                    case "x":
-                        life.turn = this.preCountedTurns.ninety;
-                        life.yOffset = defaultOffset;
-                        break;
-                    case "posEdge":
-                        if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25 && intersects[0].point.y > Math.round(intersects[0].point.y) + 0.25) {
-                            life.turn = this.preCountedTurns.hundredThirtyFive;
-                            break;
-                        } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
-                            life.turn = this.preCountedTurns.hundredEighty;
-                            life.xOffset = -defaultOffset;
-                            life.special = true;
-                            break;
-                        } else {
+                        case "x":
                             life.turn = this.preCountedTurns.ninety;
                             life.yOffset = defaultOffset;
                             break;
-                        }
-                    case "negEdge":
-                        life.turn = this.preCountedTurns.hundredThirtyFive;
-                        break;
+                        case "posEdge":
+                            if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25 && intersects[0].point.y > Math.round(intersects[0].point.y) + 0.25) {
+                                life.turn = this.preCountedTurns.hundredThirtyFive;
+                                break;
+                            } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
+                                life.turn = this.preCountedTurns.hundredEighty;
+                                life.xOffset = -defaultOffset;
+                                life.special = true;
+                                break;
+                            } else {
+                                life.turn = this.preCountedTurns.ninety;
+                                life.yOffset = defaultOffset;
+                                break;
+                            }
+                        case "negEdge":
+                            life.turn = this.preCountedTurns.hundredThirtyFive;
+                            break;
+                    }
                 }
             }
         }
 
-        let hitPosAccurate = intersects.length ? [intersects[0].point.x, intersects[0].point.y] : hitPos;
-        life.route = this.getProjectileRoute(from, hitPos, hitPosAccurate, speedPerTile, distance, life.dir);
+        let hitPosAccurate = [intersects[0].point.x, intersects[0].point.y];
+        life.route = this.getProjectileRoute(from, hitPosAccurate, speedPerTile, distance, life.dir);
+        life.intersects = intersects;
 
         return life;
     }
@@ -497,7 +531,6 @@ class Projectiles {
 
     hitObstacle(type, scene, projectileName, camera, tileMap, targetPos, projectileLife) {
         let pos = [targetPos[0], targetPos[1]],
-            dir = projectileLife.dir,
             posWOffset = [targetPos[0] + projectileLife.xOffset, targetPos[1] + projectileLife.yOffset],
             minFloorParticles = 3,
             maxFloorParticles = 20,

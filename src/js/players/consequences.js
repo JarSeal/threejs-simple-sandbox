@@ -150,7 +150,6 @@ class Consequences {
         if(projIndex !== undefined) {
             this.projectiles.splice(projIndex, 1);
         }
-        console.log('removing (removeProjectile)');
         if(scene.remove && scene.getObjectByName) {
             scene.remove(scene.getObjectByName(id + "-inside"));
             scene.remove(scene.getObjectByName(id + "-outside"));
