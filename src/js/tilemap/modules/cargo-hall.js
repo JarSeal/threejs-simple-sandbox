@@ -13,7 +13,6 @@ export function getModule(module, level) {
             },
             getModuleLevelData(level)
         );
-    data.tilemap = addWallDOff(data);
     return data;
 };
 
@@ -29,7 +28,7 @@ function getModuleLevelData(level, type) {
                     diffuseMap: "cargo-hall/interior-baked.png",
                     lightMap: "cargo-hall/interior-lightmap.png",
                     normalMap: "cargo-hall/interior-normal.png",
-                    bumpMap: "cargo-hall/interior-bump.png", // TODO: Check if necessary..
+                    bumpMap: "cargo-hall/interior-bump.png", // TODO: Check if necessary (we have normal map)..
                 },
                 exterior: {
                     mtlId: "cargo-hall-1-a-ext",
@@ -39,7 +38,20 @@ function getModuleLevelData(level, type) {
                     lightMap: "cargo-hall/exterior-lightmap.png",
                     normalMap: "cargo-hall/exterior-normal.png",
                     bumpMap: "cargo-hall/exterior-bump.png",
-                }
+                },
+                doors: [{
+                    pos: [3, 0],
+                    turn: 1,
+                    size: [0.6, 0.2, 1.0],
+                    type: "slide-double",
+                    localTriggers: [[2,-1], [3,-1], [4,-1], [3,0], [2,1], [3,1], [3,2]],
+                }, {
+                    pos: [0, 6],
+                    turn: 0,
+                    size: [0.6, 0.2, 3.0],
+                    type: "slide-double",
+                    localTriggers: [[-1,5], [-1,6], [-1,7], [0,6], [1,5], [1,6], [1,7]],
+                }],
             },
             aligners: [ // Based on turn value (0 = no turn, 1 = 90 deg, 2 = 180 deg, 3 = 270 deg)
                 [0.47, 0.47],
@@ -48,13 +60,13 @@ function getModuleLevelData(level, type) {
                 [8.55,0.46],
             ],
             tilemap: [
-                [{type:2},{type:2},{type:2},{type:3},{type:2},{type:2},{type:2},{type:2},{type:2}],
+                [{type:2},{type:2},{type:2},{type:3,door:0},{type:2},{type:2},{type:2},{type:2},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
-                [{type:3},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
+                [{type:3,door:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:1},{type:2}],
                 [{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2},{type:2}],
@@ -67,38 +79,6 @@ function getModuleLevelData(level, type) {
     } else {
         return null;
     }
-}
-
-function addWallDOff(data) {
-    let tilemap = data.tilemap,
-        level = data.level,
-        dims = [tilemap[0].length,tilemap.length],
-        dOff = [0,0,0,0,0,0,0,0], // Default dark offset
-        meta = [],
-        northWall, eastWall, southWall, westWall;
-    // Create empty meta grid
-    for(let y=0; y<dims[1]; y++) {
-        if(!meta[y]) { meta.push([]); }
-        for(let x=0; x<dims[0]; x++) {
-            if(!meta[y][x]) { meta[y].push([]); }
-        }
-    }
-    northWall = {dOff: [0,0.5,0.5,0.5,0,0,0,0]};
-    meta[0][1] = meta[0][2] = meta[0][3] = meta[0][4] = meta[0][5] = meta[0][6] = meta[0][7] = northWall;
-    southWall = {dOff: [0,0,0,0,0,-0.5,-0.5,-0.5]};
-    meta[9][1] = meta[9][2] = meta[9][3] = meta[9][4] = meta[9][5] = meta[9][6] = meta[9][7] = southWall;
-    meta[0][0] = {dOff: [0,0,0,0,0,0,0,0], corner:true};
-    meta[0][8] = {dOff: [0,0,0,0,0,0,0,0], corner:true};
-    meta[9][0] = {dOff: [0,0,0,0,0,0,0,0], corner:true};
-    meta[9][8] = {dOff: [0,0,0,0,0,0,0,0], corner:true};
-    for(let y=0; y<dims[1]; y++) {
-        for(let x=0; x<dims[0]; x++) {
-            if(tilemap[y][x].type == 2) {
-                tilemap[y][x] = Object.assign({}, tilemap[y][x], {dOff: dOff}, meta[y][x]);
-            }
-        }
-    }
-    return tilemap;
 }
 
 function checkErrors(tilemap) {

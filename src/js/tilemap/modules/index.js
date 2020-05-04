@@ -18,15 +18,29 @@ export function getModule(module, level, turn) {
 }
 
 function checkTurn(module, turn) {
-    let tilemap, dims;
-    // DO THE TURN HERE, TODO
     if(turn !== 0) {
         module.tilemap = rotate(module.tilemap, turn);
         if(turn == 1 || turn == 3) {
             module.dims = [module.dims[1], module.dims[0]];
         }
+        module.models.doors = getNewDoorPositions(module.models.doors, module.tilemap);
     }
     return module;
+}
+
+function getNewDoorPositions(doors, tilemap) {
+    let colLength = tilemap.length,
+        rowLength = colLength ? tilemap[0].length : 0,
+        col = 0,
+        row = 0;
+    for(col=0; col<colLength; col++) {
+        for(row=0; row<rowLength; row++) {
+            if(tilemap[col][row].type == 3) {
+                doors[tilemap[col][row].door].pos = [row, col];
+            }
+        }
+    }
+    return doors;
 }
 
 function transpose(matrix) {

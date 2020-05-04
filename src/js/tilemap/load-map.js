@@ -54,7 +54,7 @@ class LoadTileMap {
                     pos: modules[m].pos,
                     type: modules[m].module[0],
                     index: modules[m].module[1],
-                    turn: turn
+                    turn: turn,
                 },
                 getModule(modules[m].module[0], modules[m].level, turn)
             );
@@ -70,13 +70,11 @@ class LoadTileMap {
         }
 
         let loader,
-            loaderLength = modulesLoader.length,
-            uvs;
+            loaderLength = modulesLoader.length;
         this.loaders.modulesLength = loaderLength;
+        this.sceneState.doors = [];
         for(loader=0;loader<loaderLength;loader++) {
-            (function(self, module, loader, loaders, checkIfAllLoaded, sceneState) {
-                
-                // NEW VERSION
+            (function(self, module, loader, loaders, checkIfAllLoaded, sceneState, createDoors) {
                 let mLoader = new THREE.MTLLoader();
                 mLoader.setPath('/images/objects/');
                 mLoader.load(module.models[module.part].mtlFile, (materials) => {
@@ -105,18 +103,28 @@ class LoadTileMap {
                         let geometry = object.children[0].geometry;
                         let uvs = geometry.attributes.uv.array;
                         geometry.addAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
-
-                        // let moduleGroup = new THREE.Group();
-                        // moduleGroup.name = self.createObjectId(module.module, module.level, module.index);
-                        // moduleGroup.add(object);
                         
                         object.name = self.createObjectId(module.module, module.level, module.index, module.part);
                         groups["m" + module.module + "l" + module.level].add(object);
+
+                        if(module.part == "exterior") {
+                            let doors = module.models.doors,
+                                doorsLength = doors.length,
+                                d = 0;
+                            for(d=0; d<doorsLength; d++) {
+                                sceneState.doors.push(Object.assign({}, doors[d], {
+                                    modulePos: module.pos,
+                                    moduleTurn: module.turn,
+                                    moduleDoorIndex: d,
+                                }));
+                            }
+                        }
 
                         if(loaders.modulesLength == loader + 1) {
                             // Last module loaded
                             loaders.modulesLoaded = true;
                             checkIfAllLoaded(loaders, sceneState);
+                            createDoors(scene, sceneState);
                             let levelPropsGroup = new THREE.Group();
                             levelPropsGroup.name = "level-props";
                             for(var prop in groups) {
@@ -128,13 +136,37 @@ class LoadTileMap {
                         }
                     });
                 });
-            })(this, modulesLoader[loader], loader, this.loaders, this.checkIfAllLoaded, this.sceneState);
+            })(this, modulesLoader[loader], loader, this.loaders, this.checkIfAllLoaded, this.sceneState, this.createDoors);
         }
     }
 
     checkIfAllLoaded(loaders, sceneState) {
         if(loaders.modulesLoaded) {
             sceneState.ui.viewLoading = false;
+        }
+    }
+
+    createDoors(scene, sceneState) {
+        let doors = sceneState.doors,
+            doorsLength = doors.length,
+            d = 0,
+            deg90 = 1.5708;
+        for(d=0; d<doorsLength; d++) {
+            if(doors[d].type == "slide-double") {
+                let doorGeo = new THREE.BoxBufferGeometry(doors[d].size[0], doors[d].size[1], doors[d].size[2]);
+                let doorMat = new THREE.MeshPhongMaterial({color: 0x333333});
+                let doorMat2 = new THREE.MeshPhongMaterial({color: 0xff0000});
+                let doorOne = d == doorsLength - 1 ? new THREE.Mesh(doorGeo, doorMat2) : new THREE.Mesh(doorGeo, doorMat),
+                    doorTwo = new THREE.Mesh(doorGeo, doorMat);
+                if(doorsLength - 1 == d) {
+                    console.log(doors[d].turn, doors[d].moduleTurn, doors[d].turn + doors[d].moduleTurn);
+                }
+                doorOne.position.x = doors[d].modulePos[1] + doors[d].pos[1];
+                doorOne.position.y = doors[d].modulePos[0] + doors[d].pos[0];
+                doorOne.position.z = 0.5;
+                doorOne.rotation.z = deg90 * doors[d].moduleTurn + deg90 * doors[d].turn;
+                scene.add(doorOne);
+            }
         }
     }
 
@@ -153,7 +185,7 @@ class LoadTileMap {
             curModuleData = getModule(curModule.module[0], curModule.level, curModule.turn);
             curY = 0;
             for(y=0; y<mapLengths[0]; y++) {
-                m === 0 ? row = [] : row = thisFloor[y]; // Row does not exist, create new
+                m === 0 ? row = [] : row = thisFloor[y]; // If row does not exist, create new
                 curX = 0;
                 for(x=0; x<mapLengths[1]; x++) {
                     if(x <= curModule.pos[0] + curModuleData.dims[0] - 1 &&
