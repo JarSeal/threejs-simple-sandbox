@@ -14,7 +14,42 @@ export function getModule(module, level, turn) {
         default:
             return {errors: [{error: 1}]} // Module data not found
     }
-    return checkTurn(mod, turn);
+    return setDoorTriggers(mod, turn);
+}
+
+function setDoorTriggers(module, turn) {
+    console.log("MODULEOS", module);
+    let tilemap = module.tilemap;
+    if(!module.tilemap.length) return {errors: [{error: 2}]}; // Tilemap data not found
+    let rows = tilemap.length,
+        cols = tilemap[0].length,
+        r = 0,
+        c = 0,
+        doors = module.models.doors,
+        doorsLength = doors.length,
+        d = 0,
+        triggers,
+        triggersLength,
+        t = 0;
+    for(r=0; r<rows; r++) {
+        for(c=0; c<cols; c++) {
+            for(d=0; d<doorsLength; d++) {
+                triggers = doors[d].localTriggers;
+                triggersLength = triggers.length;
+                for(t=0; t<triggersLength; t++) {
+                    if(triggers[t][0] === c && triggers[t][1] === r) {
+                        if(!module.tilemap[r][c].triggers) module.tilemap[r][c]['triggers'] = [];
+                        console.log('TADAA');
+                        module.tilemap[r][c].triggers.push({
+                            type: 'door',
+                            door: doors[d],
+                        });
+                    }
+                }
+            }
+        }
+    }
+    return checkTurn(module, turn);
 }
 
 function checkTurn(module, turn) {

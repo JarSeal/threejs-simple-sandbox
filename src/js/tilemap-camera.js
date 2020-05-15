@@ -308,7 +308,7 @@ class TileMapCamera {
                 resultRoute.unshift({x:playerPos[0],y:playerPos[1]});
                 resultRoute = this.predictAndDividePositions(resultRoute, this.sceneState.players.hero);
                 let endTime = performance.now();
-                console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute, this.sceneState);
+                console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
 
                 // Add route to player movement
                 if(this.sceneState.players.hero &&

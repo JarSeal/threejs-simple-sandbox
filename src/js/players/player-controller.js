@@ -171,10 +171,26 @@ class PlayerController {
                         console.log('ended hero movement');
                         return; // End animation
                     }
+                    let affectedDoors = this.sceneState.consequences.getDoorsWithPos(player.pos, this.getPrevRouteTile(player));
+                    if(affectedDoors.openAnimation.length || affectedDoors.closeAnimation.length) {
+                        console.log('AFFECTED DOORS', affectedDoors);
+                    }
                 }
                 this.newMove(player);
             },
         });
+    }
+
+    getPrevRouteTile(player) {
+        let curIndex = player.routeIndex,
+            route = player.route,
+            prevPos;
+        if(curIndex == 1) return player.pos;
+        prevPos = [route[curIndex - 1].xInt, route[curIndex - 1].yInt];
+        if(curIndex - 1 !== 0 && prevPos[0] === player.pos[0] && prevPos[1] === player.pos[1]) {
+            prevPos = [route[curIndex - 2].xInt, route[curIndex - 2].yInt];
+        }
+        return prevPos;
     }
 
     getRealPosition(route, index) {

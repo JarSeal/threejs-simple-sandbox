@@ -5,6 +5,7 @@ class Consequences {
         this.hitList = {}; // {"someId": {type:"projectile", time:153.., pos:[25,25], shooterId:"someId", target:"player"||"object"||"turret", targetId:"someId"}}
         this.players = {}; // {playerId: [{pos:[25.555,25], posInt:[25,25],  enterTime:154..., leaveTime:155...}]}
         this.projectiles = []; // [{shooterId:"someId", projectileId:"someId", route:[{pos:[25,25], enterTime:154..., leaveTime:155...}]}]
+        this.doors = [];
         this.initTime = 0;
     }
 
@@ -33,6 +34,58 @@ class Consequences {
             });
         }
         this.createHitList();
+    }
+
+    addDoor(door) {
+        console.log('ADD DOOR', door);
+        this.doors.push(door);
+    }
+
+    getDoorsWithPos(newPos, lastPos) {
+        // For animating the doors
+        let d = 0,
+            doorsLength = this.doors.length,
+            affectedDoors = {
+                openAnimation: [],
+                closeAnimation: [],
+            },
+            closingDoor,
+            curDoor,
+            t = 0,
+            triggersLength;
+        // if(newPos[0] === lastPos[0] && newPos[1] === lastPos[1]) return affectedDoors;
+        for(d=0; d<doorsLength; d++) {
+            closingDoor = undefined;
+            curDoor = this.doors[d];
+            // triggersLength = curDoor.localTriggers.length;
+            // // Check if the tile the player is leaving is a trigger
+            // for(t=0; t<triggersLength; t++) {
+            //     if(d===0 && t===1) {
+            //         //console.log('POOT', curDoor, curDoor.localTriggers[t][0] === lastPos[0] - curDoor.modulePos[0], curDoor.localTriggers[t][1] === lastPos[1] - curDoor.modulePos[1]);
+            //     }
+            //     if(curDoor.localTriggers[t][0] === lastPos[0] - curDoor.modulePos[0] && curDoor.localTriggers[t][1] === lastPos[1] - curDoor.modulePos[1]) {
+            //         console.log('CLOSE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+            //     }
+            //     if(curDoor.localTriggers[t][0] === newPos[0] - curDoor.modulePos[0] && curDoor.localTriggers[t][1] === newPos[1] - curDoor.modulePos[1]) {
+            //         console.log("OPEN OPEN OPEN OPEN !!!!!!!!!!!!!!!!!!!!!!!!!!");
+            //     }
+            //     if(curDoor.localTriggers[t][0] === lastPos[0] - curDoor.modulePos[0] && curDoor.localTriggers[t][1] === lastPos[1] - curDoor.modulePos[1]) {
+            //         closingDoor = curDoor;
+            //     }
+            //     if(curDoor.localTriggers[t][0] === newPos[0] - curDoor.modulePos[0] && curDoor.localTriggers[t][1] === newPos[1] - curDoor.modulePos[1]) {
+            //         if(!closingDoor || closingDoor.groupId != curDoor.groupId) {
+            //             affectedDoors.openAnimation.push(curDoor);
+            //         } else {
+            //             closingDoor = undefined;
+            //         }
+            //         break;
+            //     }
+            // }
+            if(closingDoor !== undefined) {
+                affectedDoors.closeAnimation.push(closingDoor);
+            }
+        }
+        return affectedDoors;
     }
 
     addProjectile(shooterId, projectileId, route) {
@@ -64,11 +117,14 @@ class Consequences {
             playersLength = playerKeys.length,
             plR = 0,
             plRLength,
+            d = 0,
+            doorsLength = this.doors.length,
             hitFound = false;
         for(r=1; r<routeLength; r++) { // Skip the first tile
             let prEnterTime = projectile.route[r].enterTime,
                 prLeaveTime = projectile.route[r].leaveTime,
                 prPos = projectile.route[r].pos;
+            // Check if players are on the way of the projectile's route
             for(pl=0; pl<playersLength; pl++) {
                 plRLength = this.players[playerKeys[pl]].length;
                 for(plR=0; plR<plRLength; plR++) {
@@ -94,6 +150,11 @@ class Consequences {
                         hitFound = true;
                         break;
                     }
+                    // CHECK THE DOOR HITS HERE!
+                    for(d=0; d<doorsLength; d++) {
+
+                    }
+                    if(hitFound) break;
                 }
                 if(hitFound) break;
             }
