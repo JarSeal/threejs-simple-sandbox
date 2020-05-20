@@ -2,7 +2,7 @@ import { getModule as captainsCabin } from './captains-cabin.js';
 import { getModule as cargoHall } from './cargo-hall.js';
 
 // Load a module
-export function getModule(module, level, turn) {
+export function getModule(module, level, turn, moduleID) {
     let mod = {};
     switch(module) {
         case 1:
@@ -14,11 +14,10 @@ export function getModule(module, level, turn) {
         default:
             return {errors: [{error: 1}]} // Module data not found
     }
-    return setDoorTriggers(mod, turn);
+    return setDoorTriggers(mod, turn, moduleID);
 }
 
-function setDoorTriggers(module, turn) {
-    console.log("MODULEOS", module);
+function setDoorTriggers(module, turn, moduleID) {
     let tilemap = module.tilemap;
     if(!module.tilemap.length) return {errors: [{error: 2}]}; // Tilemap data not found
     let rows = tilemap.length,
@@ -30,7 +29,8 @@ function setDoorTriggers(module, turn) {
         d = 0,
         triggers,
         triggersLength,
-        t = 0;
+        t = 0,
+        params = {};
     for(r=0; r<rows; r++) {
         for(c=0; c<cols; c++) {
             for(d=0; d<doorsLength; d++) {
@@ -38,12 +38,16 @@ function setDoorTriggers(module, turn) {
                 triggersLength = triggers.length;
                 for(t=0; t<triggersLength; t++) {
                     if(triggers[t][0] === c && triggers[t][1] === r) {
-                        if(!module.tilemap[r][c].triggers) module.tilemap[r][c]['triggers'] = [];
-                        console.log('TADAA');
-                        module.tilemap[r][c].triggers.push({
-                            type: 'door',
-                            door: doors[d],
-                        });
+                        params = doors[d];
+                        params.doorIndex = d;
+                        params.doorID = moduleID + "-d" + d;
+                        if(params.pos[0] === c && params.pos[1] === r) {
+                            params.isCurDoorTile = true;
+                        } else {
+                            params.isCurDoorTile = false;
+                        }
+                        if(!module.tilemap[r][c].doorParams) module.tilemap[r][c].doorParams = [];
+                        module.tilemap[r][c].doorParams.push(Object.assign({}, params));
                     }
                 }
             }

@@ -171,10 +171,10 @@ class PlayerController {
                         console.log('ended hero movement');
                         return; // End animation
                     }
-                    let affectedDoors = this.sceneState.consequences.getDoorsWithPos(player.pos, this.getPrevRouteTile(player));
-                    if(affectedDoors.openAnimation.length || affectedDoors.closeAnimation.length) {
-                        console.log('AFFECTED DOORS', affectedDoors);
-                    }
+                    // let affectedDoors = this.sceneState.consequences.getDoorsWithPos(player.pos, this.getPrevRouteTile(player));
+                    // if(affectedDoors.openAnimation.length || affectedDoors.closeAnimation.length) {
+                    //     console.log('AFFECTED DOORS', affectedDoors);
+                    // }
                 }
                 this.newMove(player);
             },

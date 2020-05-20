@@ -48,7 +48,7 @@ function getModuleLevelData(level, type) {
                     closedOffset: 0.35,
                     selfClosing: true,
                     type: "slide-double",
-                    localTriggers: [[2,-1], [3,-1], [4,-1], [3,0], [2,1], [3,1], [3,2]],
+                    localTriggers: [[3,0], [2,1], [3,1], [3,2]],
                 }, {
                     pos: [0, 6],
                     turn: 0,
@@ -58,7 +58,7 @@ function getModuleLevelData(level, type) {
                     closedOffset: 0.35,
                     selfClosing: true,
                     type: "slide-double",
-                    localTriggers: [[-1,5], [-1,6], [-1,7], [0,6], [1,5], [1,6], [1,7]],
+                    localTriggers: [[0,6], [1,5], [1,6], [1,7]],
                 }],
             },
             aligners: [ // Based on turn value (0 = no turn, 1 = 90 deg, 2 = 180 deg, 3 = 270 deg)
