@@ -413,6 +413,7 @@ class LoadTileMap {
                             if(params[p].isCurDoorTile) {
                                 tileMap[r][c].doorParams[p]['locked'] = true;
                                 tileMap[r][c].doorParams[p]['nextToSpace'] = true;
+                                break;
                             }
                         }
                     }

@@ -17,9 +17,34 @@ class Consequences {
     addPlayer(player) {
         this.players[player.id] = [{
             pos: player.pos,
+            posInt: player.pos,
             enterTime: 0,
             leaveTime: 0,
         }];
+    }
+
+    getAllCurrentPlayerPositions() {
+        const playerKeys = Object.keys(this.players);
+        let now = this.initTime + performance.now() / 1000,
+            playerKeysLength = playerKeys.length,
+            p = 0,
+            playerPositions = [];
+        for(p=0; p<playerKeysLength; p++) {
+            let curRoute = this.players[playerKeys[p]],
+                curRouteLength = curRoute.length,
+                r = 0;
+            for(r=0; r<curRouteLength; r++) {
+                if(curRoute[curRouteLength-1].enterTime < now) {
+                    playerPositions.push(curRoute[curRouteLength-1].posInt);
+                    break;
+                }
+                if(curRoute[r].enterTime < now && curRoute[r].leaveTime > now) {
+                    playerPositions.push(curRoute[r].posInt);
+                    break;
+                }
+            }
+        }
+        return playerPositions;
     }
 
     movePlayer(playerId, route) {
@@ -61,8 +86,14 @@ class Consequences {
     }
 
     addDoor(door) {
-        this.doors[door.doorID] = {};
+        this.doors[door.doorID] = {
+
+        };
         this.doors[door.doorID].params = door;
+    }
+
+    getDoors() {
+        return this.doors;
     }
 
     doDoorTimesCleaning(playerId) {
@@ -74,6 +105,29 @@ class Consequences {
                 times: [],
             };
         }
+    }
+
+    getTriggeredDoors(playerId, timeNow) {
+        const doorKeys = Object.keys(this.doors);
+        let doorKeysLength = doorKeys.length,
+            d = 0,
+            affectedDoors = [];
+        for(d=0; d<doorKeysLength; d++) {
+            let door = this.doors[doorKeys[d]].params,
+                playerData = this.doors[doorKeys[d]][playerId];
+            if(playerData && playerData.times && playerData.times.length) {
+                let times = playerData.times,
+                    timesLength = times.length,
+                    t = 0;
+                for(t=0; t<timesLength; t++) {
+                    if((times[t].opening > timeNow && times[t].closing < timeNow) || times[t].closing === 0) {
+                        affectedDoors.push(door);
+                        break;
+                    }
+                }
+            }
+        }
+        return affectedDoors;
     }
 
     addProjectile(shooterId, projectileId, route) {

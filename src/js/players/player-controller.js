@@ -2,8 +2,9 @@ import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA 
 import { calculateAngle } from '../util.js';
 
 class PlayerController {
-    constructor(sceneState) {
+    constructor(sceneState, doorAnimationController) {
         this.sceneState = sceneState;
+        this.doorAnims = doorAnimationController;
     }
 
     createNewPlayer(mtlLoader, objLoader, scene, renderer, sceneState, type) {
@@ -139,6 +140,8 @@ class PlayerController {
                 player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
             },
             onComplete: () => {
+                // Check door trigger tiles
+                this.doorAnims.checkDoors(player.pos);
                 player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
                 player.microPos = [route[routeIndex].x, route[routeIndex].y, player.pos[2]];
                 let evenX = route[routeIndex].x - route[routeIndex].xInt;
@@ -171,10 +174,6 @@ class PlayerController {
                         console.log('ended hero movement');
                         return; // End animation
                     }
-                    // let affectedDoors = this.sceneState.consequences.getDoorsWithPos(player.pos, this.getPrevRouteTile(player));
-                    // if(affectedDoors.openAnimation.length || affectedDoors.closeAnimation.length) {
-                    //     console.log('AFFECTED DOORS', affectedDoors);
-                    // }
                 }
                 this.newMove(player);
             },

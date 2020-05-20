@@ -1,6 +1,7 @@
 import TileMapCamera from './../tilemap-camera.js';
 import LoadTileMap from './../tilemap/load-map.js';
 import PlayerController from './../players/player-controller.js';
+import DoorAnimationController from './../players/door-animation-controller.js';
 
 class CombatScene {
     constructor() {
@@ -24,7 +25,8 @@ class CombatScene {
         this.sceneState = sceneState;
         
         this.tileMapController = new LoadTileMap(mtlLoader, objLoader, this.scene, renderer, sceneState);
-        this.playerController = new PlayerController(sceneState);
+        let doorAnimationController = new DoorAnimationController(this.scene, sceneState);
+        this.playerController = new PlayerController(sceneState, doorAnimationController);
         this.playerController.createNewPlayer(mtlLoader, objLoader, this.scene, renderer, sceneState, 'hero');
 
         let hemi = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.8);
