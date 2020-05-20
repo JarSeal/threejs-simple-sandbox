@@ -181,7 +181,8 @@ class LoadTileMap {
                     doorOne.position.y = doors[d].modulePos[0] + doors[d].pos[0];
                     doorTwo.position.x = doors[d].modulePos[1] + doors[d].pos[1] + doors[d].closedOffset;
                     doorTwo.position.y = doors[d].modulePos[0] + doors[d].pos[0];
-                    
+                    doorOne.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
+                    doorTwo.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
                 } else {
                     // Doors is facing to X axis
                     doorOne.name += 'odd';
@@ -190,6 +191,8 @@ class LoadTileMap {
                     doorOne.position.y = doors[d].modulePos[0] + doors[d].pos[0] - doors[d].closedOffset;
                     doorTwo.position.x = doors[d].modulePos[1] + doors[d].pos[1];
                     doorTwo.position.y = doors[d].modulePos[0] + doors[d].pos[0] + doors[d].closedOffset;
+                    doorOne.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
+                    doorTwo.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
                 }
                 doorOne.position.z = 0.5;
                 doorOne.rotation.z = deg90 * doors[d].moduleTurn + deg90 * doors[d].turn;
