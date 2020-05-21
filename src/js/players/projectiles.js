@@ -565,6 +565,7 @@ class Projectiles {
             this.sceneState.particles += floorParticles + streaks;
             this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, "player", projectileLife, projectileName);
             this.createStreaks(streaks, scene, posWOffset, pos, "player", projectileLife);
+            if(type == 'door') this.createSmoke(posWOffset, scene, camera);
         }
     }
 
@@ -789,18 +790,43 @@ class Projectiles {
                 }
         }
     }
+    createSmoke(posWOffset, scene, camera) {
+        let smoke1Opacity = this.sceneState.settings.useOpacity ? ((Math.random() * 7) + 1) / 10 : 1,
+            smoke1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.smokeTexture,transparent:true,opacity:smoke1Opacity})),
+            particles = 0,
+            tlSmoke = new TimelineMax(),
+            smokeLife = this._randomFloatInBetween(2.0, 3.8);
+        smoke1.scale.set(0.3,5,1);
+        smoke1.quaternion.copy(camera.quaternion);
+        smoke1.position.set(posWOffset[0], posWOffset[1], 1);
+        particles++;
+        scene.add(smoke1);
+        if(this.sceneState.settings.useOpacity) {
+            tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
+                   .to(smoke1.material, 2, {opacity: 0}, "-=2")
+                   .to(smoke1.scale, smokeLife, {x: 8, y: 8}, "-="+smokeLife);
+        } else {
+            tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
+                   .to(smoke1.scale, smokeLife / 3, {x: 3, y: 3}, "-="+smokeLife)
+                   .to(smoke1.scale, smokeLife / 1.5, {x: 0.001, y: 0.001}, "-="+smokeLife / 1.25);
+        }
+        this.sceneState.particles += particles
+        setTimeout(() => {
+            smoke1.geometry.dispose();
+            smoke1.material.dispose();
+            scene.remove(smoke1);
+            this.sceneState.particles -= particles;
+        }, 3000);
+    }
 
     createBurnSpot(projectileLife, posWOffset, scene, camera) {
         let darkSpot1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.burnMarkTexture,transparent:true})),
             darkSpot2 = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone()),
-            smoke1Opacity = this.sceneState.settings.useOpacity ? ((Math.random() * 7) + 1) / 10 : 1,
-            smoke1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.smokeTexture,transparent:true,opacity:smoke1Opacity})),
             darkSpotGroup = new THREE.Group(),
             randomizer = Math.random() / 50,
             offset1 = this.getBurnSpotOffset(projectileLife, "mark", randomizer),
             offset2 = this.getBurnSpotOffset(projectileLife, "burn", randomizer),
             tl = new TimelineMax(),
-            tlSmoke = new TimelineMax(),
             burnSize1 = Math.random() * 9,
             burnSize2 = Math.random() + 0.5,
             particles = 0;
@@ -825,14 +851,10 @@ class Projectiles {
         darkSpotGroup.children[0].position.y = offset1[1];
         darkSpotGroup.children[1].position.x = offset2[0];
         darkSpotGroup.children[1].position.y = offset2[1];
-        
-        smoke1.scale.set(0.3,5,1);
-        smoke1.quaternion.copy(camera.quaternion);
-        smoke1.position.set(posWOffset[0], posWOffset[1], 1);
-        particles++;
+
+        this.createSmoke(posWOffset, scene, camera);
 
         scene.add(darkSpotGroup);
-        scene.add(smoke1);
 
         if(this.sceneState.settings.useOpacity) {
             tl.to(darkSpot2.material, 2, {opacity:0})
@@ -840,17 +862,6 @@ class Projectiles {
         } else {
             tl.to(darkSpot2.scale, 2, {x: 0.001, y: 0.001})
               .to(darkSpot1.scale, 3, {x: 0.001, y: 0.001}, "-=1");
-        }
-        
-        let smokeLife = this._randomFloatInBetween(2.0, 3.8);
-        if(this.sceneState.settings.useOpacity) {
-            tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
-                   .to(smoke1.material, 2, {opacity: 0}, "-=2")
-                   .to(smoke1.scale, smokeLife, {x: 8, y: 8}, "-="+smokeLife);
-        } else {
-            tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
-                   .to(smoke1.scale, smokeLife / 3, {x: 3, y: 3}, "-="+smokeLife)
-                   .to(smoke1.scale, smokeLife / 1.5, {x: 0.001, y: 0.001}, "-="+smokeLife / 1.25);
         }
 
         this.sceneState.particles += particles
@@ -863,9 +874,6 @@ class Projectiles {
             darkSpot2.material.dispose();
             scene.remove(darkSpot2);
             scene.remove(darkSpotGroup);
-            smoke1.geometry.dispose();
-            smoke1.material.dispose();
-            scene.remove(smoke1);
             this.sceneState.particles -= particles;
         }, 4000);
     }

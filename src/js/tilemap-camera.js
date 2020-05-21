@@ -277,7 +277,9 @@ class TileMapCamera {
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
-                if(dx === this.sceneState.players.hero.pos[0] && dy === this.sceneState.players.hero.pos[1]) return;
+                if (dx === this.sceneState.players.hero.pos[0] &&
+                    dy === this.sceneState.players.hero.pos[1] &&
+                    !this.sceneState.players.hero.moving) return;
 
                 if(!this.sceneState.players.hero.moving) {
                     this.AppUiLayer.logMessage(
@@ -289,7 +291,7 @@ class TileMapCamera {
                 }
 
                 this.PlayerController.calculateRoute('hero', dx, dy);
-                
+
             } else if(this.sceneState.ui.curSecondaryState) {
                 // Shoot a projectile:
 

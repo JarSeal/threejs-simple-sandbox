@@ -60,22 +60,23 @@ class Consequences {
                 enterTime: route[i].enterTime,
                 leaveTime: route[i].leaveTime ? route[i].leaveTime : 0,
             });
-            // Check if there are any door triggers on the route and set opening (and possible closing) times for doors)
+            // Check if there are any door triggers on the route and set opening and closing times for doors
             curTile = this.tileMap[route[i].xInt][route[i].yInt];
             if(curTile.doorParams && curTile.doorParams.length) {
                 let doorParams = curTile.doorParams,
                     doorParamsLength = doorParams.length,
                     d = 0,
+                    delay = 0.15,
                     doorID;
                 for(d=0; d<doorParamsLength; d++) {
                     doorID = doorParams[d].doorID;
-                    let leaveTime = routeLength == i + 1 ? 0 : route[i].leaveTime,
+                    let leaveTime = routeLength == i + 1 ? 0 : route[i].leaveTime + delay,
                         timesLastIndex = this.doors[doorID][playerId].times.length - 1;
-                    if(timesLastIndex >= 0 && this.doors[doorID][playerId].times[timesLastIndex].closing === route[i].enterTime) {
+                    if(timesLastIndex >= 0 && this.doors[doorID][playerId].times[timesLastIndex].closing + delay === route[i].enterTime) {
                         this.doors[doorID][playerId].times[timesLastIndex].closing = leaveTime;
                     } else {
                         this.doors[doorID][playerId].times.push({
-                            opening: route[i].enterTime,
+                            opening: route[i].enterTime + delay,
                             closing: leaveTime,
                         });
                     }

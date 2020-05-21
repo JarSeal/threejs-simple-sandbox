@@ -199,7 +199,7 @@ class PlayerController {
                         player.routeIndex = 0;
                         player.curSpeed = 0;
                         this.doorAnims.checkDoors();
-                        console.log('ended hero movement');
+                        console.log('ended hero movement', player.newRoute);
                         return; // End animation
                     }
                 }
