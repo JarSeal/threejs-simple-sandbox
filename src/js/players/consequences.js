@@ -69,6 +69,7 @@ class Consequences {
                     delay = 0.15,
                     doorID;
                 for(d=0; d<doorParamsLength; d++) {
+                    if(doorParams[d].locked) continue;
                     doorID = doorParams[d].doorID;
                     let leaveTime = routeLength == i + 1 ? 0 : route[i].leaveTime + delay,
                         timesLastIndex = this.doors[doorID][playerId].times.length - 1;

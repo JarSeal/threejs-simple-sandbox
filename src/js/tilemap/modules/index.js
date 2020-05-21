@@ -2,7 +2,7 @@ import { getModule as captainsCabin } from './captains-cabin.js';
 import { getModule as cargoHall } from './cargo-hall.js';
 
 // Load a module
-export function getModule(module, level, turn, moduleID) {
+export function getModule(module, level, turn, moduleID, doorParams) {
     let mod = {};
     switch(module) {
         case 1:
@@ -14,10 +14,10 @@ export function getModule(module, level, turn, moduleID) {
         default:
             return {errors: [{error: 1}]} // Module data not found
     }
-    return setDoorTriggers(mod, turn, moduleID);
+    return setDoorTriggers(mod, turn, moduleID, doorParams);
 }
 
-function setDoorTriggers(module, turn, moduleID) {
+function setDoorTriggers(module, turn, moduleID, doorParams) {
     let tilemap = module.tilemap;
     if(!module.tilemap.length) return {errors: [{error: 2}]}; // Tilemap data not found
     let rows = tilemap.length,
@@ -39,6 +39,9 @@ function setDoorTriggers(module, turn, moduleID) {
                 for(t=0; t<triggersLength; t++) {
                     if(triggers[t][0] === c && triggers[t][1] === r) {
                         params = doors[d];
+                        if(doorParams && doorParams[d]) {
+                            params = Object.assign({}, params, doorParams[d]);
+                        }
                         params.doorIndex = d;
                         params.doorID = moduleID + "-d" + d;
                         if(params.pos[0] === c && params.pos[1] === r) {

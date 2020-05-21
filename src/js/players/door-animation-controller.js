@@ -19,7 +19,7 @@ class DoorAnimationController {
                     paramsLength = params.length,
                     d = 0;
                 for(d=0; d<paramsLength; d++) {
-                    if(!openDoors.includes(params[d].doorID)) {
+                    if(!openDoors.includes(params[d].doorID) && !params[d].locked) {
                         openDoors.push(params[d].doorID);
                     }
                 }

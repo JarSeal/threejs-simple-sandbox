@@ -240,6 +240,8 @@ class PlayerController {
     }
 
     predictAndDividePositions(route, player) {
+        route = this.checkLockedDoors(route);
+        if(route.length <= 1) return [];
         let routeLength = route.length,
             i,
             speed,
@@ -250,6 +252,7 @@ class PlayerController {
             previousTime = 0,
             dividedRoute = [];
         for(i=0; i<routeLength; i++) {
+
             if(i === 0) {
                 speed = player.pos[0] !== route[1].x && player.pos[1] !== route[1].y ?
                     player.speed * 1.5 * player.startMultiplier :
@@ -315,6 +318,24 @@ class PlayerController {
             }
         }
         return dividedRoute;
+    }
+
+    checkLockedDoors(route) {
+        let routeLength = route.length,
+            i = 0,
+            tileMap = this.sceneState.shipMap[this.sceneState.floor],
+            parsedRoute = [],
+            x,
+            y;
+        for(i=0; i<routeLength; i++) {
+            x = route[i].x;
+            y = route[i].y;
+            if(tileMap[x][y].type === 3 && tileMap[x][y].doorParams[0] && tileMap[x][y].doorParams[0].locked) {
+                break;
+            }
+            parsedRoute.push(route[i]);
+        }
+        return parsedRoute;
     }
 }
 

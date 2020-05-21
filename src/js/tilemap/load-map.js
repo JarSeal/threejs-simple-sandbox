@@ -227,7 +227,9 @@ class LoadTileMap {
                 curModule.module[0],
                 curModule.level,
                 curModule.turn,
-                this.createObjectId(curModule.module[0], curModule.level, curModule.module[1], "exterior"));
+                this.createObjectId(curModule.module[0], curModule.level, curModule.module[1], "exterior"),
+                curModule.doorParams
+            );
             curY = 0;
             for(y=0; y<mapLengths[0]; y++) {
                 m === 0 ? row = [] : row = thisFloor[y]; // If row does not exist, create new
