@@ -130,6 +130,7 @@ class PlayerController {
             player.pos = realPosition.pos;
             player.mesh.position.x = realPosition.pos[0];
             player.mesh.position.y = realPosition.pos[1];
+            this.doorAnims.checkDoors(player.pos);
         }
         tl.to(player.mesh.position, route[routeIndex].duration, {
             x: route[routeIndex].x,
@@ -140,10 +141,10 @@ class PlayerController {
                 player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
             },
             onComplete: () => {
-                // Check door trigger tiles
-                this.doorAnims.checkDoors(player.pos);
                 player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
                 player.microPos = [route[routeIndex].x, route[routeIndex].y, player.pos[2]];
+                // Check door trigger tiles
+                this.doorAnims.checkDoors(player.pos);
                 let evenX = route[routeIndex].x - route[routeIndex].xInt;
                 let evenY = route[routeIndex].y - route[routeIndex].yInt;
                 if(player.newRoute.length && evenX === 0 && evenY === 0) {

@@ -553,7 +553,7 @@ class Projectiles {
             this.createBurnSpot(projectileLife, posWOffset, scene, camera);
             this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName);
             this.createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife);
-        } else if(type == 'player') {
+        } else if(type == 'player' || type == 'door') {
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
             streaks = this._randomIntInBetween(2, 6);
             particles = floorParticles + streaks;

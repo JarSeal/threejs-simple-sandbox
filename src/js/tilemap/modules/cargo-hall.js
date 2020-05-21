@@ -48,7 +48,7 @@ function getModuleLevelData(level, type) {
                     closedOffset: 0.35,
                     selfClosing: true,
                     type: "slide-double",
-                    localTriggers: [[3,0], [2,1], [3,1], [3,2]],
+                    localTriggers: [[3,0], [2,1], [3,1], [4,1]],
                 }, {
                     pos: [0, 6],
                     turn: 0,

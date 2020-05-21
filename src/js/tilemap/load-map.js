@@ -401,15 +401,15 @@ class LoadTileMap {
                         tileMap[r + 2][c - 1].doorParams.push(curParams);
                         if(!tileMap[r + 2][c + 1].doorParams) tileMap[r + 2][c + 1].doorParams = [];
                         tileMap[r + 2][c + 1].doorParams.push(curParams);
-                    } else if(tileMap[r][c - 1] && tileMap[r][c - 1].type == 3) {
-                        if(!tileMap[r][c - 1].doorParams) tileMap[r][c - 1].doorParams = [];
-                        tileMap[r][c - 1].doorParams.push(curParams);
-                        if(!tileMap[r][c - 2].doorParams) tileMap[r][c - 2].doorParams = [];
-                        tileMap[r][c - 2].doorParams.push(curParams);
-                        if(!tileMap[r - 1][c - 2].doorParams) tileMap[r - 1][c - 2].doorParams = [];
-                        tileMap[r - 1][c - 2].doorParams.push(curParams);
-                        if(!tileMap[r + 1][c - 2].doorParams) tileMap[r + 1][c - 2].doorParams = [];
-                        tileMap[r + 1][c - 2].doorParams.push(curParams);
+                    } else if(tileMap[r][c + 1] && tileMap[r][c + 1].type == 3) {
+                        if(!tileMap[r][c + 1].doorParams) tileMap[r][c + 1].doorParams = [];
+                        tileMap[r][c + 1].doorParams.push(curParams);
+                        if(!tileMap[r][c + 2].doorParams) tileMap[r][c + 2].doorParams = [];
+                        tileMap[r][c + 2].doorParams.push(curParams);
+                        if(!tileMap[r - 1][c + 2].doorParams) tileMap[r - 1][c + 2].doorParams = [];
+                        tileMap[r - 1][c + 2].doorParams.push(curParams);
+                        if(!tileMap[r + 1][c + 2].doorParams) tileMap[r + 1][c + 2].doorParams = [];
+                        tileMap[r + 1][c + 2].doorParams.push(curParams);
                     } else {
                         // Door is next to space, lock the door
                         for(p=0; p<paramsLength; p++) {

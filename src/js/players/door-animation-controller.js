@@ -70,8 +70,6 @@ class DoorAnimationController {
             doors[doorID].params['animatingDirOpen'] = true;
             doors[doorID].params.open = true;
             if(orientation == "odd") {
-                // doorOne.position.y = doorOne.userData.pos[1] - door.openOffset;
-                // doorTwo.position.y = doorTwo.userData.pos[1] + door.openOffset;
                 doorOne.userData.tl.to(doorOne.position, duration, {
                     y: doorOne.userData.pos[1] - door.openOffset,
                     ease: Sine.easeInOut,
@@ -89,8 +87,6 @@ class DoorAnimationController {
                     }
                 });
             } else {
-                // doorOne.position.x = doorOne.userData.pos[0] - door.openOffset;
-                // doorTwo.position.x = doorTwo.userData.pos[0] + door.openOffset;
                 doorOne.userData.tl.to(doorOne.position, duration, {
                     x: doorOne.userData.pos[0] - door.openOffset,
                     ease: Sine.easeInOut,
@@ -113,8 +109,6 @@ class DoorAnimationController {
             doors[doorID].params['animatingDirOpen'] = false;
             doors[doorID].params.open = false;
             if(orientation == "odd") {
-                // doorOne.position.y = doorOne.userData.pos[1] - door.closedOffset;
-                // doorTwo.position.y = doorTwo.userData.pos[1] + door.closedOffset;
                 doorOne.userData.tl.to(doorOne.position, duration, {
                     y: doorOne.userData.pos[1] - door.closedOffset,
                     ease: Sine.easeInOut,
@@ -132,8 +126,6 @@ class DoorAnimationController {
                     }
                 });
             } else {
-                // doorOne.position.x = doorOne.userData.pos[0] - door.closedOffset;
-                // doorTwo.position.x = doorTwo.userData.pos[0] + door.closedOffset;
                 doorOne.userData.tl.to(doorOne.position, duration, {
                     x: doorOne.userData.pos[0] - door.closedOffset,
                     ease: Sine.easeInOut,

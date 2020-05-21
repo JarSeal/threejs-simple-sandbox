@@ -214,7 +214,7 @@ class Consequences {
                     for(dt=0; dt<curDoorTimesLength; dt++) {
                         if((prEnterTime > curDoorTimes[dt].opening && prEnterTime < curDoorTimes[dt].closing) ||
                            (prLeaveTime > curDoorTimes[dt].opening && prLeaveTime < curDoorTimes[dt].closing) ||
-                           curDoorTimes[dt].closing === 0) {
+                           (prEnterTime > curDoorTimes[dt].opening && curDoorTimes[dt].closing === 0)) {
                             curTileDoor.open = true;
                             break;
                         }
