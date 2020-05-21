@@ -158,7 +158,7 @@ class LoadTileMap {
             deg90 = 1.5708;
         for(d=0; d<doorsLength; d++) {
             if(doors[d].type == "slide-double") {
-                let doorGeo = new THREE.BoxBufferGeometry(doors[d].size[0], doors[d].size[1], doors[d].size[2]);
+                let doorGeo = new THREE.BoxBufferGeometry(0.7, 0.3, 2.1);
                 let doorMat = new THREE.MeshPhongMaterial({color: 0x666666});
                 let doorMat2 = new THREE.MeshPhongMaterial({color: 0x555555});
                 let doorOne = new THREE.Mesh(doorGeo, doorMat),
@@ -194,16 +194,22 @@ class LoadTileMap {
                     doorOne.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
                     doorTwo.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
                 }
-                doorOne.position.z = 0.5;
+                doorOne.position.z = 1.2;
                 doorOne.rotation.z = deg90 * doors[d].moduleTurn + deg90 * doors[d].turn;
-                doorTwo.position.z = 0.5;
+                doorTwo.position.z = 1.2;
                 doorTwo.rotation.z = deg90 * doors[d].moduleTurn + deg90 * doors[d].turn;
-                sceneState.consequences.addDoor(Object.assign({}, doors[d], {
-                    groupId: doorGroup.name,
-                    doorOneId: doorOne.name,
-                    doorTwoId: doorTwo.name,
-                    open: false,
-                }));
+                sceneState.consequences.addDoor(
+                    Object.assign(
+                        {},
+                        doors[d],
+                        {
+                            groupId: doorGroup.name,
+                            doorOneId: doorOne.name,
+                            doorTwoId: doorTwo.name,
+                            open: false,
+                        },
+                    )
+                );
                 doorGroup.add(doorOne);
                 doorGroup.add(doorTwo);
                 scene.add(doorGroup);
@@ -418,6 +424,16 @@ class LoadTileMap {
                             if(params[p].isCurDoorTile) {
                                 tileMap[r][c].doorParams[p]['locked'] = true;
                                 tileMap[r][c].doorParams[p]['nextToSpace'] = true;
+                                this.sceneState.consequences.addDoor(
+                                    Object.assign(
+                                        {},
+                                        params[p],
+                                        {
+                                            locked: true,
+                                            nextToSpace: true,
+                                        }
+                                    )
+                                );
                                 break;
                             }
                         }

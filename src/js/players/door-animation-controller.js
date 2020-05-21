@@ -11,7 +11,8 @@ class DoorAnimationController {
             playerPositionsLength = playerPositions.length,
             p = 0,
             tileMap = this.sceneState.shipMap[this.sceneState.floor],
-            openDoors = [];
+            openDoors = [],
+            doors = this.sceneState.consequences.getDoors();
         for(p=0; p<playerPositionsLength; p++) {
             let curTile = tileMap[playerPositions[p][0]][playerPositions[p][1]];
             if(curTile.doorParams && curTile.doorParams.length) {
@@ -19,13 +20,12 @@ class DoorAnimationController {
                     paramsLength = params.length,
                     d = 0;
                 for(d=0; d<paramsLength; d++) {
-                    if(!openDoors.includes(params[d].doorID) && !params[d].locked) {
+                    if(!openDoors.includes(params[d].doorID) && !doors[params[d].doorID].params.locked) {
                         openDoors.push(params[d].doorID);
                     }
                 }
             }
         }
-        let doors = this.sceneState.consequences.getDoors();
         if(openDoors.length) {
             let openDoorsLength = openDoors.length,
                 o = 0;

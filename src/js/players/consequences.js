@@ -88,10 +88,13 @@ class Consequences {
     }
 
     addDoor(door) {
-        this.doors[door.doorID] = {
-
-        };
-        this.doors[door.doorID].params = door;
+        if(this.doors[door.doorID] && this.doors[door.doorID].params) {
+            this.doors[door.doorID].params = Object.assign({}, this.doors[door.doorID].params, door);
+        } else {
+            this.doors[door.doorID] = {
+                params: door
+            };
+        }
     }
 
     getDoors() {

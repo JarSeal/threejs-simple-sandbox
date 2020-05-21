@@ -42,7 +42,6 @@ function getModuleLevelData(level, type) {
                 doors: [{
                     pos: [3, 0],
                     turn: 1,
-                    size: [0.7, 0.3, 3.5],
                     open: false,
                     openOffset: 0.8,
                     closedOffset: 0.35,
@@ -52,7 +51,6 @@ function getModuleLevelData(level, type) {
                 }, {
                     pos: [0, 6],
                     turn: 0,
-                    size: [0.7, 0.3, 3.5],
                     open: false,
                     openOffset: 0.8,
                     closedOffset: 0.35,
