@@ -33,7 +33,7 @@ class CombatScene {
         this.scene.add(hemi);
         this.scene.add(new THREE.AmbientLight(0xf0f0f0, 0.5));
 
-        this.tileMapCamera = new TileMapCamera(this.scene, renderer, sceneState, AppUiLayer);
+        this.tileMapCamera = new TileMapCamera(this.scene, renderer, sceneState, AppUiLayer, this.playerController);
         this.camera = this.tileMapCamera.getCamera();
 
         return this.scene;
