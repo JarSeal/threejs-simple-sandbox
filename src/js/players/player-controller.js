@@ -2,8 +2,9 @@ import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA 
 import { calculateAngle } from '../util.js';
 
 class PlayerController {
-    constructor(sceneState) {
+    constructor(sceneState, doorAnimationController) {
         this.sceneState = sceneState;
+        this.doorAnims = doorAnimationController;
     }
 
     createNewPlayer(mtlLoader, objLoader, scene, renderer, sceneState, type) {
@@ -89,6 +90,41 @@ class PlayerController {
         }
     }
 
+    calculateRoute(player, dx, dy) {
+        let startTime = performance.now(); // Debugging (counting the time to create route)
+        let newGraph = new Graph(
+            this.sceneState.astar[this.sceneState.floor],
+            { diagonal: true }
+        );
+        let playerPos = [this.sceneState.players.hero.pos[0], this.sceneState.players.hero.pos[1]];
+        if(this.sceneState.players.hero.moving) {
+            playerPos = [
+                this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].xInt,
+                this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].yInt,
+            ];
+        }
+        let resultRoute;
+        if(this.sceneState.players.hero && !this.sceneState.players.hero.moving) {
+            resultRoute = astar.search(
+                newGraph, newGraph.grid[playerPos[0]][playerPos[1]],
+                newGraph.grid[dx][dy],
+                { closest: true }
+            );
+            resultRoute.unshift({x:playerPos[0],y:playerPos[1]});
+            resultRoute = this.predictAndDividePositions(resultRoute, this.sceneState.players.hero);
+            this.sceneState.players.hero.route = resultRoute;
+            this.sceneState.players.hero.routeIndex = 0;
+            this.sceneState.players.hero.animatingPos = false;
+            this.sceneState.players.hero.moving = true;
+            this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute);
+        } else if(this.sceneState.players.hero.moving) {
+            // Route change during movement:
+            this.sceneState.players.hero.newRoute = [dx, dy];
+        }
+        let endTime = performance.now(); // FOR DEBUGGING PURPOSES ONLY
+        console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
+    }
+
     newMove(player) {
         // One tile movement
         let route = player.route,
@@ -130,6 +166,7 @@ class PlayerController {
             player.mesh.position.x = realPosition.pos[0];
             player.mesh.position.y = realPosition.pos[1];
         }
+        this.doorAnims.checkDoors();
         tl.to(player.mesh.position, route[routeIndex].duration, {
             x: route[routeIndex].x,
             y: route[routeIndex].y,
@@ -144,22 +181,15 @@ class PlayerController {
                 let evenX = route[routeIndex].x - route[routeIndex].xInt;
                 let evenY = route[routeIndex].y - route[routeIndex].yInt;
                 if(player.newRoute.length && evenX === 0 && evenY === 0) {
-                    let now = this.sceneState.initTime.s + performance.now(),
-                        delay = now - player.newRoute[0].createdTime,
-                        routeLength = player.newRoute.length,
-                        i = 0;
-                    for(i=0; i<routeLength; i++) {
-                        if(player.newRoute[i].enterTime) {
-                            player.newRoute[i].enterTime += delay;
-                        }
-                        if(player.newRoute[i].leaveTime) {
-                            player.newRoute[i].leaveTime += delay;
-                        }
-                    }
-                    player.route = player.newRoute.slice(0);
+                    let dx = player.newRoute[0],
+                        dy = player.newRoute[1];
                     player.newRoute = [];
+                    player.moving = false;
+                    player.route = [];
                     player.routeIndex = 0;
-                    this.sceneState.consequences.movePlayer(player.id, player.route, player.pos);
+                    player.curSpeed = 0;
+                    this.doorAnims.checkDoors();
+                    this.calculateRoute("hero", dx, dy);
                 } else {
                     player.routeIndex++;
                     // Check if full destination is reached
@@ -168,13 +198,26 @@ class PlayerController {
                         player.route = [];
                         player.routeIndex = 0;
                         player.curSpeed = 0;
-                        console.log('ended hero movement');
+                        this.doorAnims.checkDoors();
+                        console.log('ended hero movement', player.newRoute);
                         return; // End animation
                     }
                 }
                 this.newMove(player);
             },
         });
+    }
+
+    getPrevRouteTile(player) {
+        let curIndex = player.routeIndex,
+            route = player.route,
+            prevPos;
+        if(curIndex == 1) return player.pos;
+        prevPos = [route[curIndex - 1].xInt, route[curIndex - 1].yInt];
+        if(curIndex - 1 !== 0 && prevPos[0] === player.pos[0] && prevPos[1] === player.pos[1]) {
+            prevPos = [route[curIndex - 2].xInt, route[curIndex - 2].yInt];
+        }
+        return prevPos;
     }
 
     getRealPosition(route, index) {
@@ -194,6 +237,105 @@ class PlayerController {
             routeIndex: curIndex,
             pos: curPos
         };
+    }
+
+    predictAndDividePositions(route, player) {
+        route = this.checkLockedDoors(route);
+        if(route.length <= 1) return [];
+        let routeLength = route.length,
+            i,
+            speed,
+            duration = 0,
+            nextX = 0,
+            nextY = 0,
+            startTime = this.sceneState.initTime.s + performance.now() / 1000,
+            previousTime = 0,
+            dividedRoute = [];
+        for(i=0; i<routeLength; i++) {
+
+            if(i === 0) {
+                speed = player.pos[0] !== route[1].x && player.pos[1] !== route[1].y ?
+                    player.speed * 1.5 * player.startMultiplier :
+                    player.speed * player.startMultiplier;
+                duration = (speed / 2) / 1000;
+                nextX = player.pos[0] + (route[i + 1].x - player.pos[0]) / 2;
+                nextY = player.pos[1] + (route[i + 1].y - player.pos[1]) / 2;
+                dividedRoute.push({
+                    x: nextX,
+                    y: nextY,
+                    xInt: route[i].x,
+                    yInt: route[i].y,
+                    enterTime: 0,
+                    leaveTime: startTime + duration,
+                    duration: duration,
+                });
+                previousTime = startTime + duration;
+            } else if(i == routeLength - 1) {
+                speed = route[i - 1].x !== route[i].x && route[i - 1].y !== route[i].y ?
+                    player.speed * 1.5 * player.endMultiplier :
+                    player.speed * player.endMultiplier;
+                duration = (speed / 2) / 1000;
+                dividedRoute.push({
+                    x: route[i].x,
+                    y: route[i].y,
+                    xInt: route[i].x,
+                    yInt: route[i].y,
+                    enterTime: previousTime,
+                    leaveTime: previousTime + duration,
+                    duration: duration,
+                });
+            } else {
+                speed = route[i - 1].x !== route[i].x && route[i - 1].y !== route[i].y ?
+                    player.speed * 1.5 :
+                    player.speed;
+                duration = (speed / 2) / 1000;
+                dividedRoute.push({
+                    x: route[i].x,
+                    y: route[i].y,
+                    xInt: route[i].x,
+                    yInt: route[i].y,
+                    enterTime: previousTime,
+                    leaveTime: previousTime + duration,
+                    duration: duration,
+                });
+                previousTime += duration;
+                speed = route[i + 1].x !== route[i].x && route[i + 1].y !== route[i].y ?
+                    player.speed * 1.5 :
+                    player.speed;
+                duration = (speed / 2) / 1000;
+                nextX = route[i].x + (route[i + 1].x - route[i].x) / 2;
+                nextY = route[i].y + (route[i + 1].y - route[i].y) / 2;
+                dividedRoute.push({
+                    x: nextX,
+                    y: nextY,
+                    xInt: route[i].x,
+                    yInt: route[i].y,
+                    enterTime: previousTime,
+                    leaveTime: previousTime + duration,
+                    duration: duration,
+                });
+                previousTime += duration;
+            }
+        }
+        return dividedRoute;
+    }
+
+    checkLockedDoors(route) {
+        let routeLength = route.length,
+            i = 0,
+            tileMap = this.sceneState.shipMap[this.sceneState.floor],
+            parsedRoute = [],
+            x,
+            y;
+        for(i=0; i<routeLength; i++) {
+            x = route[i].x;
+            y = route[i].y;
+            if(tileMap[x][y].type === 3 && tileMap[x][y].doorParams[0] && tileMap[x][y].doorParams[0].locked) {
+                break;
+            }
+            parsedRoute.push(route[i]);
+        }
+        return parsedRoute;
     }
 }
 

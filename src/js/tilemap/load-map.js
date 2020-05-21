@@ -54,9 +54,13 @@ class LoadTileMap {
                     pos: modules[m].pos,
                     type: modules[m].module[0],
                     index: modules[m].module[1],
-                    turn: turn
+                    turn: turn,
                 },
-                getModule(modules[m].module[0], modules[m].level, turn)
+                getModule(
+                    modules[m].module[0],
+                    modules[m].level,
+                    turn,
+                    this.createObjectId(modules[m].module[0], modules[m].level, modules[m].module[1], "exterior"))
             );
             if(modulePart.models.interior) {
                 modulesLoader.push(Object.assign({},modulePart,{part:"interior"}));
@@ -70,13 +74,11 @@ class LoadTileMap {
         }
 
         let loader,
-            loaderLength = modulesLoader.length,
-            uvs;
+            loaderLength = modulesLoader.length;
         this.loaders.modulesLength = loaderLength;
+        this.sceneState.doors = [];
         for(loader=0;loader<loaderLength;loader++) {
-            (function(self, module, loader, loaders, checkIfAllLoaded, sceneState) {
-                
-                // NEW VERSION
+            (function(self, module, loader, loaders, checkIfAllLoaded, sceneState, createDoors) {
                 let mLoader = new THREE.MTLLoader();
                 mLoader.setPath('/images/objects/');
                 mLoader.load(module.models[module.part].mtlFile, (materials) => {
@@ -105,18 +107,29 @@ class LoadTileMap {
                         let geometry = object.children[0].geometry;
                         let uvs = geometry.attributes.uv.array;
                         geometry.addAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
-
-                        // let moduleGroup = new THREE.Group();
-                        // moduleGroup.name = self.createObjectId(module.module, module.level, module.index);
-                        // moduleGroup.add(object);
                         
                         object.name = self.createObjectId(module.module, module.level, module.index, module.part);
                         groups["m" + module.module + "l" + module.level].add(object);
+
+                        if(module.part == "exterior") {
+                            let doors = module.models.doors,
+                                doorsLength = doors.length,
+                                d = 0;
+                            for(d=0; d<doorsLength; d++) {
+                                sceneState.doors.push(Object.assign({}, doors[d], {
+                                    modulePos: module.pos,
+                                    moduleTurn: module.turn,
+                                    moduleDoorIndex: d,
+                                    moduleId: object.name,
+                                }));
+                            }
+                        }
 
                         if(loaders.modulesLength == loader + 1) {
                             // Last module loaded
                             loaders.modulesLoaded = true;
                             checkIfAllLoaded(loaders, sceneState);
+                            createDoors(scene, sceneState);
                             let levelPropsGroup = new THREE.Group();
                             levelPropsGroup.name = "level-props";
                             for(var prop in groups) {
@@ -128,13 +141,79 @@ class LoadTileMap {
                         }
                     });
                 });
-            })(this, modulesLoader[loader], loader, this.loaders, this.checkIfAllLoaded, this.sceneState);
+            })(this, modulesLoader[loader], loader, this.loaders, this.checkIfAllLoaded, this.sceneState, this.createDoors);
         }
     }
 
     checkIfAllLoaded(loaders, sceneState) {
         if(loaders.modulesLoaded) {
             sceneState.ui.viewLoading = false;
+        }
+    }
+
+    createDoors(scene, sceneState) {
+        let doors = sceneState.doors,
+            doorsLength = doors.length,
+            d = 0,
+            deg90 = 1.5708;
+        for(d=0; d<doorsLength; d++) {
+            if(doors[d].type == "slide-double") {
+                let doorGeo = new THREE.BoxBufferGeometry(0.7, 0.3, 2.1);
+                let doorMat = new THREE.MeshPhongMaterial({color: 0x666666});
+                let doorMat2 = new THREE.MeshPhongMaterial({color: 0x555555});
+                let doorOne = new THREE.Mesh(doorGeo, doorMat),
+                    doorTwo = new THREE.Mesh(doorGeo, doorMat2),
+                    doorGroup = new THREE.Group(),
+                    doorIds;
+                doorGroup.name = doors[d].moduleId + "-d" + doors[d].moduleDoorIndex;
+                doorOne.name = doors[d].moduleId + "-d" + doors[d].moduleDoorIndex + '--slide-double--door1--';
+                doorTwo.name = doors[d].moduleId + "-d" + doors[d].moduleDoorIndex + '--slide-double--door2--';
+                doorIds = {
+                    groupName: doorGroup.name,
+                    doorOneName: doorOne.name,
+                    doorTwoName: doorTwo.name,
+                }
+                if((doors[d].turn + doors[d].moduleTurn) % 2 === 0) {
+                    // Doors is facing to Y axis
+                    doorOne.name += 'even';
+                    doorTwo.name += 'even';
+                    doorOne.position.x = doors[d].modulePos[1] + doors[d].pos[1] - doors[d].closedOffset;
+                    doorOne.position.y = doors[d].modulePos[0] + doors[d].pos[0];
+                    doorTwo.position.x = doors[d].modulePos[1] + doors[d].pos[1] + doors[d].closedOffset;
+                    doorTwo.position.y = doors[d].modulePos[0] + doors[d].pos[0];
+                    doorOne.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
+                    doorTwo.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
+                } else {
+                    // Doors is facing to X axis
+                    doorOne.name += 'odd';
+                    doorTwo.name += 'odd';
+                    doorOne.position.x = doors[d].modulePos[1] + doors[d].pos[1];
+                    doorOne.position.y = doors[d].modulePos[0] + doors[d].pos[0] - doors[d].closedOffset;
+                    doorTwo.position.x = doors[d].modulePos[1] + doors[d].pos[1];
+                    doorTwo.position.y = doors[d].modulePos[0] + doors[d].pos[0] + doors[d].closedOffset;
+                    doorOne.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
+                    doorTwo.userData.pos = [doors[d].modulePos[1] + doors[d].pos[1], doors[d].modulePos[0] + doors[d].pos[0]];
+                }
+                doorOne.position.z = 1.2;
+                doorOne.rotation.z = deg90 * doors[d].moduleTurn + deg90 * doors[d].turn;
+                doorTwo.position.z = 1.2;
+                doorTwo.rotation.z = deg90 * doors[d].moduleTurn + deg90 * doors[d].turn;
+                sceneState.consequences.addDoor(
+                    Object.assign(
+                        {},
+                        doors[d],
+                        {
+                            groupId: doorGroup.name,
+                            doorOneId: doorOne.name,
+                            doorTwoId: doorTwo.name,
+                            open: false,
+                        },
+                    )
+                );
+                doorGroup.add(doorOne);
+                doorGroup.add(doorTwo);
+                scene.add(doorGroup);
+            }
         }
     }
 
@@ -150,10 +229,16 @@ class LoadTileMap {
             curDataToTile = {};
         for(m=0; m<modulesLength; m++) {
             curModule = modules[m];
-            curModuleData = getModule(curModule.module[0], curModule.level, curModule.turn);
+            curModuleData = getModule(
+                curModule.module[0],
+                curModule.level,
+                curModule.turn,
+                this.createObjectId(curModule.module[0], curModule.level, curModule.module[1], "exterior"),
+                curModule.doorParams
+            );
             curY = 0;
             for(y=0; y<mapLengths[0]; y++) {
-                m === 0 ? row = [] : row = thisFloor[y]; // Row does not exist, create new
+                m === 0 ? row = [] : row = thisFloor[y]; // If row does not exist, create new
                 curX = 0;
                 for(x=0; x<mapLengths[1]; x++) {
                     if(x <= curModule.pos[0] + curModuleData.dims[0] - 1 &&
@@ -191,7 +276,7 @@ class LoadTileMap {
                 m === 0 ? thisFloor.push(row) : thisFloor[y] = row; // Row does not exist, create new
             }
         }
-        return [thisFloor];
+        return [this.createDoorTriggers(thisFloor)];
     }
 
     createObjectId(moduleId, level, moduleIndex, modulePart) {
@@ -272,6 +357,91 @@ class LoadTileMap {
                 modules[i].action(this.sceneState, i, scene);
             }
         }
+    }
+
+    createDoorTriggers(tileMap) {
+        if(!tileMap.length) return tileMap;
+        let rows = tileMap.length,
+            cols = tileMap[0].length,
+            r = 0,
+            c = 0,
+            params,
+            paramsLength = 0,
+            p = 0,
+            curParams;
+        for(r=0; r<rows; r++) {
+            for(c=0; c<cols; c++) {
+                if(tileMap[r][c].type == 3) {
+                    params = tileMap[r][c].doorParams;
+                    paramsLength = params.length;
+                    for(p=0; p<paramsLength; p++) {
+                        if(params[p].isCurDoorTile) {
+                            curParams = Object.assign({}, params[p]);
+                            curParams.isCurDoorTile = false;
+                            break;
+                        }
+                    }
+                    // Check if the door has a door next to it
+                    if(tileMap[r - 1] && tileMap[r - 1][c].type == 3) {
+                        if(!tileMap[r - 1][c].doorParams) tileMap[r - 1][c].doorParams = [];
+                        tileMap[r - 1][c].doorParams.push(curParams);
+                        if(!tileMap[r - 2][c].doorParams) tileMap[r - 2][c].doorParams = [];
+                        tileMap[r - 2][c].doorParams.push(curParams);
+                        if(!tileMap[r - 2][c - 1].doorParams) tileMap[r - 2][c - 1].doorParams = [];
+                        tileMap[r - 2][c - 1].doorParams.push(curParams);
+                        if(!tileMap[r - 2][c + 1].doorParams) tileMap[r - 2][c + 1].doorParams = [];
+                        tileMap[r - 2][c + 1].doorParams.push(curParams);
+                    } else if(tileMap[r][c - 1] && tileMap[r][c - 1].type == 3) {
+                        if(!tileMap[r][c - 1].doorParams) tileMap[r][c - 1].doorParams = [];
+                        tileMap[r][c - 1].doorParams.push(curParams);
+                        if(!tileMap[r][c - 2].doorParams) tileMap[r][c - 2].doorParams = [];
+                        tileMap[r][c - 2].doorParams.push(curParams);
+                        if(!tileMap[r - 1][c - 2].doorParams) tileMap[r - 1][c - 2].doorParams = [];
+                        tileMap[r - 1][c - 2].doorParams.push(curParams);
+                        if(!tileMap[r + 1][c - 2].doorParams) tileMap[r + 1][c - 2].doorParams = [];
+                        tileMap[r + 1][c - 2].doorParams.push(curParams);
+                    } else if(tileMap[r + 1] && tileMap[r + 1][c].type == 3) {
+                        if(!tileMap[r + 1][c].doorParams) tileMap[r + 1][c].doorParams = [];
+                        tileMap[r + 1][c].doorParams.push(curParams);
+                        if(!tileMap[r + 2][c].doorParams) tileMap[r + 2][c].doorParams = [];
+                        tileMap[r + 2][c].doorParams.push(curParams);
+                        if(!tileMap[r + 2][c - 1].doorParams) tileMap[r + 2][c - 1].doorParams = [];
+                        tileMap[r + 2][c - 1].doorParams.push(curParams);
+                        if(!tileMap[r + 2][c + 1].doorParams) tileMap[r + 2][c + 1].doorParams = [];
+                        tileMap[r + 2][c + 1].doorParams.push(curParams);
+                    } else if(tileMap[r][c + 1] && tileMap[r][c + 1].type == 3) {
+                        if(!tileMap[r][c + 1].doorParams) tileMap[r][c + 1].doorParams = [];
+                        tileMap[r][c + 1].doorParams.push(curParams);
+                        if(!tileMap[r][c + 2].doorParams) tileMap[r][c + 2].doorParams = [];
+                        tileMap[r][c + 2].doorParams.push(curParams);
+                        if(!tileMap[r - 1][c + 2].doorParams) tileMap[r - 1][c + 2].doorParams = [];
+                        tileMap[r - 1][c + 2].doorParams.push(curParams);
+                        if(!tileMap[r + 1][c + 2].doorParams) tileMap[r + 1][c + 2].doorParams = [];
+                        tileMap[r + 1][c + 2].doorParams.push(curParams);
+                    } else {
+                        // Door is next to space, lock the door
+                        for(p=0; p<paramsLength; p++) {
+                            if(params[p].isCurDoorTile) {
+                                tileMap[r][c].doorParams[p]['locked'] = true;
+                                tileMap[r][c].doorParams[p]['nextToSpace'] = true;
+                                this.sceneState.consequences.addDoor(
+                                    Object.assign(
+                                        {},
+                                        params[p],
+                                        {
+                                            locked: true,
+                                            nextToSpace: true,
+                                        }
+                                    )
+                                );
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return tileMap;
     }
 }
 
