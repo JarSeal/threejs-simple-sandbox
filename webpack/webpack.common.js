@@ -71,6 +71,9 @@ module.exports = {
         {from:'src/images',to:'images'}
     ]),
     new CopyWebpackPlugin([
+        {from:'src/sounds',to:'sounds'}
+    ]),
+    new CopyWebpackPlugin([
         {from:'src/js/vendor',to:'js'}
     ]),
     new MiniCssExtractPlugin({
