@@ -1,7 +1,7 @@
 import { calculateAngle } from "../util";
 
 class Projectiles {
-    constructor(scene, sceneState) {
+    constructor(scene, sceneState, SoundController) {
         this.scene = scene;
         this.sceneState = sceneState;
         this.projectileGeoInside = new THREE.PlaneBufferGeometry();
@@ -30,6 +30,7 @@ class Projectiles {
             hundredThirtyFive: 135 * (Math.PI/180),
             hundredEighty: 180 * (Math.PI/180),
         };
+        this.sounds = SoundController.loadSoundsSprite("projectile", {volume: 0.5});
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {

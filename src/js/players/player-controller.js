@@ -1,10 +1,13 @@
 import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
 import { calculateAngle } from '../util.js';
+import Projectiles from "./projectiles.js";
 
 class PlayerController {
-    constructor(sceneState, doorAnimationController) {
+    constructor(scene, sceneState, doorAnimationController, SoundController) {
         this.sceneState = sceneState;
         this.doorAnims = doorAnimationController;
+        this.SoundController = SoundController;
+        this.projectiles = new Projectiles(scene, sceneState, SoundController);
     }
 
     createNewPlayer(mtlLoader, objLoader, scene, renderer, sceneState, type) {
@@ -81,6 +84,17 @@ class PlayerController {
                     break;
             }
         }
+    }
+
+    fire(player, target, scene, sceneState, AppUiLayer, camera) {
+        this.projectiles.shootProjectile(
+            player,
+            target,
+            scene,
+            sceneState,
+            AppUiLayer,
+            camera
+        );
     }
 
     animateMovement(player) {

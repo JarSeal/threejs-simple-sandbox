@@ -1,12 +1,10 @@
-import * as doorSprite from '../../soundsSrc/door-sprite.json';
 
 class DoorAnimationController {
     constructor(scene, sceneState, SoundController) {
         this.scene = scene;
         this.sceneState = sceneState;
         this.SoundController = SoundController;
-        const soundSprite = doorSprite.default ? doorSprite.default : doorSprite;
-        this.sounds = SoundController.loadSoundsSprite(soundSprite, {volume: 0.09});
+        this.sounds = SoundController.loadSoundsSprite("door", {volume: 0.1});
     }
 
     checkDoors() {

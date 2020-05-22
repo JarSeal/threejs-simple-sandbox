@@ -6,7 +6,7 @@ Guide for creating sound sprites for Howler with audiosprite
     3.c terminal: audiosprite -h
     3.d terminal: ffmpeg -v
 2. Download the original sounds into this folder that you want to include in the sprites
-3. Form a command for the audiosprite sprite creation, terminal:
+3. Form a command for the audiosprite sprite creation in the soundsSrc folder, terminal:
 audiosprite -o door-sprite -e mp3 -u /sounds/ -f howler2 clips/door-slide-001.mp3 clips/door-closes-001.mp3
 4. Move the sprite file from the soundsSrc folder into the sounds folder
 5. Reference to the door-sprites.json with the Node require('./soundsSrc/door-sprite.mp3') method
@@ -18,7 +18,7 @@ Door sprite:
 audiosprite -o door-sprite -e mp3 -u /sounds/ -f howler2 clips/door-slide-001.mp3 clips/door-closes-001.mp3
 
 Projectile sprite:
-
+audiosprite -o projectile-sprite -e mp3 -u /sounds/ -f howler2 clips/projectile-001.mp3 clips/projectile-002.mp3 clips/zap-001.mp3 clips/whoosh-001.mp3 clips/whoosh-002.mp3
 
 Hero sprite:
 
