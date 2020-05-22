@@ -1,4 +1,3 @@
-import Projectiles from "./players/projectiles.js";
 
 class TileMapCamera {
     constructor(scene, renderer, sceneState, AppUiLayer, PlayerController) {
@@ -22,7 +21,6 @@ class TileMapCamera {
         this.backPlane;
         this.stars = [];
         this.starMaterials = [];
-        this.projectiles = new Projectiles(scene, sceneState);
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.init(scene);
@@ -305,14 +303,14 @@ class TileMapCamera {
                 tl = new TimelineMax();
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
-                
-                this.projectiles.shootProjectile(
+
+                this.PlayerController.fire(
                     this.sceneState.players.hero,
                     this.sceneState.ui.curSecondaryTarget,
                     this.scene,
                     this.sceneState,
                     this.AppUiLayer,
-                    this.camera,
+                    this.camera
                 );
             }
         }

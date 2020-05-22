@@ -15,7 +15,7 @@ class CombatScene {
         this.lastConsequenceCheck = performance.now();
     }
 
-    initView(renderer, sceneState, AppUiLayer) {
+    initView(renderer, sceneState, AppUiLayer, SoundController) {
         const objLoader = new THREE.OBJLoader();
         const mtlLoader = new THREE.MTLLoader();
         objLoader.setPath('/images/objects/');
@@ -25,8 +25,8 @@ class CombatScene {
         this.sceneState = sceneState;
         
         this.tileMapController = new LoadTileMap(mtlLoader, objLoader, this.scene, renderer, sceneState);
-        let doorAnimationController = new DoorAnimationController(this.scene, sceneState);
-        this.playerController = new PlayerController(sceneState, doorAnimationController);
+        let doorAnimationController = new DoorAnimationController(this.scene, sceneState, SoundController);
+        this.playerController = new PlayerController(this.scene, sceneState, doorAnimationController, SoundController);
         this.playerController.createNewPlayer(mtlLoader, objLoader, this.scene, renderer, sceneState, 'hero');
 
         let hemi = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.8);

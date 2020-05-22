@@ -1,7 +1,7 @@
 import { calculateAngle } from "../util";
 
 class Projectiles {
-    constructor(scene, sceneState) {
+    constructor(scene, sceneState, SoundController) {
         this.scene = scene;
         this.sceneState = sceneState;
         this.projectileGeoInside = new THREE.PlaneBufferGeometry();
@@ -30,6 +30,7 @@ class Projectiles {
             hundredThirtyFive: 135 * (Math.PI/180),
             hundredEighty: 180 * (Math.PI/180),
         };
+        this.sounds = SoundController.loadSoundsSprite("projectile", {volume: 0.1});
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
@@ -95,6 +96,8 @@ class Projectiles {
         this.sceneState.particles += particles; // ADD PARTICLE(S)
         let tl = new TimelineMax();
         tl.startTime = performance.now();
+        this.sounds.play("projectile-002");
+        this.sounds.play("whoosh-001");
         tl.to(projectileGroup.position, speed, {
             x: targetPos[0],
             y: targetPos[1],
@@ -553,6 +556,7 @@ class Projectiles {
             this.createBurnSpot(projectileLife, posWOffset, scene, camera);
             this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName);
             this.createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife);
+            this.sounds.play("ricochet-001");
         } else if(type == 'player' || type == 'door') {
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
             streaks = this._randomIntInBetween(2, 6);
@@ -565,7 +569,12 @@ class Projectiles {
             this.sceneState.particles += floorParticles + streaks;
             this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, "player", projectileLife, projectileName);
             this.createStreaks(streaks, scene, posWOffset, pos, "player", projectileLife);
-            if(type == 'door') this.createSmoke(posWOffset, scene, camera);
+            if(type == 'door') {
+                this.createSmoke(posWOffset, scene, camera);
+                this.sounds.play("ricochet-001");
+            } else {
+                this.sounds.play("zap-001");
+            }
         }
     }
 

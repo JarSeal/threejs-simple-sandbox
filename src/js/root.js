@@ -1,5 +1,6 @@
 import Scene from './scene.js';
 import AppUiLayer from './ui/app-ui-layer.js';
+import SoundController from './sound-controller.js';
 import LStorage from './ui/local-storage.js';
 import Consequences from './players/consequences.js';
 
@@ -42,6 +43,7 @@ class TileMapRoot {
         this.sceneState.initTime = this.getInitTime();
         console.log(this.sceneState.initTime);
         const appUiLayer = new AppUiLayer(this.sceneState);
+        const soundController = new SoundController();
 
         this.getLocalSettingsData();
 
@@ -50,7 +52,7 @@ class TileMapRoot {
         renderer.setSize(document.documentElement.clientWidth, document.documentElement.clientHeight);
         document.body.appendChild(renderer.domElement);
 
-        const sceneController = new Scene(renderer, this.sceneState, appUiLayer);
+        const sceneController = new Scene(renderer, this.sceneState, appUiLayer, soundController);
         let scene = sceneController.loadScene(this.sceneState.ui.view);
         
         const geometry = new THREE.BoxGeometry(1,1,1);
