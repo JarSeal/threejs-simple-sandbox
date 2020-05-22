@@ -18,7 +18,7 @@ Door sprite:
 audiosprite -o door-sprite -e mp3 -u /sounds/ -f howler2 clips/door-slide-001.mp3 clips/door-closes-001.mp3
 
 Projectile sprite:
-audiosprite -o projectile-sprite -e mp3 -u /sounds/ -f howler2 clips/projectile-001.mp3 clips/projectile-002.mp3 clips/zap-001.mp3 clips/whoosh-001.mp3 clips/whoosh-002.mp3
+audiosprite -o projectile-sprite -e mp3 -u /sounds/ -f howler2 clips/projectile-001.mp3 clips/projectile-002.mp3 clips/zap-001.mp3 clips/ricochet-001.mp3 clips/whoosh-001.mp3 clips/whoosh-002.mp3
 
 Hero sprite:
 
