@@ -1,8 +1,12 @@
+import * as THREE from 'three';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getShip } from '../data/dev-ship.js';
 import { getModule } from './modules/index.js';
 
 class LoadTileMap {
-    constructor(mtlLoader, objLoader, scene, renderer, sceneState) {
+    constructor(scene, renderer, sceneState) {
         this.ship = [];
         this.sceneState = sceneState;
         this.mapLengths = [64, 64];
@@ -12,10 +16,10 @@ class LoadTileMap {
             propLightsLength: null,
             propLightsLoaded: false,
         };
-        this.init(mtlLoader, objLoader, scene, renderer, sceneState);
+        this.init(scene, renderer, sceneState);
     }
 
-    init(mtlLoader, objLoader, scene, renderer, sceneState) {
+    init(scene, renderer, sceneState) {
         let m,
             floor = 0,
             rawShip = getShip(),
@@ -30,6 +34,8 @@ class LoadTileMap {
         sceneState.shipMap = this.ship;
         sceneState.consequences.addMapAndInitTime(this.ship[sceneState.floor], this.sceneState.initTime.s);
         sceneState.astarMap = this.createAstarMap(this.ship, sceneState);
+
+        var modelLoader = new GLTFLoader(); // TEMP LOADER
 
         // Create modulesLoader (loads the 3D assets)
         let groups = {},
@@ -79,7 +85,7 @@ class LoadTileMap {
         this.sceneState.doors = [];
         for(loader=0;loader<loaderLength;loader++) {
             (function(self, module, loader, loaders, checkIfAllLoaded, sceneState, createDoors) {
-                let mLoader = new THREE.MTLLoader();
+                let mLoader = new MTLLoader();
                 mLoader.setPath('/images/objects/');
                 mLoader.load(module.models[module.part].mtlFile, (materials) => {
                     materials.preload();
@@ -91,7 +97,7 @@ class LoadTileMap {
                     materials.materials[module.models[module.part].mtlId].bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
                     materials.materials[module.models[module.part].mtlId].map.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
-                    let oLoader = new THREE.OBJLoader();
+                    let oLoader = new OBJLoader();
                     oLoader.setMaterials(materials);
                     oLoader.setPath('/images/objects/');
                     oLoader.load(module.models[module.part].objFile, (object) => {
@@ -106,7 +112,7 @@ class LoadTileMap {
                         object.userData.moduleIndex = module.index;
                         let geometry = object.children[0].geometry;
                         let uvs = geometry.attributes.uv.array;
-                        geometry.addAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
+                        geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
                         
                         object.name = self.createObjectId(module.module, module.level, module.index, module.part);
                         groups["m" + module.module + "l" + module.level].add(object);

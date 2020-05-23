@@ -1,3 +1,5 @@
+import * as THREE from 'three'
+import { TimelineMax } from 'gsap-ssr';
 
 class TileMapCamera {
     constructor(scene, renderer, sceneState, AppUiLayer, PlayerController) {

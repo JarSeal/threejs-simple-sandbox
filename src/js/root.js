@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+import * as Stats from './vendor/stats.min.js';
 import Scene from './scene.js';
 import AppUiLayer from './ui/app-ui-layer.js';
 import SoundController from './sound-controller.js';
