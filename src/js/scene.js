@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import CombatScene from './scenes/combat-scene.js';
 
 class Scene {

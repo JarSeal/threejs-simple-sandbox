@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+import { astar, Graph } from '../vendor/astar.js';
 import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
 import { calculateAngle } from '../util.js';
 import Projectiles from "./projectiles.js";
@@ -10,7 +12,7 @@ class PlayerController {
         this.projectiles = new Projectiles(scene, sceneState, SoundController);
     }
 
-    createNewPlayer(mtlLoader, objLoader, scene, renderer, sceneState, type) {
+    createNewPlayer(scene, renderer, sceneState, type) {
         let player;
         switch(type) {
             case 'hero':

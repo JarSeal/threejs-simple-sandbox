@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { calculateAngle } from "../util";
 
 class Projectiles {

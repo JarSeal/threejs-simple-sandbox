@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import TileMapCamera from './../tilemap-camera.js';
 import LoadTileMap from './../tilemap/load-map.js';
 import PlayerController from './../players/player-controller.js';
@@ -16,18 +17,13 @@ class CombatScene {
     }
 
     initView(renderer, sceneState, AppUiLayer, SoundController) {
-        const objLoader = new THREE.OBJLoader();
-        const mtlLoader = new THREE.MTLLoader();
-        objLoader.setPath('/images/objects/');
-        mtlLoader.setPath('/images/objects/');
-
         this.scene = new THREE.Scene();
         this.sceneState = sceneState;
         
-        this.tileMapController = new LoadTileMap(mtlLoader, objLoader, this.scene, renderer, sceneState);
+        this.tileMapController = new LoadTileMap(this.scene, renderer, sceneState);
         let doorAnimationController = new DoorAnimationController(this.scene, sceneState, SoundController);
         this.playerController = new PlayerController(this.scene, sceneState, doorAnimationController, SoundController);
-        this.playerController.createNewPlayer(mtlLoader, objLoader, this.scene, renderer, sceneState, 'hero');
+        this.playerController.createNewPlayer(this.scene, renderer, sceneState, 'hero');
 
         let hemi = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.8);
         this.scene.add(hemi);
