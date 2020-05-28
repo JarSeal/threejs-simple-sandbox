@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 import * as Stats from './vendor/stats.min.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js';
+import { BloomPass } from 'three/examples/jsm/postprocessing/BloomPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import Scene from './scene.js';
 import AppUiLayer from './ui/app-ui-layer.js';
 import SoundController from './sound-controller.js';
@@ -82,11 +87,23 @@ class TileMapRoot {
 
         const camera = sceneController.getCamera();
 
+        // POST PROCESSING FX:
+        // const composer = new EffectComposer(renderer);
+        // let renderPass = new RenderPass(scene, camera);
+        // composer.addPass(renderPass);
+        // let bloomPass = new BloomPass();
+        // composer.addPass(bloomPass);
+        // let unrealBloomPass = new UnrealBloomPass({x:256, y:256}, 0.5, 0.7, 0.75);
+        // composer.addPass(unrealBloomPass);
+        // let glitchPass = new GlitchPass();
+        // composer.addPass(glitchPass);
+
         const render = function() {
             requestAnimationFrame(render);
             sceneController.doLoops();
             appUiLayer.renderUi();
             renderer.render(scene, camera);
+            //composer.render();
             stats.update(); // Debug statistics
         };
 

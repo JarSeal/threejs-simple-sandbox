@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { getShip } from '../data/dev-ship.js';
 import { getModule } from './modules/index.js';
 
@@ -35,7 +36,81 @@ class LoadTileMap {
         sceneState.consequences.addMapAndInitTime(this.ship[sceneState.floor], this.sceneState.initTime.s);
         sceneState.astarMap = this.createAstarMap(this.ship, sceneState);
 
-        var modelLoader = new GLTFLoader(); // TEMP LOADER
+        let modelLoader = new GLTFLoader(); // TEMP LOADER
+        let dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('/js/draco/');
+        modelLoader.setDRACOLoader(dracoLoader);
+        modelLoader.load(
+            'images/objects/props/prop-barrel-01.glb',
+            function (gltf)  {
+                let barrelMesh = gltf.scene.children[0];
+                //barrelMesh.material = new THREE.MeshPhongMaterial();
+                barrelMesh.material.map = new THREE.TextureLoader().load("/images/objects/props/barrel2-baked-map.png");
+                barrelMesh.material.map.flipY = false;
+                barrelMesh.material.lightMap = new THREE.TextureLoader().load("/images/objects/props/barrel2-lightmap.png");
+                barrelMesh.material.lightMapIntensity = 2;
+                barrelMesh.material.lightMap.anistropy = renderer.capabilities.getMaxAnisotropy();
+                barrelMesh.material.lightMap.flipY = false;
+                barrelMesh.material.metalness = 0;
+                barrelMesh.material.bumpScale = 0.145;
+                barrelMesh.material.bumpMap = new THREE.TextureLoader().load("/images/objects/props/barrel2-uv-bump-map.png");
+                barrelMesh.material.bumpMap.anistropy = renderer.capabilities.getMaxAnisotropy();
+                barrelMesh.material.bumpMap.flipY = false;
+
+                let geometry = barrelMesh.geometry;
+                let uvs = geometry.attributes.uv.array;
+                geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
+                
+                console.log('THE SCENE imported: ', uvs.length, barrelMesh);
+                barrelMesh.position.x = 37;
+                barrelMesh.position.y = 33;
+                /*
+                materials.materials[module.models[module.part].mtlId].lightMap = new THREE.TextureLoader().load("/images/objects/props/barrel02-lightmap.png";
+                materials.materials[module.models[module.part].mtlId].lightMapIntensity = 2;
+                materials.materials[module.models[module.part].mtlId].lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                materials.materials[module.models[module.part].mtlId].shininess = 10;
+                materials.materials[module.models[module.part].mtlId].bumpScale = 0.145;
+                materials.materials[module.models[module.part].mtlId].bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                materials.materials[module.models[module.part].mtlId].map.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                */
+
+                scene.add(barrelMesh);
+            },
+            function (xhr) {
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+            },
+            function (error) {
+                console.log('An GLTF loading error happened', error);
+            }
+        );
+
+        // NEW TEMP OBJECT
+        let objMtlLoader = new MTLLoader();
+        objMtlLoader.setPath('/images/objects/props/');
+        objMtlLoader.load("barrel2.mtl", (materials) => {
+            materials.preload();
+            let oLoader = new OBJLoader();
+            oLoader.setMaterials(materials);
+            oLoader.setPath('/images/objects/props/');
+            oLoader.load("barrel2.obj", (object) => {
+                object = object.children[0];
+                console.log("objectos",object);
+                object.material.lightMap = new THREE.TextureLoader().load("/images/objects/props/barrel2-lightmap.png");
+                object.material.lightMapIntensity = 2;
+                object.material.lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                object.material.shininess = 10;
+                object.material.bumpScale = 0.145;
+                object.material.bumpMap = new THREE.TextureLoader().load("/images/objects/props/barrel2-uv-bump-map.png");
+                object.material.bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                let geometry = object.geometry;
+                let uvs = geometry.attributes.uv.array;
+                geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
+                object.position.x = 39;
+                object.position.y = 33;
+                scene.add(object);
+            });
+        });
+
 
         // Create modulesLoader (loads the 3D assets)
         let groups = {},
@@ -102,6 +177,7 @@ class LoadTileMap {
                     oLoader.setPath('/images/objects/');
                     oLoader.load(module.models[module.part].objFile, (object) => {
                         let deg90 = 1.5708;
+                        console.log('MODULE OBJECT',object);
                         object.rotation.x = deg90;
                         if(module.turn !== 0) {
                             object.rotation.y = deg90 * module.turn;
@@ -110,6 +186,7 @@ class LoadTileMap {
                         object.position.x = module.pos[1] + module.aligners[module.turn][1];
                         object.userData.moduleType = module.type;
                         object.userData.moduleIndex = module.index;
+                        
                         let geometry = object.children[0].geometry;
                         let uvs = geometry.attributes.uv.array;
                         geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
