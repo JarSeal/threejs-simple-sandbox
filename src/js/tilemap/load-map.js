@@ -11,13 +11,117 @@ class LoadTileMap {
         this.ship = [];
         this.sceneState = sceneState;
         this.mapLengths = [64, 64];
+        this.texturesToLoad = 3;
+        this.groups = {};
         this.loaders = {
             modulesLength: null,
+            texturesLoaded: 0,
             modulesLoaded: false,
-            propLightsLength: null,
-            propLightsLoaded: false,
         };
         this.init(scene, renderer, sceneState);
+    }
+
+    addLoadedTexture(scene) {
+        let total = this.loaders.modulesLength * this.loaders.texturesLoaded;
+        total = 6;
+        this.loaders.texturesLoaded++;
+        if(this.loaders.texturesLoaded == total) {
+            this.sceneState.ui.viewLoading = false;
+            console.log("LOADED");
+            this.createDoors(scene, this.sceneState);
+            let levelPropsGroup = new THREE.Group();
+            levelPropsGroup.name = "level-props";
+            for(var prop in this.groups) {
+                if(Object.prototype.hasOwnProperty.call(this.groups, prop)) {
+                    levelPropsGroup.add(this.groups[prop]);
+                }
+            }
+            scene.add(levelPropsGroup);
+            this.groups = {};
+        }
+    }
+
+    loadModuleAndTexture(module, renderer, scene) {
+        console.log("LOADING module", module);
+        let modelLoader = new GLTFLoader(),
+            dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('/js/draco/');
+        let aligners = [
+            [0,0],
+            [2,8],
+            [8,7],
+            [7,0],
+        ];
+        modelLoader.setDRACOLoader(dracoLoader);
+        modelLoader.load(
+            'images/objects/' + module.models[module.part].glb,
+            (gltf) => {
+                console.log("LOADED gltf", gltf);
+                let object = gltf.scene.children[0];
+
+                let geometry = object.geometry;
+                let uvs = geometry.attributes.uv.array;
+                object.geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
+
+                let deg90 = 1.5708;
+                if(module.turn !== 0) {
+                    object.rotation.z = deg90 * module.turn;
+                }
+                object.position.y = module.pos[0] + module.aligners[module.turn][0];
+                object.position.x = module.pos[1] + module.aligners[module.turn][1];
+                object.userData.moduleType = module.type;
+                object.userData.moduleIndex = module.index;
+
+                object.name = this.createObjectId(module.module, module.level, module.index, module.part);
+                if(!this.groups["m" + module.module + "l" + module.level]) {
+                    this.groups["m" + module.module + "l" + module.level] = new THREE.Group();
+                }
+                this.groups["m" + module.module + "l" + module.level].add(object);
+
+                if(module.part == "exterior") {
+                    let doors = module.models.doors,
+                        doorsLength = doors.length,
+                        d = 0;
+                    for(d=0; d<doorsLength; d++) {
+                        this.sceneState.doors.push(Object.assign({}, doors[d], {
+                            modulePos: module.pos,
+                            moduleTurn: module.turn,
+                            moduleDoorIndex: d,
+                            moduleId: object.name,
+                        }));
+                    }
+                }
+
+                object.material.dispose();
+                object.material = new THREE.MeshLambertMaterial();
+                object.material.lightMapIntensity = 2;
+                object.material.bumpScale = 0.145;
+                object.material.shininess = 10;
+                object.material.userData.outlineParameters = {
+                    visible: false
+                };
+                object.material.map = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].diffuseMap, (texture) => {
+                    console.log("FROM CALLBACK", texture);
+                    texture.flipY = false;
+                    texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+                    this.addLoadedTexture(scene);
+                });
+                object.material.lightMap = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].lightMap, (texture) => {
+                    texture.flipY = false;
+                    texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+                    this.addLoadedTexture(scene);
+                });
+                object.material.bumpMap = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].bumpMap, (texture) => {
+                    texture.flipY = false;
+                    texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+                    this.addLoadedTexture(scene);
+                });
+            },
+            (xhr) => {},
+            (error) => {
+                console.log('An GLTF loading error happened', error, module);
+            }
+        );
     }
 
     init(scene, renderer, sceneState) {
@@ -41,10 +145,11 @@ class LoadTileMap {
         dracoLoader.setDecoderPath('/js/draco/');
         modelLoader.setDRACOLoader(dracoLoader);
         modelLoader.load(
-            'images/objects/props/prop-barrel-01.glb',
+            'images/objects/props/prop-barrel-02.glb',
             function (gltf)  {
                 let barrelMesh = gltf.scene.children[0];
-                //barrelMesh.material = new THREE.MeshPhongMaterial();
+                barrelMesh.material.dispose();
+                barrelMesh.material = new THREE.MeshLambertMaterial();
                 barrelMesh.material.map = new THREE.TextureLoader().load("/images/objects/props/barrel2-baked-map.png");
                 barrelMesh.material.map.flipY = false;
                 barrelMesh.material.lightMap = new THREE.TextureLoader().load("/images/objects/props/barrel2-lightmap.png");
@@ -61,56 +166,20 @@ class LoadTileMap {
                 let uvs = geometry.attributes.uv.array;
                 geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
                 
-                console.log('THE SCENE imported: ', uvs.length, barrelMesh);
-                barrelMesh.position.x = 37;
-                barrelMesh.position.y = 33;
-                /*
-                materials.materials[module.models[module.part].mtlId].lightMap = new THREE.TextureLoader().load("/images/objects/props/barrel02-lightmap.png";
-                materials.materials[module.models[module.part].mtlId].lightMapIntensity = 2;
-                materials.materials[module.models[module.part].mtlId].lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                materials.materials[module.models[module.part].mtlId].shininess = 10;
-                materials.materials[module.models[module.part].mtlId].bumpScale = 0.145;
-                materials.materials[module.models[module.part].mtlId].bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                materials.materials[module.models[module.part].mtlId].map.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                */
+                let barrel = new THREE.Group();
+                barrel.add(barrelMesh);
+                barrel.position.x = 37;
+                barrel.position.y = 33;
 
-                scene.add(barrelMesh);
+                scene.add(barrel);
             },
             function (xhr) {
-                console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                
             },
             function (error) {
                 console.log('An GLTF loading error happened', error);
             }
         );
-
-        // NEW TEMP OBJECT
-        let objMtlLoader = new MTLLoader();
-        objMtlLoader.setPath('/images/objects/props/');
-        objMtlLoader.load("barrel2.mtl", (materials) => {
-            materials.preload();
-            let oLoader = new OBJLoader();
-            oLoader.setMaterials(materials);
-            oLoader.setPath('/images/objects/props/');
-            oLoader.load("barrel2.obj", (object) => {
-                object = object.children[0];
-                console.log("objectos",object);
-                object.material.lightMap = new THREE.TextureLoader().load("/images/objects/props/barrel2-lightmap.png");
-                object.material.lightMapIntensity = 2;
-                object.material.lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                object.material.shininess = 10;
-                object.material.bumpScale = 0.145;
-                object.material.bumpMap = new THREE.TextureLoader().load("/images/objects/props/barrel2-uv-bump-map.png");
-                object.material.bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                let geometry = object.geometry;
-                let uvs = geometry.attributes.uv.array;
-                geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
-                object.position.x = 39;
-                object.position.y = 33;
-                scene.add(object);
-            });
-        });
-
 
         // Create modulesLoader (loads the 3D assets)
         let groups = {},
@@ -135,6 +204,8 @@ class LoadTileMap {
                     pos: modules[m].pos,
                     type: modules[m].module[0],
                     index: modules[m].module[1],
+                    intSkin: modules[m].intSkin,
+                    extSkin: modules[m].extSkin,
                     turn: turn,
                 },
                 getModule(
@@ -159,6 +230,10 @@ class LoadTileMap {
         this.loaders.modulesLength = loaderLength;
         this.sceneState.doors = [];
         for(loader=0;loader<loaderLength;loader++) {
+            //if(loader == 4 || loader == 5) {
+                this.loadModuleAndTexture(modulesLoader[loader], renderer, scene);
+                continue;
+            //}
             (function(self, module, loader, loaders, checkIfAllLoaded, sceneState, createDoors) {
                 let mLoader = new MTLLoader();
                 mLoader.setPath('/images/objects/');
@@ -177,7 +252,6 @@ class LoadTileMap {
                     oLoader.setPath('/images/objects/');
                     oLoader.load(module.models[module.part].objFile, (object) => {
                         let deg90 = 1.5708;
-                        console.log('MODULE OBJECT',object);
                         object.rotation.x = deg90;
                         if(module.turn !== 0) {
                             object.rotation.y = deg90 * module.turn;
@@ -186,11 +260,27 @@ class LoadTileMap {
                         object.position.x = module.pos[1] + module.aligners[module.turn][1];
                         object.userData.moduleType = module.type;
                         object.userData.moduleIndex = module.index;
+
+                        object.children[0].material.dispose();
+                        object.children[0].material = new THREE.MeshLambertMaterial();
+                        object.children[0].material.map = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].diffuseMap);
+                        object.children[0].material.lightMap = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].lightMap);
+                        object.children[0].material.lightMapIntensity = 2;
+                        object.children[0].material.lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                        object.children[0].material.shininess = 10;
+                        object.children[0].material.bumpMap = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].bumpMap);
+                        object.children[0].material.bumpScale = 0.145;
+                        object.children[0].material.bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                        object.children[0].material.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
                         
                         let geometry = object.children[0].geometry;
                         let uvs = geometry.attributes.uv.array;
                         geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
                         
+                        object.children[0].material.userData.outlineParameters = {
+                            visible: false
+                        };
+
                         object.name = self.createObjectId(module.module, module.level, module.index, module.part);
                         groups["m" + module.module + "l" + module.level].add(object);
 
@@ -228,12 +318,6 @@ class LoadTileMap {
         }
     }
 
-    checkIfAllLoaded(loaders, sceneState) {
-        if(loaders.modulesLoaded) {
-            sceneState.ui.viewLoading = false;
-        }
-    }
-
     createDoors(scene, sceneState) {
         let doors = sceneState.doors,
             doorsLength = doors.length,
@@ -242,8 +326,8 @@ class LoadTileMap {
         for(d=0; d<doorsLength; d++) {
             if(doors[d].type == "slide-double") {
                 let doorGeo = new THREE.BoxBufferGeometry(0.7, 0.3, 2.1);
-                let doorMat = new THREE.MeshPhongMaterial({color: 0x666666});
-                let doorMat2 = new THREE.MeshPhongMaterial({color: 0x555555});
+                let doorMat = new THREE.MeshLambertMaterial({color: 0x666666});
+                let doorMat2 = new THREE.MeshLambertMaterial({color: 0x555555});
                 let doorOne = new THREE.Mesh(doorGeo, doorMat),
                     doorTwo = new THREE.Mesh(doorGeo, doorMat2),
                     doorGroup = new THREE.Group(),

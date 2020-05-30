@@ -22,6 +22,7 @@ function getModuleLevelData(level, type) {
             level: 1,
             models: {
                 interior: {
+                    glb: "cargo-hall/cargo-hall-l1-interior.glb",
                     mtlId: "cargo-hall-1-a-int",
                     objFile: "cargo-hall/cargo-hall-int.obj",
                     mtlFile: "cargo-hall/cargo-hall-int.mtl",
@@ -31,6 +32,7 @@ function getModuleLevelData(level, type) {
                     bumpMap: "cargo-hall/interior-bump.png", // TODO: Check if necessary (we have normal map)..
                 },
                 exterior: {
+                    glb: "cargo-hall/cargo-hall-l1-exterior.glb",
                     mtlId: "cargo-hall-1-a-ext",
                     objFile: "cargo-hall/cargo-hall-ext.obj",
                     mtlFile: "cargo-hall/cargo-hall-ext.mtl",
@@ -60,10 +62,10 @@ function getModuleLevelData(level, type) {
                 }],
             },
             aligners: [ // Based on turn value (0 = no turn, 1 = 90 deg, 2 = 180 deg, 3 = 270 deg)
-                [0.47, 0.47],
-                [0.47,7.55],
-                [7.55,8.53],
-                [8.55,0.46],
+                [0,2],
+                [2,8],
+                [8,7],
+                [7,0],
             ],
             tilemap: [
                 [{type:2},{type:2},{type:2},{type:3,door:0},{type:2},{type:2},{type:2},{type:2},{type:2}],

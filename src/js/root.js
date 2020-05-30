@@ -1,10 +1,6 @@
 import * as THREE from 'three';
 import * as Stats from './vendor/stats.min.js';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js';
-import { BloomPass } from 'three/examples/jsm/postprocessing/BloomPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import Scene from './scene.js';
 import AppUiLayer from './ui/app-ui-layer.js';
 import SoundController from './sound-controller.js';
@@ -59,6 +55,8 @@ class TileMapRoot {
         renderer.setSize(document.documentElement.clientWidth, document.documentElement.clientHeight);
         document.body.appendChild(renderer.domElement);
 
+        const effect = new OutlineEffect(renderer, {defaultThickness: 0.0045});
+
         const sceneController = new Scene(renderer, this.sceneState, appUiLayer, soundController);
         let scene = sceneController.loadScene(this.sceneState.ui.view);
         
@@ -87,23 +85,12 @@ class TileMapRoot {
 
         const camera = sceneController.getCamera();
 
-        // POST PROCESSING FX:
-        // const composer = new EffectComposer(renderer);
-        // let renderPass = new RenderPass(scene, camera);
-        // composer.addPass(renderPass);
-        // let bloomPass = new BloomPass();
-        // composer.addPass(bloomPass);
-        // let unrealBloomPass = new UnrealBloomPass({x:256, y:256}, 0.5, 0.7, 0.75);
-        // composer.addPass(unrealBloomPass);
-        // let glitchPass = new GlitchPass();
-        // composer.addPass(glitchPass);
-
         const render = function() {
             requestAnimationFrame(render);
             sceneController.doLoops();
             appUiLayer.renderUi();
             renderer.render(scene, camera);
-            //composer.render();
+            effect.render(scene, camera);
             stats.update(); // Debug statistics
         };
 
