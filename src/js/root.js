@@ -53,6 +53,9 @@ class TileMapRoot {
         const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor('#000000');
         renderer.setSize(document.documentElement.clientWidth, document.documentElement.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        // renderer.gammaFactor = 2.2;
+        // renderer.gammaOutput = true;
         document.body.appendChild(renderer.domElement);
 
         const effect = new OutlineEffect(renderer, {defaultThickness: 0.0045});
@@ -90,7 +93,7 @@ class TileMapRoot {
             sceneController.doLoops();
             appUiLayer.renderUi();
             renderer.render(scene, camera);
-            effect.render(scene, camera);
+            //effect.render(scene, camera);
             stats.update(); // Debug statistics
         };
 

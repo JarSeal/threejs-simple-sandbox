@@ -17,6 +17,7 @@ class CombatScene {
     }
 
     initView(renderer, sceneState, AppUiLayer, SoundController) {
+        console.log('FOUND', renderer.capabilities);
         this.scene = new THREE.Scene();
         this.sceneState = sceneState;
 
