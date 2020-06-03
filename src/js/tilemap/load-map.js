@@ -26,7 +26,6 @@ class LoadTileMap {
             modulesLength: 0,
             texturesLoaded: 0,
             meshesLoaded: 0,
-            modulesLoaded: false,
         };
         this.init(scene, renderer, sceneState);
     }
@@ -71,22 +70,57 @@ class LoadTileMap {
 
     mergeTextures() {
         this.mergedMaps['map'] = new TextureMerger(this.mapTextures);
-        this.mergedMaps.map.mergedTexture.flipY = false;
+        //this.mergedMaps.map.mergedTexture.flipY = false;
         this.mergedMaps['lightMap'] = new TextureMerger(this.lightMapTextures);
-        this.mergedMaps.lightMap.mergedTexture.flipY = false;
+        //this.mergedMaps.lightMap.mergedTexture.flipY = false;
         this.mergedMaps['bumpMap'] = new TextureMerger(this.bumpMapTextures);
-        this.mergedMaps.bumpMap.mergedTexture.flipY = false;
+        //this.mergedMaps.bumpMap.mergedTexture.flipY = false;
     }
 
     modifyObjectUV(object, range) {
         var uvAttrAry = object.geometry.attributes.uv.array;
         // FIX THIS: I DONT KNOW HOW!!!!!
-        for (var i = 0; i < uvAttrAry.length; i += 2){
+        for(var i = 0; i < uvAttrAry.length; i += 2) {
             uvAttrAry[i] = (uvAttrAry[i] * (range.endU - range.startU) + range.startU);
             uvAttrAry[i + 1] = (uvAttrAry[i + 1] * (range.startV - range.endV) + range.endV);
         }
-        //object.geometry.setAttribute('uv', new THREE.BufferAttribute(uvAttrAry, 2));
         object.geometry.attributes.uv.needsUpdate = true;
+    }
+
+    modifyObjectUV2(object, range, count) {
+        let uvAttribute = object.geometry.attributes.uv,
+            i = 0,
+            multiplier;
+        if(count == 1) { multiplier = 1; } else
+        if(count < 5) { multiplier = 0.84; } else
+        if(count < 17) { multiplier = 0.42; } else
+        if(count < 33) { multiplier = 0.21; } else
+        if(count < 65) { multiplier = 0.105; } else
+        if(count < 129) { multiplier = 0.0525; } else {
+            multiplier = 0.026125;
+        }
+
+        for(i=0; i<uvAttribute.count; i++) {
+                
+            let u = uvAttribute.getX(i);
+            let v = uvAttribute.getY(i);
+
+            // u = (u * (range.endU - range.startU) + range.startU);
+            // v = (v * (range.startV - range.endV) + range.endV);
+
+            u = this.scale( 0, 1, 0, multiplier, u );
+            v = this.scale( 0, 1, 0, multiplier, v );
+            
+            // u = u + range.startU;
+            // v = v + range.startV;
+
+            uvAttribute.setXY(i, u, v);
+            uvAttribute.needsUpdate = true;
+        }
+    }
+
+    scale( a, b, c, d, x ) {
+        return ( ( d - c ) * ( x - a ) / ( b - a ) ) + c;
     }
 
     positionMeshes() {
@@ -96,27 +130,56 @@ class LoadTileMap {
         for(i=0; i<modulesLength; i++) {
             let module = modules[i];
             let meshId = "m"+module.module+"-l"+module.level+"-"+module.part,
-                object = this.meshes[meshId].clone(),
-                geometry = object.geometry,
-                uvs = geometry.attributes.uv.array;
+                object = this.meshes[meshId].clone();
+            let geometry = object.geometry,
+                uvs = geometry.attributes.uv.array,
+                uv = geometry.attributes.uv;
             //object.geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
+            //console.log("GLB FILE "+module.part, object, uvs[0], uvs[uvs.length-1], uvs);
 
             let skinKey = "";
             if(module.part == "interior") skinKey = "intSkin";
             if(module.part == "exterior") skinKey = "extSkin";
             let textureId = "m"+module.module+"-l"+module.level+"-s"+module[skinKey]+"-map-"+module.part;
 
+            let ranges = {
+                startU: 0.5,
+                endU: 1,
+                startV: 0,
+                endV: 0.5,
+            };
+            this.modifyObjectUV2(object, ranges, this.mergedMaps.map.textureCount);
+            //this.modifyObjectUV2(object, this.mergedMaps.map.ranges[textureId]);
+
             object.material.dispose();
             object.material = new THREE.MeshLambertMaterial();
-            //this.modifyObjectUV(object, this.mergedMaps.map.ranges[textureId]);
             object.material.lightMapIntensity = 2;
             object.material.bumpScale = 0.145;
             object.material.shininess = 10;
 
-            //object.material.map = this.mergedMaps.map.mergedTexture;
-            object.material.map = this.mapTextures[textureId];
+            object.material.map = this.mergedMaps.map.mergedTexture;
+            // object.material.map = this.textureLoader.load("/images/objects/cargo-hall/uvgrid01.jpg");
+            // object.material.map = this.mapTextures["m2-l1-s1-map-interior"];
             object.material.map.flipY = false;
-            console.log("KUKKA", this.mergedMaps.map);
+            console.log("Textures", this.mapTextures["m2-l1-s1-map-interior"], this.mergedMaps.map.mergedTexture);
+            // object.material.map.encoding = THREE.sRGBEncoding;
+            //object.material.needsUpdate = true;
+
+            //object.material.metalness = 0;
+            //object.material.map.flipX = true;
+            //object.material.map.flipY = false;
+            //this.modifyObjectUV(object, this.mergedMaps.map.ranges[textureId]);
+
+            //console.log('UV RANGES', this.mergedMaps.map.ranges[textureId], object.geometry.attributes.uv.array[0]);
+            //object.material.map.flipY = false;
+            // object.material.map.flipX = false;
+            //object.material.map = this.mapTextures[textureId]
+            // if(i === -1) {
+            //     object.material.map = this.mergedMaps.map.mergedTexture;
+            // } else {
+            //     object.material.map = this.mapTextures[textureId];
+            // }
+            console.log("KUKKA", this.mergedMaps.map, geometry.attributes.uv.array);
 
             let deg90 = 1.5708;
             if(module.turn !== 0) {
@@ -149,6 +212,7 @@ class LoadTileMap {
 
             this.scene.add(object);
         }
+        this.sceneState.ui.viewLoading = false;
     }
 
     loadMeshes() {

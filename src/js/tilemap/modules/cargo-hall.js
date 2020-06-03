@@ -22,7 +22,8 @@ function getModuleLevelData(level, type) {
             level: 1,
             models: {
                 interior: {
-                    glb: "cargo-hall/cargo-hall-l1-interior.glb",
+                    //glb: "cargo-hall/cargo-hall-l1-interior.glb",
+                    glb: "cargo-hall/cargo-hall-l1-interior2.glb",
                     mtlId: "cargo-hall-1-a-int",
                     objFile: "cargo-hall/cargo-hall-int.obj",
                     mtlFile: "cargo-hall/cargo-hall-int.mtl",
@@ -32,7 +33,7 @@ function getModuleLevelData(level, type) {
                     bumpMap: "cargo-hall/interior-bump.png", // TODO: Check if necessary (we have normal map)..
                 },
                 exterior: {
-                    glb: "cargo-hall/cargo-hall-l1-exterior.glb",
+                    glb: "cargo-hall/cargo-hall-l1-exterior2.glb",
                     mtlId: "cargo-hall-1-a-ext",
                     objFile: "cargo-hall/cargo-hall-ext.obj",
                     mtlFile: "cargo-hall/cargo-hall-ext.mtl",

@@ -97,7 +97,7 @@ var TextureMergerRectangle = function(x, y, width, height){
     this.ranges = new Object();
     var imgSize = this.calculateImageSize(texturesObj);
     this.canvas.width = imgSize.width;
-    this.canvas.height = imgSize.height;
+    this.canvas.height = imgSize.width;
     var context = this.canvas.getContext("2d");
     this.context = context;
     for (textureName in this.textureOffsets){
@@ -116,8 +116,8 @@ var TextureMergerRectangle = function(x, y, width, height){
       var range = new Object();
       range.startU = offsetX / imgSize.width;
       range.endU = (offsetX + imgWidth) / imgSize.width;
-      range.startV = 1 - (offsetY / imgSize.height);
-      range.endV = 1 - ((offsetY + imgHeight) / imgSize.height);
+      range.startV = 1 - (offsetY / imgSize.width);
+      range.endV = 1 - ((offsetY + imgHeight) / imgSize.width);
       this.ranges[textureName] = range;
     }
   
@@ -128,6 +128,11 @@ var TextureMergerRectangle = function(x, y, width, height){
     this.mergedTexture.minFilter = THREE.NearestFilter;
     this.mergedTexture.magFilter = THREE.NearestFilter;
     this.mergedTexture.needsUpdate = true;
+
+    // var link = document.createElement('a');
+    // link.download = 'filename.png';
+    // link.href = this.canvas.toDataURL();
+    // link.click();
   }
   
   TextureMerger.prototype.isTextureAlreadyInserted = function(textureName, texturesObj){
@@ -265,7 +270,7 @@ var TextureMergerRectangle = function(x, y, width, height){
     }
   }
   
-  TextureMerger.prototype.calculateImageSize = function(texturesObj){
+  TextureMerger.prototype.calculateImageSize = function(texturesObj) {
     var width = 0;
     var height = 0;
     for (var textureName in this.textureOffsets){
