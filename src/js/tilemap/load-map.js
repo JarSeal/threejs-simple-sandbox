@@ -32,26 +32,6 @@ class LoadTileMap {
         this.init(scene, renderer, sceneState);
     }
 
-    addLoadedTexture(scene) {
-        let total = this.loaders.modulesLength * this.loaders.texturesLoaded;
-        total = 6;
-        this.loaders.texturesLoaded++;
-        if(this.loaders.texturesLoaded == total) {
-            this.sceneState.ui.viewLoading = false;
-            console.log("LOADED");
-            this.createDoors(scene, this.sceneState);
-            let levelPropsGroup = new THREE.Group();
-            levelPropsGroup.name = "level-props";
-            for(var prop in this.groups) {
-                if(Object.prototype.hasOwnProperty.call(this.groups, prop)) {
-                    levelPropsGroup.add(this.groups[prop]);
-                }
-            }
-            scene.add(levelPropsGroup);
-            this.groups = {};
-        }
-    }
-
     textureLoaded = (texture) => {
         let totalAmount = this.texturesToLoadPerGeo * this.loaders.modulesLength;
         this.loaders.texturesLoaded++;
@@ -65,63 +45,27 @@ class LoadTileMap {
         this.loaders.meshesLoaded++;
         if(this.loaders.meshesLoaded == this.loaders.modulesLength) {
             console.log('All meshes loaded');
-            this.mergeTextures();
+            this.mergedMaps['map'] = new TextureMerger(this.mapTextures);
+            console.log("UUURAHAHAHHAHAHAHAH", this.mergedMaps);
             this.positionMeshes();
         }
     }
 
-    mergeTextures() {
-        this.mergedMaps['map'] = new TextureMerger(this.mapTextures);
-        //this.mergedMaps.map.mergedTexture.flipY = false;
-        this.mergedMaps['lightMap'] = new TextureMerger(this.lightMapTextures);
-        //this.mergedMaps.lightMap.mergedTexture.flipY = false;
-        this.mergedMaps['bumpMap'] = new TextureMerger(this.bumpMapTextures);
-        //this.mergedMaps.bumpMap.mergedTexture.flipY = false;
-    }
-
     modifyObjectUV(object, range) {
-        var uvAttrAry = object.geometry.attributes.uv.array;
-        // FIX THIS: I DONT KNOW HOW!!!!!
-        for(var i = 0; i < uvAttrAry.length; i += 2) {
-            uvAttrAry[i] = (uvAttrAry[i] * (range.endU - range.startU) + range.startU);
-            uvAttrAry[i + 1] = (uvAttrAry[i + 1] * (range.startV - range.endV) + range.endV);
-        }
-        object.geometry.attributes.uv.needsUpdate = true;
-    }
-
-    modifyObjectUV2(object, range, count) {
         let uvAttribute = object.geometry.attributes.uv,
             i = 0,
-            multiplier;
-        if(count == 1) { multiplier = 1; } else
-        if(count < 5) { multiplier = 0.84105; } else
-        if(count < 17) { multiplier = 0.42; } else
-        if(count < 33) { multiplier = 0.21; } else
-        if(count < 65) { multiplier = 0.105; } else
-        if(count < 129) { multiplier = 0.0525; } else {
-            multiplier = 0.026125;
-        }
-        for(i=0; i<uvAttribute.count; i++) {
-                
-            let u = uvAttribute.getX(i);
-            let v = uvAttribute.getY(i);
+            attrLength = uvAttribute.count;
+        for(i=0; i<attrLength; i++) {
 
-            // u = (u * (range.endU - range.startU) + range.startU);
-            // v = (v * (range.startV - range.endV) + range.endV);
-            multiplier = 0.84;
-            // u = this.scale( 0, 1, 0, multiplier, u );
-            // v = this.scale( 0, 1, 0, multiplier, v );
+            let u = uvAttribute.getX(i),
+                v = uvAttribute.getY(i);
 
-            // u = u * 0.84105;
-            // v = v * 0.84105;
-
-            u = u * 0.5;
-            v = v * 0.5;
+            u = u * (range.endU - range.startU) + range.startU;
+            v = v * (range.endV - (1 - range.startV)) + (1 - range.startV);
 
             uvAttribute.setXY(i, u, v);
             uvAttribute.needsUpdate = true;
         }
-        object.geometry.uvsNeedUpdate = true;
     }
 
     scale( a, b, c, d, x ) {
@@ -160,91 +104,26 @@ class LoadTileMap {
         let i = 0,
             modules = this.loaders.modules,
             modulesLength = modules.length,
-            geometries = [],
-            kingObject;
+            geometries = [];
         for(i=0; i<modulesLength; i++) {
-            let module = modules[i];
-            let meshId = "m"+module.module+"-l"+module.level+"-"+module.part,
+            let module = modules[i],
+                meshId = "m"+module.module+"-l"+module.level+"-"+module.part,
                 object = this.meshes[meshId].clone();
-            let geometry = object.geometry,
-                normal = geometry.attributes.normal.array,
-                position = geometry.attributes.position.array,
-                uvs = geometry.attributes.uv.array;
-            let ranges = {
-                startU: 0.5,
-                endU: 1,
-                startV: 0.5,
-                endV: 1,
-            };
-            let newGeo = new THREE.BufferGeometry();
-            newGeo.setAttribute('normal', new THREE.BufferAttribute(uvs, 2));
-            newGeo.setAttribute('position', new THREE.BufferAttribute(position, 3));
-            newGeo.setAttribute('uv', new THREE.BufferAttribute(normal, 3));
-            newGeo.setIndex(geometry.index);
-            let newMat = new THREE.ShaderMaterial(this.createShaderMaterial(
-                this.mergedMaps.map.mergedTexture,
-                ranges
-            ));
-            let objectTEMP = new THREE.Mesh(geometry, newMat);
-            module['uvCount'] = geometry.attributes.uv.count;
-            //object.geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
-            console.log("GEMOETRY", geometry, object, module['uvCount']);
-
             let skinKey = "";
             if(module.part == "interior") skinKey = "intSkin";
             if(module.part == "exterior") skinKey = "extSkin";
             let textureId = "m"+module.module+"-l"+module.level+"-s"+module[skinKey]+"-map-"+module.part;
-            
             if(i < 2) {
-                this.modifyObjectUV2(object, ranges, this.mergedMaps.map.textureCount);
+                //this.modifyObjectUV(object, this.mergedMaps.map.range[meshId]);
+                this.modifyObjectUV(object, this.mergedMaps.map.ranges[textureId]);
             }
-            //this.modifyObjectUV2(object, this.mergedMaps.map.ranges[textureId]);
+            console.log(this.mergedMaps, meshId);
 
             object.material.dispose();
             object.material = new THREE.ShaderMaterial(this.createShaderMaterial(
                 this.mergedMaps.map.mergedTexture,
-                ranges
+                {}
             ));
-            // object.material.lightMapIntensity = 2;
-            // object.material.bumpScale = 0.145;
-            // object.material.shininess = 10;
-
-            //object.material.map = this.textureLoader.load("/images/objects/cargo-hall/uvgrid01.jpg");
-            //object.material.map = this.mergedMaps.map.mergedTexture;
-            // object.material.map.transformUv(new THREE.Vector2(0.5,1));
-            // object.material.map.repeat.set(0.5, 0.5);
-            // if(i == 1) {
-            //     object.material.map.offset.set(0.5, 0);
-            // }
-            // object.material.map = this.textureLoader.load("/images/objects/cargo-hall/uvgrid01.jpg");
-            // object.material.map = this.mapTextures["m2-l1-s1-map-interior"];
-            // var material = new THREE.ShaderMaterial({
-            //     uniforms: {
-            //         texture1: { value: this.mergedMaps.map.mergedTexture },
-            //         textureDivision: {value: new THREE.Vector2(2, 2)},
-            //     },
-            // });
-            // object.material = material;
-            // object.material.map.flipY = false;
-            console.log("Textures", this.mapTextures["m2-l1-s1-map-interior"], this.mergedMaps.map.mergedTexture);
-            // object.material.map.encoding = THREE.sRGBEncoding;
-            //object.material.needsUpdate = true;
-
-            //object.material.metalness = 0;
-            //object.material.map.flipX = true;
-            //object.material.map.flipY = false;
-            //this.modifyObjectUV(object, this.mergedMaps.map.ranges[textureId]);
-
-            //console.log('UV RANGES', this.mergedMaps.map.ranges[textureId], object.geometry.attributes.uv.array[0]);
-            //object.material.map.flipY = false;
-            // object.material.map.flipX = false;
-            //object.material.map = this.mapTextures[textureId]
-            // if(i === -1) {
-            //     object.material.map = this.mergedMaps.map.mergedTexture;
-            // } else {
-            //     object.material.map = this.mapTextures[textureId];
-            // }
-            //console.log("KUKKA", this.mergedMaps.map, geometry.attributes.uv.array);
 
             let deg90 = 1.5708;
             if(module.turn !== 0) {
@@ -255,12 +134,6 @@ class LoadTileMap {
             object.userData.moduleType = module.type;
             object.userData.moduleIndex = module.index;
             object.updateMatrix();
-
-            // object.name = this.createObjectId(module.module, module.level, module.index, module.part);
-            // if(!this.groups["m" + module.module + "l" + module.level]) {
-            //     this.groups["m" + module.module + "l" + module.level] = new THREE.Group();
-            // }
-            // this.groups["m" + module.module + "l" + module.level].add(object);
 
             let moduleId = this.createObjectId(module.module, module.level, module.index, module.part);
             if(module.part == "exterior") {
@@ -289,37 +162,11 @@ class LoadTileMap {
         ));
         let kingMesh = new THREE.Mesh(kingGeo, kingMat);
         kingMesh.name = "king-mesh";
-        console.log("KING GEO", kingMesh);
+        kingMesh.matrixAutoUpdate = false;
         this.createDoors(this.scene, this.sceneState);
         this.scene.add(kingMesh);
         
         this.sceneState.ui.viewLoading = false;
-    }
-
-    loadMeshes2() {
-        let i = 0,
-            modules = this.loaders.modules,
-            modulesLength = modules.length,
-            module,
-            oLoader = new OBJLoader();
-        oLoader.setPath('/images/objects/');            
-        for(i=0; i<modulesLength; i++) {
-            module = modules[i];
-            let meshId = "m"+module.module+"-l"+module.level+"-"+module.part;
-            if(!this.meshes[meshId]) {
-                this.meshes[meshId] = {};
-                oLoader.load(module.models[module.part].objFile, (object) => {
-                    //console.log('OBJECT LOADED', object);
-                    let obj = object.children[0],
-                        deg90 = 1.5708;
-                    obj.rotation.x = deg90;
-                    this.meshes[meshId] = obj;
-                    this.meshLoaded();
-                });
-            } else {
-                this.meshLoaded();
-            }
-        }
     }
 
     loadMeshes() {

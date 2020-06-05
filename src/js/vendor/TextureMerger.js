@@ -124,17 +124,13 @@ var TextureMergerRectangle = function(x, y, width, height){
     }
   
     this.makeCanvasPowerOfTwo();
-    var img = document.createElement("img");
-    img.src = this.canvas.toDataURL("image/png");
-    this.mergedTexture = new THREE.Texture(img);
-    //this.mergedTexture = new THREE.CanvasTexture(this.canvas);
+    this.mergedTexture = new THREE.CanvasTexture(this.canvas);
     this.mergedTexture.flipY = false;
     this.mergedTexture.encoding = THREE.sRGBEncoding;
     this.mergedTexture.wrapS = THREE.ClampToEdgeWrapping;
     this.mergedTexture.wrapT = THREE.ClampToEdgeWrapping;
     this.mergedTexture.minFilter = THREE.LinearMipmapLinearFilter;
     this.mergedTexture.magFilter = THREE.LinearFilter;
-    console.log("KÄNVÄS",this.canvas, this);
     this.mergedTexture.needsUpdate = true;
 
     // var link = document.createElement('a');
