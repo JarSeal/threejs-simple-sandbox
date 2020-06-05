@@ -49,6 +49,7 @@ class DoorAnimationController {
     }
 
     animateDoor(door, doors, dirTo) {
+        console.log('DOOR', door, doors, dirTo);
         let doorID = door.doorID,
             doorGroup = this.scene.getObjectByName(doorID).children,
             duration = 0.3,

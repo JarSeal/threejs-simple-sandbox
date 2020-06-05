@@ -52,7 +52,7 @@ class Projectiles {
             raycaster = new THREE.Raycaster(),
             startPoint = new THREE.Vector3(from[0], from[1], 1),
             direction = new THREE.Vector3(),
-            hitObject = this.scene.getObjectByName("level-props").children[0];
+            hitObject = this.scene.getObjectByName("king-mesh");
         direction.subVectors(new THREE.Vector3(target[0], target[1], 1), startPoint).normalize();;
         raycaster.set(startPoint, direction, true);
         let intersects = raycaster.intersectObject(hitObject, true);

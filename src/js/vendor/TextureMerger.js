@@ -99,6 +99,8 @@ var TextureMergerRectangle = function(x, y, width, height){
     this.canvas.width = imgSize.width;
     this.canvas.height = imgSize.width;
     var context = this.canvas.getContext("2d");
+    context.fillStyle = "blue";
+    context.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.context = context;
     for (textureName in this.textureOffsets){
       var texture = texturesObj[textureName];
@@ -122,11 +124,17 @@ var TextureMergerRectangle = function(x, y, width, height){
     }
   
     this.makeCanvasPowerOfTwo();
-    this.mergedTexture = new THREE.CanvasTexture(this.canvas);
+    var img = document.createElement("img");
+    img.src = this.canvas.toDataURL("image/png");
+    this.mergedTexture = new THREE.Texture(img);
+    //this.mergedTexture = new THREE.CanvasTexture(this.canvas);
+    this.mergedTexture.flipY = false;
+    this.mergedTexture.encoding = THREE.sRGBEncoding;
     this.mergedTexture.wrapS = THREE.ClampToEdgeWrapping;
     this.mergedTexture.wrapT = THREE.ClampToEdgeWrapping;
-    this.mergedTexture.minFilter = THREE.NearestFilter;
-    this.mergedTexture.magFilter = THREE.NearestFilter;
+    this.mergedTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    this.mergedTexture.magFilter = THREE.LinearFilter;
+    console.log("KÄNVÄS",this.canvas, this);
     this.mergedTexture.needsUpdate = true;
 
     // var link = document.createElement('a');
