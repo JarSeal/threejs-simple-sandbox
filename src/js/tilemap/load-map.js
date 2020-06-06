@@ -46,8 +46,7 @@ class LoadTileMap {
         if(this.loaders.meshesLoaded == this.loaders.modulesLength) {
             console.log('All meshes loaded');
             this.mergedMaps['map'] = new TextureMerger(this.mapTextures);
-            console.log("UUURAHAHAHHAHAHAHAH", this.mergedMaps);
-            this.positionMeshes();
+            this.positionAndSkinMeshes();
         }
     }
 
@@ -68,11 +67,7 @@ class LoadTileMap {
         }
     }
 
-    scale( a, b, c, d, x ) {
-        return ( ( d - c ) * ( x - a ) / ( b - a ) ) + c;
-    }
-
-    createShaderMaterial(texture, ranges) {
+    createShaderMaterial(texture) {
         const uniforms = {
             texture: { type: "t", value: texture },
         };
@@ -100,11 +95,12 @@ class LoadTileMap {
         }
     }
 
-    positionMeshes() {
+    positionAndSkinMeshes() {
         let i = 0,
             modules = this.loaders.modules,
             modulesLength = modules.length,
-            geometries = [];
+            geometries = [],
+            handledUvs = [];
         for(i=0; i<modulesLength; i++) {
             let module = modules[i],
                 meshId = "m"+module.module+"-l"+module.level+"-"+module.part,
@@ -113,16 +109,14 @@ class LoadTileMap {
             if(module.part == "interior") skinKey = "intSkin";
             if(module.part == "exterior") skinKey = "extSkin";
             let textureId = "m"+module.module+"-l"+module.level+"-s"+module[skinKey]+"-map-"+module.part;
-            if(i < 2) {
-                //this.modifyObjectUV(object, this.mergedMaps.map.range[meshId]);
+            if(!handledUvs.includes(textureId)) {
                 this.modifyObjectUV(object, this.mergedMaps.map.ranges[textureId]);
+                handledUvs.push(textureId);
             }
-            console.log(this.mergedMaps, meshId);
 
             object.material.dispose();
             object.material = new THREE.ShaderMaterial(this.createShaderMaterial(
-                this.mergedMaps.map.mergedTexture,
-                {}
+                this.mergedMaps.map.mergedTexture
             ));
 
             let deg90 = 1.5708;
@@ -187,7 +181,7 @@ class LoadTileMap {
                     'images/objects/' + module.models[module.part].glb,
                     (gltf) => {
                         //console.log("LOADED gltf", gltf);
-                        let object = gltf.scene.children[0];
+                        let object = gltf.scene.children[0];                        
                         this.meshes[meshId] = object;
                         this.meshLoaded();
                     },
