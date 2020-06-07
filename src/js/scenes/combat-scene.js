@@ -17,20 +17,23 @@ class CombatScene {
     }
 
     initView(renderer, sceneState, AppUiLayer, SoundController) {
+        console.log('FOUND', renderer.capabilities);
         this.scene = new THREE.Scene();
         this.sceneState = sceneState;
-        
-        this.tileMapController = new LoadTileMap(this.scene, renderer, sceneState);
-        let doorAnimationController = new DoorAnimationController(this.scene, sceneState, SoundController);
-        this.playerController = new PlayerController(this.scene, sceneState, doorAnimationController, SoundController);
-        this.playerController.createNewPlayer(this.scene, renderer, sceneState, 'hero');
 
         let hemi = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.8);
         this.scene.add(hemi);
         this.scene.add(new THREE.AmbientLight(0xf0f0f0, 0.5));
 
+        let doorAnimationController = new DoorAnimationController(this.scene, sceneState, SoundController);
+        this.playerController = new PlayerController(this.scene, sceneState, doorAnimationController, SoundController);
+
         this.tileMapCamera = new TileMapCamera(this.scene, renderer, sceneState, AppUiLayer, this.playerController);
         this.camera = this.tileMapCamera.getCamera();
+
+        this.playerController.createNewPlayer(this.scene, renderer, sceneState, 'hero');
+
+        this.tileMapController = new LoadTileMap(this.scene, renderer, sceneState);
 
         return this.scene;
     }

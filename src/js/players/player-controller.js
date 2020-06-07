@@ -34,7 +34,7 @@ class PlayerController {
         let tempDudePos = [33, 43];
         sceneState.consequences.addPlayer({id:"testPLAYER",pos:[tempDudePos[0], tempDudePos[1],0]}); // TEMP PLAYER
         let tempGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
-        let tempMaterial = new THREE.MeshPhongMaterial({color: 0xffEE44});
+        let tempMaterial = new THREE.MeshLambertMaterial({color: 0xffEE44});
         let tempMesh = new THREE.Mesh(tempGeometry, tempMaterial);
         tempMesh.scale.x = 0.5;
         tempMesh.scale.y = 0.5;
@@ -45,14 +45,14 @@ class PlayerController {
         
         let group = new THREE.Group();
         let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
-        let heroMaterial = new THREE.MeshPhongMaterial({color: 0xff0088});
+        let heroMaterial = new THREE.MeshLambertMaterial({color: 0xff0088});
         let heroMesh = new THREE.Mesh(heroGeometry, heroMaterial);
         heroMesh.scale.x = 0.5;
         heroMesh.scale.y = 0.5;
         group.add(heroMesh);
 
         let pointerGeo = new THREE.BoxBufferGeometry(0.2,0.2,0.2);
-        let pointerMat = new THREE.MeshPhongMaterial({color: 0x550066});
+        let pointerMat = new THREE.MeshLambertMaterial({color: 0x550066});
         let pointerMesh = new THREE.Mesh(pointerGeo, pointerMat);
         pointerMesh.position.z = hero.height / 2;
         pointerMesh.position.y = -0.2;

@@ -7,7 +7,7 @@ class AppUiLayer {
         this.sceneState = sceneState;
         this.uiCanvas = document.getElementById("uiCanvas");
         this.logList = [[
-            sceneState.initTime.ms,
+            sceneState.initTime.s + performance.now() / 1000,
             "[SYSTEM]",
             "START of logging!",
             "S"

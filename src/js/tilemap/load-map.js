@@ -1,22 +1,305 @@
 import * as THREE from 'three';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { getShip } from '../data/dev-ship.js';
 import { getModule } from './modules/index.js';
+import { TextureMerger } from '../vendor/TextureMerger.js';
+import { getModuleTexture } from './textures.js';
 
 class LoadTileMap {
     constructor(scene, renderer, sceneState) {
         this.ship = [];
+        this.scene = scene;
         this.sceneState = sceneState;
+        this.sceneState.doors = [];
         this.mapLengths = [64, 64];
+        this.texturesToLoadPerGeo = 3;
+        this.textureLoader = new THREE.TextureLoader();
+        this.groups = {};
+        this.mapTextures = {};
+        this.lightMapTextures = {};
+        this.bumpMapTextures = {};
+        this.meshes = {};
+        this.mergedMaps = {};
         this.loaders = {
-            modulesLength: null,
-            modulesLoaded: false,
-            propLightsLength: null,
-            propLightsLoaded: false,
+            modulesLength: 0,
+            texturesLoaded: 0,
+            meshesLoaded: 0,
         };
         this.init(scene, renderer, sceneState);
+    }
+
+    textureLoaded = (texture) => {
+        let totalAmount = this.texturesToLoadPerGeo * this.loaders.modulesLength;
+        this.loaders.texturesLoaded++;
+        if(totalAmount == this.loaders.texturesLoaded) {
+            console.log('ALL TEXTURES LOADED');
+            this.loadMeshes();
+        }
+    }
+
+    meshLoaded() {
+        this.loaders.meshesLoaded++;
+        if(this.loaders.meshesLoaded == this.loaders.modulesLength) {
+            console.log('All meshes loaded');
+            this.mergedMaps['map'] = new TextureMerger(this.mapTextures);
+            this.positionAndSkinMeshes();
+        }
+    }
+
+    modifyObjectUV(object, range) {
+        let uvAttribute = object.geometry.attributes.uv,
+            i = 0,
+            attrLength = uvAttribute.count;
+        for(i=0; i<attrLength; i++) {
+
+            let u = uvAttribute.getX(i),
+                v = uvAttribute.getY(i);
+
+            u = u * (range.endU - range.startU) + range.startU;
+            v = v * (range.endV - (1 - range.startV)) + (1 - range.startV);
+
+            uvAttribute.setXY(i, u, v);
+            uvAttribute.needsUpdate = true;
+        }
+    }
+
+    createShaderMaterial(texture) {
+        const uniforms = {
+            texture: { type: "t", value: texture },
+        };
+
+        const vertexShader = `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`;
+
+        const fragmentShader = `
+        varying vec2 vUv;
+        uniform sampler2D texture;
+        void main() {
+            float coordX = vUv.x;
+            float coordY = vUv.y;
+            gl_FragColor = texture2D(texture, vec2(coordX, coordY));
+        }`;
+
+        return {
+            uniforms: uniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+        }
+    }
+
+    positionAndSkinMeshes() {
+        let i = 0,
+            modules = this.loaders.modules,
+            modulesLength = modules.length,
+            geometries = [],
+            handledUvs = [];
+        for(i=0; i<modulesLength; i++) {
+            let module = modules[i],
+                meshId = "m"+module.module+"-l"+module.level+"-"+module.part,
+                object = this.meshes[meshId].clone();
+            let skinKey = "";
+            if(module.part == "interior") skinKey = "intSkin";
+            if(module.part == "exterior") skinKey = "extSkin";
+            let textureId = "m"+module.module+"-l"+module.level+"-s"+module[skinKey]+"-map-"+module.part;
+            if(!handledUvs.includes(textureId)) {
+                this.modifyObjectUV(object, this.mergedMaps.map.ranges[textureId]);
+                handledUvs.push(textureId);
+            }
+
+            object.material.dispose();
+            object.material = new THREE.ShaderMaterial(this.createShaderMaterial(
+                this.mergedMaps.map.mergedTexture
+            ));
+
+            let deg90 = 1.5708;
+            if(module.turn !== 0) {
+                object.rotation.z = deg90 * module.turn;
+            }
+            object.position.y = module.pos[0] + module.aligners[module.turn][0];
+            object.position.x = module.pos[1] + module.aligners[module.turn][1];
+            object.userData.moduleType = module.type;
+            object.userData.moduleIndex = module.index;
+            object.updateMatrix();
+
+            let moduleId = this.createObjectId(module.module, module.level, module.index, module.part);
+            if(module.part == "exterior") {
+                let doors = module.models.doors,
+                    doorsLength = doors.length,
+                    d = 0;
+                for(d=0; d<doorsLength; d++) {
+                    this.sceneState.doors.push(Object.assign({}, doors[d], {
+                        modulePos: module.pos,
+                        moduleTurn: module.turn,
+                        moduleDoorIndex: d,
+                        moduleId: moduleId,
+                    }));
+                }
+            }
+
+            object.geometry = object.geometry.toNonIndexed();
+            object.matrix.compose(object.position, object.quaternion, object.scale);
+		    object.geometry.applyMatrix4(object.matrix);
+            geometries.push(object.geometry);
+        }
+        let kingGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
+        let kingMat = new THREE.ShaderMaterial(this.createShaderMaterial(
+            this.mergedMaps.map.mergedTexture,
+            {}
+        ));
+        let kingMesh = new THREE.Mesh(kingGeo, kingMat);
+        kingMesh.name = "king-mesh";
+        kingMesh.matrixAutoUpdate = false;
+        this.createDoors(this.scene, this.sceneState);
+        this.scene.add(kingMesh);
+        
+        this.sceneState.ui.viewLoading = false;
+    }
+
+    loadMeshes() {
+        let i = 0,
+            modules = this.loaders.modules,
+            modulesLength = modules.length,
+            module,
+            modelLoader = new GLTFLoader(),
+            dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('/js/draco/');
+        modelLoader.setDRACOLoader(dracoLoader);
+        for(i=0; i<modulesLength; i++) {
+            module = modules[i];
+            let meshId = "m"+module.module+"-l"+module.level+"-"+module.part;
+            if(!this.meshes[meshId]) {
+                this.meshes[meshId] = {};
+                modelLoader.load(
+                    'images/objects/' + module.models[module.part].glb,
+                    (gltf) => {
+                        //console.log("LOADED gltf", gltf);
+                        let object = gltf.scene.children[0];                        
+                        this.meshes[meshId] = object;
+                        this.meshLoaded();
+                    },
+                    (xhr) => {},
+                    (error) => {
+                        console.log('An GLTF loading error happened', error);
+                    }
+                );
+            } else {
+                this.meshLoaded();
+            }
+        }
+    }
+
+    loadModuleAndTexture(module, renderer, scene) {
+        let skinKey = "";
+        if(module.part == "interior") skinKey = "intSkin";
+        if(module.part == "exterior") skinKey = "extSkin";
+
+        // Load current module's textures (map, lightMap, bumpMap)
+        let mapTexture = getModuleTexture(module.module, module.level, module[skinKey], "map", module.part),
+            lightMapTexture = getModuleTexture(module.module, module.level, module[skinKey], "light", module.part),
+            bumpMapTexture = getModuleTexture(module.module, module.level, module[skinKey], "bump", module.part);
+        if(!this.mapTextures[mapTexture.key]) {
+            this.mapTextures[mapTexture.key] = this.textureLoader.load("/images/objects/"+mapTexture.texturePath, this.textureLoaded);
+        } else {
+            this.textureLoaded();
+        }
+        if(!this.lightMapTextures[lightMapTexture.key]) {
+            this.lightMapTextures[lightMapTexture.key] = this.textureLoader.load("/images/objects/"+lightMapTexture.texturePath, this.textureLoaded);
+        } else {
+            this.textureLoaded();
+        }
+        if(!this.bumpMapTextures[bumpMapTexture.key]) {
+            this.bumpMapTextures[bumpMapTexture.key] = this.textureLoader.load("/images/objects/"+bumpMapTexture.texturePath, this.textureLoaded);
+        } else {
+            this.textureLoaded();
+        }
+    }
+
+    loadModuleAndTexture2(module, renderer, scene) {
+        console.log("LOADING module", module);
+
+        // Load current module's textures (map, lightMap, bumpMap)
+        let mapTexture = getModuleTexture(module.module, module.level, )
+
+        // Load GLTF models
+        let modelLoader = new GLTFLoader(),
+            dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('/js/draco/');
+        modelLoader.setDRACOLoader(dracoLoader);
+        modelLoader.load(
+            'images/objects/' + module.models[module.part].glb,
+            (gltf) => {
+                console.log("LOADED gltf", gltf);
+                let object = gltf.scene.children[0];
+
+                let geometry = object.geometry;
+                let uvs = geometry.attributes.uv.array;
+                object.geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
+
+                let deg90 = 1.5708;
+                if(module.turn !== 0) {
+                    object.rotation.z = deg90 * module.turn;
+                }
+                object.position.y = module.pos[0] + module.aligners[module.turn][0];
+                object.position.x = module.pos[1] + module.aligners[module.turn][1];
+                object.userData.moduleType = module.type;
+                object.userData.moduleIndex = module.index;
+
+                object.name = this.createObjectId(module.module, module.level, module.index, module.part);
+                if(!this.groups["m" + module.module + "l" + module.level]) {
+                    this.groups["m" + module.module + "l" + module.level] = new THREE.Group();
+                }
+                this.groups["m" + module.module + "l" + module.level].add(object);
+
+                if(module.part == "exterior") {
+                    let doors = module.models.doors,
+                        doorsLength = doors.length,
+                        d = 0;
+                    for(d=0; d<doorsLength; d++) {
+                        this.sceneState.doors.push(Object.assign({}, doors[d], {
+                            modulePos: module.pos,
+                            moduleTurn: module.turn,
+                            moduleDoorIndex: d,
+                            moduleId: object.name,
+                        }));
+                    }
+                }
+
+                object.material.dispose();
+                object.material = new THREE.MeshLambertMaterial();
+                object.material.lightMapIntensity = 2;
+                object.material.bumpScale = 0.145;
+                object.material.shininess = 10;
+                object.material.userData.outlineParameters = {
+                    visible: false
+                };
+                object.material.map = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].diffuseMap, (texture) => {
+                    console.log("FROM CALLBACK", texture);
+                    texture.flipY = false;
+                    texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+                    this.addLoadedTexture(scene);
+                });
+                object.material.lightMap = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].lightMap, (texture) => {
+                    texture.flipY = false;
+                    texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+                    this.addLoadedTexture(scene);
+                });
+                object.material.bumpMap = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].bumpMap, (texture) => {
+                    texture.flipY = false;
+                    texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+                    this.addLoadedTexture(scene);
+                });
+            },
+            (xhr) => {},
+            (error) => {
+                console.log('An GLTF loading error happened', error, module);
+            }
+        );
     }
 
     init(scene, renderer, sceneState) {
@@ -35,7 +318,46 @@ class LoadTileMap {
         sceneState.consequences.addMapAndInitTime(this.ship[sceneState.floor], this.sceneState.initTime.s);
         sceneState.astarMap = this.createAstarMap(this.ship, sceneState);
 
-        var modelLoader = new GLTFLoader(); // TEMP LOADER
+        let modelLoader = new GLTFLoader(); // TEMP LOADER
+        let dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('/js/draco/');
+        modelLoader.setDRACOLoader(dracoLoader);
+        modelLoader.load(
+            'images/objects/props/prop-barrel-02.glb',
+            function (gltf)  {
+                let barrelMesh = gltf.scene.children[0];
+                barrelMesh.material.dispose();
+                barrelMesh.material = new THREE.MeshLambertMaterial();
+                barrelMesh.material.map = new THREE.TextureLoader().load("/images/objects/props/barrel2-baked-map.png");
+                barrelMesh.material.map.flipY = false;
+                barrelMesh.material.lightMap = new THREE.TextureLoader().load("/images/objects/props/barrel2-lightmap.png");
+                barrelMesh.material.lightMapIntensity = 2;
+                barrelMesh.material.lightMap.anistropy = renderer.capabilities.getMaxAnisotropy();
+                barrelMesh.material.lightMap.flipY = false;
+                barrelMesh.material.metalness = 0;
+                barrelMesh.material.bumpScale = 0.145;
+                barrelMesh.material.bumpMap = new THREE.TextureLoader().load("/images/objects/props/barrel2-uv-bump-map.png");
+                barrelMesh.material.bumpMap.anistropy = renderer.capabilities.getMaxAnisotropy();
+                barrelMesh.material.bumpMap.flipY = false;
+
+                let geometry = barrelMesh.geometry;
+                let uvs = geometry.attributes.uv.array;
+                geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
+                
+                let barrel = new THREE.Group();
+                barrel.add(barrelMesh);
+                barrel.position.x = 37;
+                barrel.position.y = 33;
+
+                scene.add(barrel);
+            },
+            function (xhr) {
+                
+            },
+            function (error) {
+                console.log('An GLTF loading error happened', error);
+            }
+        );
 
         // Create modulesLoader (loads the 3D assets)
         let groups = {},
@@ -60,6 +382,8 @@ class LoadTileMap {
                     pos: modules[m].pos,
                     type: modules[m].module[0],
                     index: modules[m].module[1],
+                    intSkin: modules[m].intSkin,
+                    extSkin: modules[m].extSkin,
                     turn: turn,
                 },
                 getModule(
@@ -81,79 +405,10 @@ class LoadTileMap {
 
         let loader,
             loaderLength = modulesLoader.length;
+        this.loaders.modules = modulesLoader;
         this.loaders.modulesLength = loaderLength;
-        this.sceneState.doors = [];
         for(loader=0;loader<loaderLength;loader++) {
-            (function(self, module, loader, loaders, checkIfAllLoaded, sceneState, createDoors) {
-                let mLoader = new MTLLoader();
-                mLoader.setPath('/images/objects/');
-                mLoader.load(module.models[module.part].mtlFile, (materials) => {
-                    materials.preload();
-                    materials.materials[module.models[module.part].mtlId].lightMap = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].lightMap);
-                    materials.materials[module.models[module.part].mtlId].lightMapIntensity = 2;
-                    materials.materials[module.models[module.part].mtlId].lightMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                    materials.materials[module.models[module.part].mtlId].shininess = 10;
-                    materials.materials[module.models[module.part].mtlId].bumpScale = 0.145;
-                    materials.materials[module.models[module.part].mtlId].bumpMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                    materials.materials[module.models[module.part].mtlId].map.anisotropy = renderer.capabilities.getMaxAnisotropy();
-
-                    let oLoader = new OBJLoader();
-                    oLoader.setMaterials(materials);
-                    oLoader.setPath('/images/objects/');
-                    oLoader.load(module.models[module.part].objFile, (object) => {
-                        let deg90 = 1.5708;
-                        object.rotation.x = deg90;
-                        if(module.turn !== 0) {
-                            object.rotation.y = deg90 * module.turn;
-                        }
-                        object.position.y = module.pos[0] + module.aligners[module.turn][0];
-                        object.position.x = module.pos[1] + module.aligners[module.turn][1];
-                        object.userData.moduleType = module.type;
-                        object.userData.moduleIndex = module.index;
-                        let geometry = object.children[0].geometry;
-                        let uvs = geometry.attributes.uv.array;
-                        geometry.setAttribute('uv2', new THREE.BufferAttribute(uvs, 2));
-                        
-                        object.name = self.createObjectId(module.module, module.level, module.index, module.part);
-                        groups["m" + module.module + "l" + module.level].add(object);
-
-                        if(module.part == "exterior") {
-                            let doors = module.models.doors,
-                                doorsLength = doors.length,
-                                d = 0;
-                            for(d=0; d<doorsLength; d++) {
-                                sceneState.doors.push(Object.assign({}, doors[d], {
-                                    modulePos: module.pos,
-                                    moduleTurn: module.turn,
-                                    moduleDoorIndex: d,
-                                    moduleId: object.name,
-                                }));
-                            }
-                        }
-
-                        if(loaders.modulesLength == loader + 1) {
-                            // Last module loaded
-                            loaders.modulesLoaded = true;
-                            checkIfAllLoaded(loaders, sceneState);
-                            createDoors(scene, sceneState);
-                            let levelPropsGroup = new THREE.Group();
-                            levelPropsGroup.name = "level-props";
-                            for(var prop in groups) {
-                                if(Object.prototype.hasOwnProperty.call(groups, prop)) {
-                                    levelPropsGroup.add(groups[prop]);
-                                }
-                            }
-                            scene.add(levelPropsGroup);
-                        }
-                    });
-                });
-            })(this, modulesLoader[loader], loader, this.loaders, this.checkIfAllLoaded, this.sceneState, this.createDoors);
-        }
-    }
-
-    checkIfAllLoaded(loaders, sceneState) {
-        if(loaders.modulesLoaded) {
-            sceneState.ui.viewLoading = false;
+            this.loadModuleAndTexture(modulesLoader[loader], renderer, scene);
         }
     }
 
@@ -165,8 +420,8 @@ class LoadTileMap {
         for(d=0; d<doorsLength; d++) {
             if(doors[d].type == "slide-double") {
                 let doorGeo = new THREE.BoxBufferGeometry(0.7, 0.3, 2.1);
-                let doorMat = new THREE.MeshPhongMaterial({color: 0x666666});
-                let doorMat2 = new THREE.MeshPhongMaterial({color: 0x555555});
+                let doorMat = new THREE.MeshLambertMaterial({color: 0x666666});
+                let doorMat2 = new THREE.MeshLambertMaterial({color: 0x555555});
                 let doorOne = new THREE.Mesh(doorGeo, doorMat),
                     doorTwo = new THREE.Mesh(doorGeo, doorMat2),
                     doorGroup = new THREE.Group(),
