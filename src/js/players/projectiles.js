@@ -556,6 +556,7 @@ class Projectiles {
             this.sceneState.particles += floorParticles + streaks;
             this.createBurnSpot(projectileLife, posWOffset, scene, camera);
             this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName);
+            this.createShaderSparks(scene, camera, posWOffset, pos, projectileLife);
             this.createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife);
             this.sounds.play("ricochet-001");
         } else if(type == 'player' || type == 'door') {
@@ -622,6 +623,56 @@ class Projectiles {
                 }, "-="+lifeSpan/1.2);
             })();
         }
+    }
+
+    createSparkMaterial() {
+        const uniforms = {
+            innerCol: { value: THREE.Vector3(1,0,0) },
+            strokeCol: { value: THREE.Vector3(1,1,0) },
+            radius: { value: 0.1 },
+            stroke: { value: 0.1 },
+        };
+
+        const vertexShader = `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`;
+
+        const fragmentShader = `
+        uniform vec3 innerCol;
+        uniform vec3 strokeCol;
+        uniform float radius;
+        uniform float stroke;
+
+        varying vec2 vUV;
+
+        void main() {
+            float border = (radius - stroke/2.)/(stroke/2.+radius);
+            float d = distance(vUV, vec2(.5, .5));
+
+            if(d<=border) gl_FragColor = vec4(innerCol, 1.);
+            else if(d>border && d<1.) gl_FragColor = vec4(strokeCol, 1.);
+            else discard;
+        }
+        `;
+
+        return {
+            uniforms: uniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+        }
+    }
+
+    createShaderSparks(scene, camera, posWOffset, pos, projectileLife) {
+        let spark = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(1, 1),
+            new THREE.ShaderMaterial(this.createSparkMaterial())
+        );
+        spark.position.set(posWOffset[0], posWOffset[1], 1);
+        spark.quaternion.copy(camera.quaternion);
+        scene.add(spark);
     }
 
     createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName) {
