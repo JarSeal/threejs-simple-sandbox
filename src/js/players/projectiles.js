@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { calculateAngle } from "../util";
 
 class Projectiles {
@@ -557,11 +559,11 @@ class Projectiles {
                 streaks = 0;
             }
             this.sceneState.particles += streaks;
-            this.createBurnSpot(projectileLife, posWOffset, scene, camera);
-            //this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName);
-            //this.createShaderSparks(scene, camera, posWOffset, pos, tileMap, projectileLife);
-            this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife)
             this.createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife);
+            //this.createBurnSpot(projectileLife, posWOffset, scene, camera);
+            //this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName);
+            this.createStreakMaterial(projectileLife, posWOffset, scene, camera);
+            this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife)
             this.sounds.play("ricochet-001");
         } else if(type == 'player' || type == 'door') {
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
@@ -610,7 +612,6 @@ class Projectiles {
         scene.add(sparks);
         for(i=0; i<floorParticles; i++) {
             (function(i, particles, sparks, targetPositions, scene, time) {
-                console.log("SPARKS",sparks);
                 let tl = new TimelineMax();
                 let positions = sparks.geometry.attributes.position,
                     x = positions.getX(i),
@@ -1019,6 +1020,114 @@ class Projectiles {
             scene.remove(smoke1);
             this.sceneState.particles -= particles;
         }, 3000);
+    }
+
+    streakMaterial(uniforms) {
+
+        const vertexShader = `
+        uniform float uTime;
+        uniform float uTotalTime;
+        uniform float uBurnSize;
+        uniform float uLavaSize;
+        varying vec2 vUv;
+        varying float time;
+        varying float totalTime;
+        varying float burnSize;
+        varying float lavaSize; 
+        void main() {
+            vUv = uv;
+            time = uTime;
+            totalTime = uTotalTime;
+            burnSize = uBurnSize;
+            lavaSize = uLavaSize;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`;
+
+        const fragmentShader = `
+        #ifdef GL_ES
+        precision mediump float;
+        #endif
+
+        varying vec2 vUv;
+        varying float time;
+        varying float totalTime;
+        varying float burnSize;
+        varying float lavaSize;
+
+        void main() {
+            vec4 black_alpha_color = vec4(0.0, 0.0, 0.0, 0.0);
+            float burn_border_size = 0.1 * (1.0 - time);
+            float burn_radius = burnSize * (1.0 - time);
+            if(burn_radius < 0.01) {
+                burn_radius = 0.0;
+            }
+            vec4 burn_color = vec4(0.0, 0.0, 0.0, 1.0);
+            float lava_radius = lavaSize;
+            if(time > 0.4) {
+                lava_radius = lavaSize * (1.0 - (time*2.0) + 0.8);
+            }
+            if(lava_radius < 0.01) {
+                lava_radius = 0.0;
+            }
+            vec4 lava_color = vec4(1.0, 0.4941, 0.0, 1.0);
+            
+            vec2 uv = vUv;
+            uv -= vec2(0.5, 0.5);
+            float dist = sqrt(dot(uv, uv));
+            float burn_t = smoothstep(burn_radius+burn_border_size, burn_radius-burn_border_size, dist);
+            vec4 burnSpot = mix(black_alpha_color, burn_color, burn_t);
+            float lava_t = smoothstep(lava_radius+0.000001, lava_radius-0.000001, dist);
+            gl_FragColor = mix(burnSpot, lava_color, lava_t);
+        }
+        `;
+
+        return {
+            uniforms: uniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true,
+        }
+    }
+
+    createStreakMaterial(projectileLife, posWOffset, scene, camera) {
+        let uTime = { value: 0 },
+            uTotalTime = { value: this._randomFloatInBetween(3.0, 6.0) },
+            uBurnSize = { value: this._randomIntInBetween(6, 9) / 100 },
+            uLavaSize = { value: this._randomIntInBetween(3, 6) / 100 },
+            uniforms = {
+                uTime: uTime,
+                uTotalTime: uTotalTime,
+                uBurnSize: uBurnSize,
+                uLavaSize: uLavaSize,
+            },
+            plane = new THREE.PlaneBufferGeometry(1, 1),
+            material = new THREE.ShaderMaterial(this.streakMaterial(uniforms)),
+            mesh = new THREE.Mesh(plane, material),
+            group = new THREE.Group(),
+            randomizer = Math.random() / 50,
+            offset = this.getBurnSpotOffset(projectileLife, "burn", randomizer);
+        console.log("YTootal", uTotalTime, material);
+        mesh.rotation.set(0, 1.5708, 0);
+        mesh.position.x = offset[0];
+        mesh.position.y = offset[1];
+        group.add(mesh);
+        group.position.set(posWOffset[0], posWOffset[1], 1);
+        group.rotation.z = projectileLife.turn;
+        scene.add(group);
+        let tl = new TimelineMax();
+        tl.to(uTime, uTotalTime.value, {
+            value: 1,
+            ease: Linear.easeNone,
+            onUpdate: () => {
+                material.uniforms.uTime.value = tl.progress();
+            },
+            onComplete: () => {
+                plane.dispose();
+                material.dispose();
+                scene.remove(mesh);
+                scene.remove(group);
+            }
+        });
     }
 
     createBurnSpot(projectileLife, posWOffset, scene, camera) {
