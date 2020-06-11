@@ -543,42 +543,42 @@ class Projectiles {
             posWOffset = [targetPos[0] + projectileLife.xOffset, targetPos[1] + projectileLife.yOffset],
             minFloorParticles = 3,
             maxFloorParticles = 36,
-            floorParticles,
+            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles),
             i = 0,
             streaks,
             particles,
             maxParticles = this.sceneState.settings.maxSimultaneousParticles,
             curParticles = this.sceneState.particles;
         if(type == 'solid') {
-            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
-            streaks = this._randomIntInBetween(2, 6);
-            particles = floorParticles + streaks;
-            if(curParticles + particles > maxParticles) {
-                floorParticles = maxParticles - curParticles;
-                if(floorParticles < 0) floorParticles = 0;
-                streaks = 0;
-            }
-            this.sceneState.particles += streaks;
-            this.createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife);
+            // floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
+            // streaks = this._randomIntInBetween(2, 6);
+            // particles = floorParticles + streaks;
+            // if(curParticles + particles > maxParticles) {
+            //     floorParticles = maxParticles - curParticles;
+            //     if(floorParticles < 0) floorParticles = 0;
+            //     streaks = 0;
+            // }
+            // this.sceneState.particles += streaks;
+            //this.createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife);
             //this.createBurnSpot(projectileLife, posWOffset, scene, camera);
             //this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName);
-            this.createStreakMaterial(projectileLife, posWOffset, scene, camera);
-            this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife)
+            this.createWallBurn(projectileLife, posWOffset, scene, camera);
+            this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             this.sounds.play("ricochet-001");
         } else if(type == 'player' || type == 'door') {
-            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
-            streaks = this._randomIntInBetween(2, 6);
-            particles = floorParticles + streaks;
-            if(curParticles + particles > maxParticles) {
-                floorParticles = maxParticles - curParticles;
-                if(floorParticles < 0) floorParticles = 0;
-                streaks = 0;
-            }
-            this.sceneState.particles += floorParticles + streaks;
-            this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, "player", projectileLife, projectileName);
-            this.createStreaks(streaks, scene, posWOffset, pos, "player", projectileLife);
+            // floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
+            // streaks = this._randomIntInBetween(2, 6);
+            // particles = floorParticles + streaks;
+            // if(curParticles + particles > maxParticles) {
+            //     floorParticles = maxParticles - curParticles;
+            //     if(floorParticles < 0) floorParticles = 0;
+            //     streaks = 0;
+            // }
+            // this.sceneState.particles += floorParticles + streaks;
+            // this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, "player", projectileLife, projectileName);
+            // this.createStreaks(streaks, scene, posWOffset, pos, "player", projectileLife);
+            this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             if(type == 'door') {
-                this.createSmoke(posWOffset, scene, camera);
                 this.sounds.play("ricochet-001");
             } else {
                 this.sounds.play("zap-001");
@@ -1022,7 +1022,7 @@ class Projectiles {
         }, 3000);
     }
 
-    streakMaterial(uniforms) {
+    wallBurnMaterial(uniforms) {
 
         const vertexShader = `
         uniform float uTime;
@@ -1033,7 +1033,7 @@ class Projectiles {
         varying float time;
         varying float totalTime;
         varying float burnSize;
-        varying float lavaSize; 
+        varying float lavaSize;
         void main() {
             vUv = uv;
             time = uTime;
@@ -1054,22 +1054,40 @@ class Projectiles {
         varying float burnSize;
         varying float lavaSize;
 
+        float drawLine (vec2 p1, vec2 p2, vec2 uv, float a) {
+            float r = 0.;
+            float one_px = 0.015; //not really one px
+            
+            // get dist between points
+            float d = distance(p1, p2);
+            
+            // get dist between current pixel and p1
+            float duv = distance(p1, uv);
+
+            //if point is on line, according to dist, it should match current uv 
+            r = 1.-floor(1.-(a*one_px)+distance (mix(p1, p2, clamp(duv/d, 0., 1.)), uv));
+                
+            return r;
+        }
+
         void main() {
             vec4 black_alpha_color = vec4(0.0, 0.0, 0.0, 0.0);
             float burn_border_size = 0.1 * (1.0 - time);
             float burn_radius = burnSize * (1.0 - time);
+            vec4 burn_color = vec4(0.0, 0.0, 0.0, 1.0);
             if(burn_radius < 0.01) {
                 burn_radius = 0.0;
             }
-            vec4 burn_color = vec4(0.0, 0.0, 0.0, 1.0);
             float lava_radius = lavaSize;
+            vec4 lava_color = vec4(1.0, 0.4941, 0.0, 1.0);
             if(time > 0.4) {
-                lava_radius = lavaSize * (1.0 - (time*2.0) + 0.8);
+                lava_radius = lavaSize * (1.4 - time * 1.5);
+                lava_color.rgb = vec3(lava_color.r * (1.4 - time * 1.5),lava_color.g * (1.4 - time * 1.5),lava_color.b * (1.4 - time * 1.5));
             }
             if(lava_radius < 0.01) {
                 lava_radius = 0.0;
+                lava_color = vec4(0.0, 0.0, 0.0, 0.0);
             }
-            vec4 lava_color = vec4(1.0, 0.4941, 0.0, 1.0);
             
             vec2 uv = vUv;
             uv -= vec2(0.5, 0.5);
@@ -1077,7 +1095,31 @@ class Projectiles {
             float burn_t = smoothstep(burn_radius+burn_border_size, burn_radius-burn_border_size, dist);
             vec4 burnSpot = mix(black_alpha_color, burn_color, burn_t);
             float lava_t = smoothstep(lava_radius+0.000001, lava_radius-0.000001, dist);
-            gl_FragColor = mix(burnSpot, lava_color, lava_t);
+            
+            float speed = time;
+            float line1 = 0.0;
+            float line2 = 0.0;
+            vec2 lStart = vec2(0.51, 0.5);
+            vec2 l1p2 = vec2(0.51, 0.5);
+            vec2 l2p1 = vec2(0.51, 0.65);
+            vec2 l2p2 = vec2(0.51, 0.55);
+            l1p2.y += speed;
+            l2p2.y += speed;
+            if(l1p2.y > 0.75) {
+                l1p2 = vec2(0.51, 0.75);
+            }
+            if(l2p2.y > 0.8) {
+                l2p2 = vec2(0.51, 0.8);
+            }
+            line1 = drawLine(lStart, l1p2, vUv.yx, 1.0);
+            line2 = drawLine(lStart, l2p2, vUv.yx, 2.0);
+            if(line1 == 1.0 && lavaSize > 0.055) {
+                gl_FragColor = lava_color;
+            } else if(line2 == 1.0 && lavaSize > 0.055) {
+                gl_FragColor = vec4(lava_color.x, 0.2, lava_color.ba);
+            } else {
+                gl_FragColor = mix(burnSpot, lava_color, lava_t);
+            }
         }
         `;
 
@@ -1089,7 +1131,7 @@ class Projectiles {
         }
     }
 
-    createStreakMaterial(projectileLife, posWOffset, scene, camera) {
+    createWallBurn(projectileLife, posWOffset, scene, camera) {
         let uTime = { value: 0 },
             uTotalTime = { value: this._randomFloatInBetween(3.0, 6.0) },
             uBurnSize = { value: this._randomIntInBetween(6, 9) / 100 },
@@ -1101,7 +1143,7 @@ class Projectiles {
                 uLavaSize: uLavaSize,
             },
             plane = new THREE.PlaneBufferGeometry(1, 1),
-            material = new THREE.ShaderMaterial(this.streakMaterial(uniforms)),
+            material = new THREE.ShaderMaterial(this.wallBurnMaterial(uniforms)),
             mesh = new THREE.Mesh(plane, material),
             group = new THREE.Group(),
             randomizer = Math.random() / 50,
