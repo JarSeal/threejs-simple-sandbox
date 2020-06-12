@@ -1,7 +1,4 @@
 import * as THREE from 'three';
-import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { calculateAngle } from "../util";
 
 class Projectiles {
@@ -18,18 +15,14 @@ class Projectiles {
             transparent: true,
             opacity: 0.2,
         });
-        this.sparkSize = 0.1;
-        this.sparkGeo = new THREE.PlaneBufferGeometry(this.sparkSize, this.sparkSize);
-        this.sparkMat = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 1,
-            name: "sparkMaterial",
+        let fxSpark = new THREE.TextureLoader().load("/images/sprites/fx-spark.png");
+        this.sparkMaterial = new THREE.PointsMaterial({
+            size: 10,
+            sizeAttenuation: false,
+            map: fxSpark,
+            alphaTest: 0.5,
+            transparent: true
         });
-        this.sparkMat2 = new THREE.ShaderMaterial();
-        this.burnMarkTexture = new THREE.TextureLoader().load('/images/sprites/burn-mark.png');
-        this.smokeTexture = new THREE.TextureLoader().load('/images/sprites/smoke-01.png');
-        this.fxSpark = new THREE.TextureLoader().load("/images/sprites/fx-spark.png");
         this.preCountedTurns = {
             fortyFive: 45 * (Math.PI/180),
             ninety: 90 * (Math.PI/180),
@@ -543,320 +536,18 @@ class Projectiles {
             posWOffset = [targetPos[0] + projectileLife.xOffset, targetPos[1] + projectileLife.yOffset],
             minFloorParticles = 3,
             maxFloorParticles = 36,
-            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles),
-            i = 0,
-            streaks,
-            particles,
-            maxParticles = this.sceneState.settings.maxSimultaneousParticles,
-            curParticles = this.sceneState.particles;
+            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
         if(type == 'solid') {
-            // floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
-            // streaks = this._randomIntInBetween(2, 6);
-            // particles = floorParticles + streaks;
-            // if(curParticles + particles > maxParticles) {
-            //     floorParticles = maxParticles - curParticles;
-            //     if(floorParticles < 0) floorParticles = 0;
-            //     streaks = 0;
-            // }
-            // this.sceneState.particles += streaks;
-            //this.createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife);
-            //this.createBurnSpot(projectileLife, posWOffset, scene, camera);
-            //this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName);
             this.createWallBurn(projectileLife, posWOffset, scene, camera);
             this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             this.sounds.play("ricochet-001");
         } else if(type == 'player' || type == 'door') {
-            // floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
-            // streaks = this._randomIntInBetween(2, 6);
-            // particles = floorParticles + streaks;
-            // if(curParticles + particles > maxParticles) {
-            //     floorParticles = maxParticles - curParticles;
-            //     if(floorParticles < 0) floorParticles = 0;
-            //     streaks = 0;
-            // }
-            // this.sceneState.particles += floorParticles + streaks;
-            // this.createFloorSparks(floorParticles, scene, camera, posWOffset, pos, "player", projectileLife, projectileName);
-            // this.createStreaks(streaks, scene, posWOffset, pos, "player", projectileLife);
             this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             if(type == 'door') {
                 this.sounds.play("ricochet-001");
             } else {
                 this.sounds.play("zap-001");
             }
-        }
-    }
-
-    createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife) {
-        let geometry = new THREE.BufferGeometry();
-        let vertices = [];
-        let targetPositions = [];
-        let i = 0;
-        for(i=0; i<floorParticles; i++) {
-            vertices.push(posWOffset[0], posWOffset[1], 1);
-            targetPositions.push([
-                posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
-                posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
-                0.1
-            ]);
-        }
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        let material = new THREE.PointsMaterial({
-            size: 10,
-            sizeAttenuation: false,
-            map: this.fxSpark,
-            alphaTest: 0.5,
-            transparent: true
-        });
-        material.color.setHSL(0.1805, 0, 1.0);
-        let sparks = new THREE.Points(geometry, material);
-        scene.add(sparks);
-        for(i=0; i<floorParticles; i++) {
-            (function(i, particles, sparks, targetPositions, scene, time) {
-                let tl = new TimelineMax();
-                let positions = sparks.geometry.attributes.position,
-                    x = positions.getX(i),
-                    y = positions.getY(i),
-                    z = positions.getZ(i),
-                    progressXY = {x: x, y: y},
-                    progressZ = {z: z};
-                tl.to(progressXY, time, {x: targetPositions[i][0], y: targetPositions[i][1], onUpdate: () => {
-                    positions.setXY(i, progressXY.x, progressXY.y);
-                }}).to(progressZ, time, {z: targetPositions[i][2], ease: Bounce.easeOut, onUpdate: () => {
-                    positions.setZ(i, progressZ.z);
-                    positions.needsUpdate = true;
-                }}, "-="+time);
-                if(i === 0) {
-                    let materialValues = {size:10, h:0.5805, s:0.0, l:1.0};
-                    let tl2 = new TimelineMax();
-                    tl2.to(materialValues, 1.7, {size: 0.001, onUpdate: () => {
-                        sparks.material.size = materialValues.size;
-                    }}).to(materialValues, 1.7, {s: 0.55, onUpdate: () => {
-                        sparks.material.color.setHSL(materialValues.h, materialValues.s, materialValues.l);
-                        sparks.material.needsUpdate = true;
-                    }}, "-=1.7");
-                }
-                if(i+1 == particles) {
-                    setTimeout(() => {
-                        sparks.geometry.dispose();
-                        sparks.material.dispose();
-                        scene.remove(sparks);
-                    }, 2200);
-                }
-            })(i, floorParticles, sparks, targetPositions, scene, this._randomFloatInBetween(0.5, 1.7));
-        }
-    }
-
-    createStreaks(streaks, scene, posWOffset, pos, tileMap, projectileLife) {
-        let i = 0;
-        for(i=0; i<streaks; i++) {
-            (() => {
-                let tl = new TimelineMax(),
-                    lifeSpan = this._randomFloatInBetween(0.1, 0.2),
-                    newX = posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
-                    newY = posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
-                    newZ = this._randomFloatInBetween(0.8, 1.6),
-                    streakGeo = new THREE.Geometry();
-                streakGeo.vertices.push(
-                    new THREE.Vector3(posWOffset[0], posWOffset[1], 1),
-                    new THREE.Vector3(posWOffset[0], posWOffset[1], 1),
-                );
-                let streak = new THREE.Line(streakGeo, new THREE.LineBasicMaterial({color: 0xffffff}));
-                scene.add(streak);
-                tl.to(streak.geometry.vertices[1], lifeSpan, {
-                    x: newX,
-                    y: newY,
-                    z: newZ,
-                    ease: Linear.easeNone,
-                    onUpdate: () => {
-                        if(streak) streak.geometry.verticesNeedUpdate = true;
-                    }
-                }).to(streak.geometry.vertices[0], lifeSpan, {
-                    x: newX,
-                    y: newY,
-                    z: newZ,
-                    ease: Linear.easeNone,
-                    onUpdate: () => {
-                        if(streak) streak.geometry.verticesNeedUpdate = true;
-                    },
-                    onComplete: () => {
-                        if(streak) {
-                            streak.geometry.dispose();
-                            streak.material.dispose();
-                            scene.remove(streak);
-                            this.sceneState.particles--;
-                        }
-                    },
-                }, "-="+lifeSpan/1.2);
-            })();
-        }
-    }
-
-    createSparkMaterial(uTime, pos) {
-        const uniforms = {
-            uTime: uTime,
-            uResolution: { value: new THREE.Vector2(1.0, 1.0), type: "v2" },
-            uColor1: { value: new THREE.Vector3(1.000, 0.833, 0.224), type: "v3" },
-            uColor2: { value: new THREE.Vector3(1, 0, 0), type: "v3" },
-            uPosX: { value: pos.x },
-            uPosY: { value: pos.y },
-            uPosZ: { value: pos.z },
-        };
-
-        const vertexShader = `
-        uniform float uTime;
-        uniform float uPosX;
-        uniform float uPosY;
-        uniform float uPosZ;
-        varying vec2 vUv;
-        varying float time;
-        void main() {
-            vUv = uv;
-            time = uTime;
-            vec3 newPos = position;
-            newPos.x += uPosX;
-            newPos.y += uPosY;
-            newPos.z = uPosZ - 1.0;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
-        }`;
-
-        const fragmentShader = `
-        #ifdef GL_ES
-        precision mediump float;
-        #endif
-
-        uniform vec2 uResolution;
-        uniform vec3 uColor1;
-        uniform vec3 uColor2;
-
-        varying vec2 vUv;
-        varying float time;
-
-        void main() {
-            float border_size = 0.5;
-            float disc_radius = 0.1;
-            float blue = 1.0;
-            float green = 1.0;
-            if(time > 0.1) {
-                blue = mix(1.0, 0.0, (time-0.1) / 0.3);
-            }
-            if(time > 0.5) {
-                disc_radius -= time / 10.0;
-                if(disc_radius < 0.0) {
-                    disc_radius = 0.0;
-                }
-            }
-            if(time > 0.8) {
-                green = mix(1.0, 0.0, (time-0.7) / 0.2);
-                border_size -= time / 10.0;
-            }
-            if(time >= 1.0) {
-                disc_radius = 0.000001;
-                border_size = 0.000001;
-            }
-            vec4 bkg_color = vec4(1.0, green, blue, 0.0);
-            vec4 disc_color = vec4(1.0, green, blue, 1);
-            
-            vec2 uv = vUv;
-            //uv -= vec2(0.5, 0.5);
-            float dist = sqrt(dot(uv, uv));
-            float t = smoothstep(disc_radius+border_size, disc_radius-border_size, dist);
-            gl_FragColor = mix(bkg_color, disc_color, t);
-        }
-        `;
-
-        return {
-            uniforms: uniforms,
-            vertexShader: vertexShader,
-            fragmentShader: fragmentShader,
-            transparent: true,
-            //alphaTest: 0.5,
-        }
-    }
-
-    createShaderSparks(scene, camera, posWOffset, tilePos, tileMap, projectileLife) {
-        let uTime = {value: 0.0},
-            pos = {x:posWOffset[0],y:posWOffset[1],z:1},
-            newPos = {
-                x: posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
-                y: posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
-                z: this.sparkSize,
-            };
-        let plane1 = new THREE.PlaneBufferGeometry(0.5, 0.5);
-        let plane2 = new THREE.PlaneBufferGeometry(0.5, 0.5);
-        let posAttribute = plane2.attributes.position,
-            i = 0,
-            attrLength = posAttribute.count;
-        for(i=0; i<attrLength; i++) {
-
-            let x = posAttribute.getX(i),
-                y = posAttribute.getY(i);
-
-            x += 0.5;
-            y += 0.5;
-            
-            posAttribute.setXY(i, x, y);
-            posAttribute.needsUpdate = true;
-        }
-        let merged = BufferGeometryUtils.mergeBufferGeometries([plane1, plane2], true);
-        let spark = new THREE.Mesh(
-            merged,
-            new THREE.ShaderMaterial(this.createSparkMaterial(uTime, pos))
-        );
-        let speed = this._randomFloatInBetween(0.1, 1.2);
-        console.log("MERGED", merged);
-        spark.position.set(posWOffset[0], posWOffset[1], 1);
-        spark.quaternion.copy(camera.quaternion);
-        scene.add(spark);
-        let tl = new TimelineMax();
-        tl.to(pos, speed, {x:newPos.x, y:newPos.y, onUpdate: () => {
-            spark.material.uniforms.uPosY.value = pos.x - posWOffset[0];
-            spark.material.uniforms.uPosX.value = pos.y - posWOffset[1];
-        }}).to(pos, speed, {z:newPos.z, ease: Bounce.easeOut, onUpdate: () => {
-            spark.material.uniforms.uPosZ.value = pos.z;
-            spark.material.uniforms.uTime.value = tl.progress();
-        }}, "-="+speed);
-    }
-
-    createFloorSparks(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife, projectileName) {
-        let i = 0;
-        for(i=0; i<floorParticles; i++) {
-            (() => {
-                let sparkName = projectileName + "-spark-" + i,
-                    startColor = {color:"#ffffff"},
-                    spark = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone());
-                spark.position.set(posWOffset[0], posWOffset[1], 1);
-                spark.name = sparkName;
-                spark.quaternion.copy(camera.quaternion);
-                scene.add(spark);
-                let tl = new TimelineMax(),
-                    lifeSpan = this._randomFloatInBetween(0.1, 1.2),
-                    newX = posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
-                    newY = posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special);
-                tl.to(scene.getObjectByName(sparkName).position, lifeSpan, {x: newX, y: newY})
-                  .to(scene.getObjectByName(sparkName).position, lifeSpan, {z: this.sparkSize, ease: Bounce.easeOut}, "-="+lifeSpan)
-                  .to(startColor, lifeSpan / 4, {color:"#ffff00", onUpdate: () => {
-                    let sparkObj = scene.getObjectByName(sparkName);
-                    if(sparkObj) {
-                        sparkObj.material.color.set(startColor.color);
-                    }
-                  }}, "-="+(lifeSpan / 1.5))
-                  .to(startColor, lifeSpan / 4, {color:"#ff0000", onUpdate: () => {
-                    let sparkObj = scene.getObjectByName(sparkName);
-                    if(sparkObj) {
-                        sparkObj.material.color.set(startColor.color);
-                    }
-                  }}, "-="+(lifeSpan / 4))
-                  .to(scene.getObjectByName(sparkName).scale, lifeSpan, {x: 0.05, y: 0.05, ease: Bounce.easeOut}, "-="+(lifeSpan / 1.5))
-                  .to(scene.getObjectByName(sparkName).material, lifeSpan, {opacity: 0});
-                setTimeout(() => {
-                    let removeThis = scene.getObjectByName(sparkName);
-                    if(removeThis) {
-                        removeThis.material.dispose();
-                        scene.remove(removeThis);
-                    }
-                    this.sceneState.particles--;
-                }, lifeSpan * 1000 * 2);
-            })();
         }
     }
 
@@ -993,33 +684,55 @@ class Projectiles {
                 }
         }
     }
-    createSmoke(posWOffset, scene, camera) {
-        let smoke1Opacity = this.sceneState.settings.useOpacity ? ((Math.random() * 7) + 1) / 10 : 1,
-            smoke1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.smokeTexture,transparent:true,opacity:smoke1Opacity})),
-            particles = 0,
-            tlSmoke = new TimelineMax(),
-            smokeLife = this._randomFloatInBetween(2.0, 3.8);
-        smoke1.scale.set(0.3,5,1);
-        smoke1.quaternion.copy(camera.quaternion);
-        smoke1.position.set(posWOffset[0], posWOffset[1], 1);
-        particles++;
-        scene.add(smoke1);
-        if(this.sceneState.settings.useOpacity) {
-            tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
-                   .to(smoke1.material, 2, {opacity: 0}, "-=2")
-                   .to(smoke1.scale, smokeLife, {x: 8, y: 8}, "-="+smokeLife);
-        } else {
-            tlSmoke.to(smoke1.position, smokeLife, {z: 2.5})
-                   .to(smoke1.scale, smokeLife / 3, {x: 3, y: 3}, "-="+smokeLife)
-                   .to(smoke1.scale, smokeLife / 1.5, {x: 0.001, y: 0.001}, "-="+smokeLife / 1.25);
+
+    createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife) {
+        let geometry = new THREE.BufferGeometry(),
+            sparks = new THREE.Points(geometry, this.sparkMaterial.clone()),
+            vertices = [],
+            targetPositions = [],
+            i = 0;
+        for(i=0; i<floorParticles; i++) {
+            vertices.push(posWOffset[0], posWOffset[1], 1);
+            targetPositions.push([
+                posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
+                posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
+                0.1
+            ]);
         }
-        this.sceneState.particles += particles
-        setTimeout(() => {
-            smoke1.geometry.dispose();
-            smoke1.material.dispose();
-            scene.remove(smoke1);
-            this.sceneState.particles -= particles;
-        }, 3000);
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        scene.add(sparks);
+        for(i=0; i<floorParticles; i++) {
+            (function(i, particles, sparks, targetPositions, scene, time) {
+                let tl = new TimelineMax();
+                let positions = sparks.geometry.attributes.position,
+                    x = positions.getX(i),
+                    y = positions.getY(i),
+                    z = positions.getZ(i),
+                    progressXY = {x: x, y: y},
+                    progressZ = {z: z};
+                tl.to(progressXY, time, {x: targetPositions[i][0], y: targetPositions[i][1], onUpdate: () => {
+                    positions.setXY(i, progressXY.x, progressXY.y);
+                }}).to(progressZ, time, {z: targetPositions[i][2], ease: Bounce.easeOut, onUpdate: () => {
+                    positions.setZ(i, progressZ.z);
+                    positions.needsUpdate = true;
+                }}, "-="+time);
+                if(i === 0) {
+                    let materialValues = {size:10},
+                        tl2 = new TimelineMax();
+                    tl2.to(materialValues, 1.7, {size: 0.001, onUpdate: () => {
+                        sparks.material.size = materialValues.size;
+                        sparks.material.needsUpdate = true;
+                    }});
+                }
+                if(i+1 == particles) {
+                    setTimeout(() => {
+                        sparks.geometry.dispose();
+                        sparks.material.dispose();
+                        scene.remove(sparks);
+                    }, 2200);
+                }
+            })(i, floorParticles, sparks, targetPositions, scene, this._randomFloatInBetween(0.5, 1.7));
+        }
     }
 
     wallBurnMaterial(uniforms) {
@@ -1044,31 +757,15 @@ class Projectiles {
         }`;
 
         const fragmentShader = `
-        #ifdef GL_ES
-        precision mediump float;
-        #endif
+        // #ifdef GL_ES
+        // precision mediump float;
+        // #endif
 
         varying vec2 vUv;
         varying float time;
         varying float totalTime;
         varying float burnSize;
         varying float lavaSize;
-
-        float drawLine (vec2 p1, vec2 p2, vec2 uv, float a) {
-            float r = 0.;
-            float one_px = 0.015; //not really one px
-            
-            // get dist between points
-            float d = distance(p1, p2);
-            
-            // get dist between current pixel and p1
-            float duv = distance(p1, uv);
-
-            //if point is on line, according to dist, it should match current uv 
-            r = 1.-floor(1.-(a*one_px)+distance (mix(p1, p2, clamp(duv/d, 0., 1.)), uv));
-                
-            return r;
-        }
 
         void main() {
             vec4 black_alpha_color = vec4(0.0, 0.0, 0.0, 0.0);
@@ -1094,34 +791,11 @@ class Projectiles {
             float dist = sqrt(dot(uv, uv));
             float burn_t = smoothstep(burn_radius+burn_border_size, burn_radius-burn_border_size, dist);
             vec4 burnSpot = mix(black_alpha_color, burn_color, burn_t);
-            float lava_t = smoothstep(lava_radius+0.000001, lava_radius-0.000001, dist);
+            float lava_t = smoothstep(lava_radius+0.01, lava_radius-0.01, dist);
             
-            float speed = time;
-            float line1 = 0.0;
-            float line2 = 0.0;
-            vec2 lStart = vec2(0.51, 0.5);
-            vec2 l1p2 = vec2(0.51, 0.5);
-            vec2 l2p1 = vec2(0.51, 0.65);
-            vec2 l2p2 = vec2(0.51, 0.55);
-            l1p2.y += speed;
-            l2p2.y += speed;
-            if(l1p2.y > 0.75) {
-                l1p2 = vec2(0.51, 0.75);
-            }
-            if(l2p2.y > 0.8) {
-                l2p2 = vec2(0.51, 0.8);
-            }
-            line1 = drawLine(lStart, l1p2, vUv.yx, 1.0);
-            line2 = drawLine(lStart, l2p2, vUv.yx, 2.0);
-            if(line1 == 1.0 && lavaSize > 0.055) {
-                gl_FragColor = lava_color;
-            } else if(line2 == 1.0 && lavaSize > 0.055) {
-                gl_FragColor = vec4(lava_color.x, 0.2, lava_color.ba);
-            } else {
-                gl_FragColor = mix(burnSpot, lava_color, lava_t);
-            }
-            if(gl_FragColor.a < 0.5) {
-                gl_FragColor = vec4(1.0,0.,0.,1.0);
+            gl_FragColor = mix(burnSpot, lava_color, lava_t);
+            if(gl_FragColor.a < 0.001) {
+                discard;
             }
         }
         `;
@@ -1131,7 +805,6 @@ class Projectiles {
             vertexShader: vertexShader,
             fragmentShader: fragmentShader,
             transparent: true,
-            alphaTest: 0.5,
         }
     }
 
@@ -1173,65 +846,6 @@ class Projectiles {
                 scene.remove(group);
             }
         });
-    }
-
-    createBurnSpot(projectileLife, posWOffset, scene, camera) {
-        let darkSpot1 = new THREE.Mesh(this.sparkGeo, new THREE.MeshBasicMaterial({map:this.burnMarkTexture,transparent:true})),
-            darkSpot2 = new THREE.Mesh(this.sparkGeo, this.sparkMat.clone()),
-            darkSpotGroup = new THREE.Group(),
-            randomizer = Math.random() / 50,
-            offset1 = this.getBurnSpotOffset(projectileLife, "mark", randomizer),
-            offset2 = this.getBurnSpotOffset(projectileLife, "burn", randomizer),
-            tl = new TimelineMax(),
-            burnSize1 = Math.random() * 9,
-            burnSize2 = Math.random() + 0.5,
-            particles = 0;
-        if(burnSize1 < 3) burnSize1 = 3;
-        if(burnSize2 < 1) burnSize2 = 1;
-        
-        darkSpot1.material.opacity = 1;
-        darkSpot1.material.depthWrite = false;
-        darkSpot1.scale.set(burnSize1,burnSize1,1);
-        darkSpot1.rotation.set(1.5708/2, 1.5708, 0);
-        darkSpot2.material.opacity = 1;
-        darkSpot2.material.depthWrite = false;
-        darkSpot2.material.color.set("#ff862d");
-        darkSpot2.scale.set(burnSize2,burnSize2,1);
-        darkSpot2.rotation.set(1.5708/2, 1.5708, 0);
-        darkSpotGroup.add(projectileLife.dir === 0 ? darkSpot2 : darkSpot1);
-        darkSpotGroup.add(projectileLife.dir === 0 ? darkSpot1 : darkSpot2);
-        particles += 2;
-        darkSpotGroup.position.set(posWOffset[0], posWOffset[1], 1);
-        darkSpotGroup.rotation.z = projectileLife.turn;
-        darkSpotGroup.children[0].position.x = offset1[0];
-        darkSpotGroup.children[0].position.y = offset1[1];
-        darkSpotGroup.children[1].position.x = offset2[0];
-        darkSpotGroup.children[1].position.y = offset2[1];
-
-        this.createSmoke(posWOffset, scene, camera);
-
-        scene.add(darkSpotGroup);
-
-        if(this.sceneState.settings.useOpacity) {
-            tl.to(darkSpot2.material, 2, {opacity:0})
-              .to(darkSpot1.material, 3, {opacity:0}, "-=1");
-        } else {
-            tl.to(darkSpot2.scale, 2, {x: 0.001, y: 0.001})
-              .to(darkSpot1.scale, 3, {x: 0.001, y: 0.001}, "-=1");
-        }
-
-        this.sceneState.particles += particles
-        
-        setTimeout(() => {
-            darkSpot1.geometry.dispose();
-            darkSpot1.material.dispose();
-            scene.remove(darkSpot1);
-            darkSpot2.geometry.dispose();
-            darkSpot2.material.dispose();
-            scene.remove(darkSpot2);
-            scene.remove(darkSpotGroup);
-            this.sceneState.particles -= particles;
-        }, 4000);
     }
 
     getBurnSpotOffset(projectileLife, elem, randomizer) {
