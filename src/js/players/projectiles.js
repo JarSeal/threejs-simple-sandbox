@@ -1120,6 +1120,9 @@ class Projectiles {
             } else {
                 gl_FragColor = mix(burnSpot, lava_color, lava_t);
             }
+            if(gl_FragColor.a < 0.5) {
+                gl_FragColor = vec4(1.0,0.,0.,1.0);
+            }
         }
         `;
 
@@ -1128,6 +1131,7 @@ class Projectiles {
             vertexShader: vertexShader,
             fragmentShader: fragmentShader,
             transparent: true,
+            alphaTest: 0.5,
         }
     }
 
@@ -1148,7 +1152,6 @@ class Projectiles {
             group = new THREE.Group(),
             randomizer = Math.random() / 50,
             offset = this.getBurnSpotOffset(projectileLife, "burn", randomizer);
-        console.log("YTootal", uTotalTime, material);
         mesh.rotation.set(0, 1.5708, 0);
         mesh.position.x = offset[0];
         mesh.position.y = offset[1];
