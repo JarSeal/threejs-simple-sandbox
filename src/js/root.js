@@ -30,6 +30,7 @@ class TileMapRoot {
             moduleMap: [],
             tileMap: [],
             astarMap: [],
+            uniforms: {},
             timeSpeed: 1,
             particles: 0,
             settings: {},
@@ -87,12 +88,13 @@ class TileMapRoot {
         // Debug statisctics [END]
 
         const camera = sceneController.getCamera();
-
-        const render = function() {
+        
+        const render = () => {
             requestAnimationFrame(render);
             sceneController.doLoops();
             appUiLayer.renderUi();
             renderer.render(scene, camera);
+            this.setShaderTime();
             //effect.render(scene, camera);
             stats.update(); // Debug statistics
         };
@@ -110,11 +112,18 @@ class TileMapRoot {
         render();
     }
 
+    setShaderTime() {
+        let elapsedMilliseconds = Date.now() - this.sceneState.initTime.ms;
+        let elapsedSeconds = elapsedMilliseconds / 1000.0;
+        this.sceneState.uniforms['uTime'] = { value: 60.0 * elapsedSeconds };
+    }
+
     getInitTime() {
         let now = performance.now(),
             unixTimestamp = Date.now();
         return {
             s: unixTimestamp + now / 1000,
+            ms: unixTimestamp + now,
             performanceStart: now,
             dayName: "Mon",
             dayNameNumber: 1

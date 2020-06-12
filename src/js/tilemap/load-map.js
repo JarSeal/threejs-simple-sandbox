@@ -178,8 +178,7 @@ class LoadTileMap {
                 modelLoader.load(
                     'images/objects/' + module.models[module.part].glb,
                     (gltf) => {
-                        //console.log("LOADED gltf", gltf);
-                        let object = gltf.scene.children[0];                        
+                        let object = gltf.scene.children[0];
                         this.meshes[meshId] = object;
                         this.meshLoaded();
                     },
