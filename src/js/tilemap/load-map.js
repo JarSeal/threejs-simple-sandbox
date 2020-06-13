@@ -93,6 +93,60 @@ class LoadTileMap {
         }
     }
 
+    createShaderMaterial2(texture, texture2) {
+        const uniforms = {
+            texture: { type: "t", value: texture },
+            texture2: { type: "t", value: texture2 }
+        };
+
+        const vertexShader = `
+        varying vec2 vUv;
+        varying vec2 vN;
+        void main() {
+            vUv = uv;
+            // gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+            vec4 p = vec4( position, 1. );
+
+            vec3 e = normalize( vec3( modelViewMatrix * p ) );
+            vec3 n = normalize( normalMatrix * normal );
+
+            vec3 r = reflect( e, n );
+            float m = 2. * sqrt(
+                pow( r.x, 2. ) +
+                pow( r.y, 2. ) +
+                pow( r.z + 1., 2. )
+            );
+            vN = r.xy / m + .5;
+
+            gl_Position = projectionMatrix * modelViewMatrix * p;
+        }`;
+
+        const fragmentShader = `
+        uniform sampler2D texture;
+        uniform sampler2D texture2;
+        varying vec2 vUv;
+
+        varying vec2 vN;
+        void main() {
+            float coordX = vUv.x;
+            float coordY = vUv.y;
+            vec4 Ca = texture2D(texture2, vN);
+            vec4 Cb = texture2D( texture, vec2(coordX, coordY) );
+            vec3 c = Ca.rgb * Ca.a + Cb.rgb * Cb.a * (1.0 - Ca.a);
+            gl_FragColor = vec4(c, 1.0);
+
+            // vec3 Cb = texture2D( texture, vN ).rgb;
+            // gl_FragColor = vec4( Cb, 1. );
+        }`;
+
+        return {
+            uniforms: uniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+        }
+    }
+
     positionAndSkinMeshes() {
         let i = 0,
             modules = this.loaders.modules,
@@ -113,9 +167,14 @@ class LoadTileMap {
             }
 
             object.material.dispose();
-            object.material = new THREE.ShaderMaterial(this.createShaderMaterial(
-                this.mergedMaps.map.mergedTexture
-            ));
+            // object.material = new THREE.ShaderMaterial(this.createShaderMaterial(
+            //     this.mergedMaps.map.mergedTexture
+            // ));
+            // object.material = new THREE.ShaderMaterial(this.createShaderMaterial2(
+            //     this.textureLoader.load("/images/objects/cargo-hall/matcap-test1.jpg"),
+            //     this.textureLoader.load("/images/objects/cargo-hall/matcap-test2.jpg")
+            // ));
+            
 
             let deg90 = 1.5708;
             if(module.turn !== 0) {
@@ -148,9 +207,13 @@ class LoadTileMap {
             geometries.push(object.geometry);
         }
         let kingGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
-        let kingMat = new THREE.ShaderMaterial(this.createShaderMaterial(
+        // let kingMat = new THREE.ShaderMaterial(this.createShaderMaterial(
+        //     this.mergedMaps.map.mergedTexture,
+        //     {}
+        // ));
+        let kingMat = new THREE.ShaderMaterial(this.createShaderMaterial2(
             this.mergedMaps.map.mergedTexture,
-            {}
+            this.textureLoader.load("/images/textures/matcap-blur-shine.png")
         ));
         let kingMesh = new THREE.Mesh(kingGeo, kingMat);
         kingMesh.name = "king-mesh";
