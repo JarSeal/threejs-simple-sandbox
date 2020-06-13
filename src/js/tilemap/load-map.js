@@ -207,10 +207,6 @@ class LoadTileMap {
             geometries.push(object.geometry);
         }
         let kingGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
-        // let kingMat = new THREE.ShaderMaterial(this.createShaderMaterial(
-        //     this.mergedMaps.map.mergedTexture,
-        //     {}
-        // ));
         let kingMat = new THREE.ShaderMaterial(this.createShaderMaterial2(
             this.mergedMaps.map.mergedTexture,
             this.textureLoader.load("/images/textures/matcap-blur-shine.png")
