@@ -17,7 +17,7 @@ class CombatView {
                     pos: [this.size, window.innerHeight - this.size],
                     radius: 50,
                     resize: function() {
-                        this.pos = [this.size, window.innerHeight - this.size];
+                        this.pos = [this.size, document.getElementById("uiCanvas").height - this.size];
                     },
                     keepUpdatingWhenPressed: true,
                     firstClick: null,
