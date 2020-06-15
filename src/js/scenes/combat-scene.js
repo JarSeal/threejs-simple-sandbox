@@ -32,6 +32,7 @@ class CombatScene {
         this.camera = this.tileMapCamera.getCamera();
 
         this.playerController.createNewPlayer(this.scene, renderer, sceneState, 'hero');
+        this.tileMapCamera.centerCamera(this.sceneState.players.hero.pos);
 
         this.tileMapController = new LoadTileMap(this.scene, renderer, sceneState);
 
