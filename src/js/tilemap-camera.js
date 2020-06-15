@@ -74,7 +74,7 @@ class TileMapCamera {
         mainApp.addEventListener("mousemove", this.touchMove, {passive: false});
         mainApp.addEventListener("mousedown", this.startTouchMove, {passive: false});
         mainApp.addEventListener("mouseup", this.endTouchMove, {passive: false});
-        this.centerCamera();
+        //this.centerCamera();
     }
 
     resize() {
@@ -92,9 +92,17 @@ class TileMapCamera {
         this.aspectRatio = w / h;
     }
 
-    centerCamera() {
-        this.camera.position.x = 36;
-        this.camera.position.y = 28;
+    centerCamera(pos) {
+        let x, y;
+        if(pos === undefined) {
+            x = 36;
+            y = 28;
+        } else {
+            x = pos[0] + 2;
+            y = pos[1] - 2;
+        }
+        this.camera.position.x = x;
+        this.camera.position.y = y;
         this.backPlanePosition();
     }
 
