@@ -55,9 +55,15 @@ class CombatView {
                     },
                     actionPhase: 0,
                     action: function(sceneState, calculateAngle) {
+                        if(!sceneState.players.hero || !sceneState.players.hero.mesh || !sceneState.players.hero.mesh.children || !sceneState.players.hero.mesh.children.length) return;
                         // 3D layer change:
                         let hero = sceneState.players.hero,
-                            heroMaterial = hero.mesh.children[0].material;
+                            heroMaterial;
+                        hero.mesh.traverse(o => {
+                            if (o.isMesh) {
+                                heroMaterial = o.material;
+                            }
+                        });
                         if(this.id == sceneState.ui.curId && sceneState.ui.curState == 'startClick') {
                             if(sceneState.ui.viewData[this.index].actionPhase === 0) {
                                 heroMaterial.color.setHex(0xffffff);
@@ -86,7 +92,7 @@ class CombatView {
                             return;
                         }
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
-                            heroMaterial.color.setHex(0xff0088);
+                            heroMaterial.color.set("lime");
                             sceneState.ui.viewData[this.index].actionPhase = 0;
                         }
                     },
