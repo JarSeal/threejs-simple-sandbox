@@ -92,9 +92,10 @@ class PlayerController {
                     object: object,
                     anims: gltf.animations,
                 };
-                object.scale.set(1.4, 1.4, 1.4);
+                //object.scale.set(1.4, 1.4, 1.4);
                 object.position.x = sceneState.players.hero.pos[0];
                 object.position.y = sceneState.players.hero.pos[1];
+                object.position.z = 0;
                 object.rotation.z = sceneState.players.hero.dir;
                 object.traverse(o => {
                     if (o.isMesh) {

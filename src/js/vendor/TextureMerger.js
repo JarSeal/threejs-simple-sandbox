@@ -97,10 +97,10 @@ var TextureMergerRectangle = function(x, y, width, height){
     this.ranges = new Object();
     var imgSize = this.calculateImageSize(texturesObj);
     this.canvas.width = imgSize.width;
-    this.canvas.height = imgSize.width;
+    this.canvas.height = imgSize.height;
     var context = this.canvas.getContext("2d");
-    context.fillStyle = "blue";
-    context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // context.fillStyle = "blue";
+    // context.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.context = context;
     for (textureName in this.textureOffsets){
       var texture = texturesObj[textureName];
@@ -118,8 +118,10 @@ var TextureMergerRectangle = function(x, y, width, height){
       var range = new Object();
       range.startU = offsetX / imgSize.width;
       range.endU = (offsetX + imgWidth) / imgSize.width;
-      range.startV = 1 - (offsetY / imgSize.width);
-      range.endV = 1 - ((offsetY + imgHeight) / imgSize.width);
+      // range.startV = 1 - (offsetY / imgSize.height);
+      // range.endV = 1 - ((offsetY + imgHeight) / imgSize.height);
+      range.startV = (offsetY + imgHeight) / imgSize.height;
+      range.endV = offsetY / imgSize.height;
       this.ranges[textureName] = range;
     }
   
