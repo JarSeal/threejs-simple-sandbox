@@ -26,8 +26,12 @@ function getShipFloors() {
             modules: [
                 {module:[2,0],level:1,intSkin:1,extSkin:1,pos:[28,33],turn:3},
                 {module:[2,1],level:1,intSkin:1,extSkin:1,pos:[26,23],turn:2},
-                {module:[2,2],level:1,intSkin:1,extSkin:1,pos:[35,21],turn:1},
-                {module:[2,3],level:1,intSkin:1,extSkin:1,pos:[38,30],turn:0},
+                {module:[2,2],level:1,intSkin:1,extSkin:1,pos:[35,20],turn:0},
+                {module:[2,3],level:1,intSkin:1,extSkin:1,pos:[38,31],turn:1},
+                {module:[1,0],level:1,intSkin:1,extSkin:1,pos:[40,40],turn:1},
+                {module:[1,1],level:1,intSkin:1,extSkin:1,pos:[35,12],turn:3},
+                {module:[1,2],level:1,intSkin:1,extSkin:1,pos:[44,23],turn:0},
+                {module:[1,3],level:1,intSkin:1,extSkin:1,pos:[52,24],turn:2},
             ],
         },
     ]

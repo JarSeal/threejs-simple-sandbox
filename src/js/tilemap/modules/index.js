@@ -1,4 +1,5 @@
 import { getModule as captainsCabin } from './captains-cabin.js';
+import { getModule as cabin } from './cabin.js';
 import { getModule as cargoHall } from './cargo-hall.js';
 
 // Load a module
@@ -6,7 +7,7 @@ export function getModule(module, level, turn, moduleID, doorParams) {
     let mod = {};
     switch(module) {
         case 1:
-            mod = captainsCabin(module, level);
+            mod = cabin(module, level);
             break;
         case 2:
             mod = cargoHall(module, level);

@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { astar, Graph } from '../vendor/astar.js';
 import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
 import { calculateAngle } from '../util.js';
@@ -7,6 +9,7 @@ import Projectiles from "./projectiles.js";
 class PlayerController {
     constructor(scene, sceneState, doorAnimationController, SoundController) {
         this.sceneState = sceneState;
+        this.chars = {};
         this.doorAnims = doorAnimationController;
         this.SoundController = SoundController;
         this.projectiles = new Projectiles(scene, sceneState, SoundController);
@@ -59,13 +62,57 @@ class PlayerController {
 
         group.add(pointerMesh);
 
+        this.importCharModel(scene, sceneState);
+
         group.position.x = sceneState.players.hero.pos[0];
         group.position.y = sceneState.players.hero.pos[1];
         group.position.z = 0.5;
         group.rotation.z = hero.dir;
 
-        scene.add(group);
-        sceneState.players.hero.mesh = group;
+        //scene.add(group);
+        //sceneState.players.hero.mesh = group;
+    }
+
+    importCharModel(scene, sceneState) {
+        let modelLoader = new GLTFLoader(),
+            dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('/js/draco/');
+        modelLoader.setDRACOLoader(dracoLoader);
+        modelLoader.load(
+            'images/objects/characters/hero1.glb',
+            (gltf) => {
+                let charId = "hero",
+                    object = gltf.scene;
+                sceneState.mixer = new THREE.AnimationMixer(object);
+                let fileAnimations = gltf.animations,
+                    idleAnim = THREE.AnimationClip.findByName(fileAnimations, 'Idle'),
+                    idle = sceneState.mixer.clipAction(idleAnim);
+                idle.play();
+                this.chars[charId] = {
+                    object: object,
+                    anims: gltf.animations,
+                };
+                //object.scale.set(1.4, 1.4, 1.4);
+                object.position.x = sceneState.players.hero.pos[0];
+                object.position.y = sceneState.players.hero.pos[1];
+                object.position.z = 0;
+                object.rotation.z = sceneState.players.hero.dir;
+                object.traverse(o => {
+                    if (o.isMesh) {
+                        // o.material.metalness = 0;
+                        // o.material.color.set("red");
+                        o.material = new THREE.MeshLambertMaterial({color: "lime", skinning: true});
+                    }
+                });
+                scene.add(object);
+                sceneState.players.hero.mesh = object;
+                console.log('IMPORT', gltf, "IDLE", idle);
+            },
+            (xhr) => {},
+            (error) => {
+                console.log('An GLTF loading error (loading hero) happened', error);
+            }
+        );
     }
 
     getStartingPosition(sceneState, type) {

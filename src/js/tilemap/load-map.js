@@ -42,23 +42,29 @@ class LoadTileMap {
     meshLoaded() {
         this.loaders.meshesLoaded++;
         if(this.loaders.meshesLoaded == this.loaders.modulesLength) {
-            console.log('All meshes loaded');
+            console.log('All meshes loaded', this.mapTextures);
             this.mergedMaps['map'] = new TextureMerger(this.mapTextures);
             this.positionAndSkinMeshes();
         }
     }
 
     modifyObjectUV(object, range) {
-        let uvAttribute = object.geometry.attributes.uv,
+        let uvAttribute,
             i = 0,
-            attrLength = uvAttribute.count;
+            attrLength = 0;
+        if(!object || !object.geometry || !object.geometry.attributes || !object.geometry.attributes.uv) {
+            console.error('Game engine error: modifyObjectUV, object attribute not found', object);
+            return;
+        }
+        uvAttribute = object.geometry.attributes.uv;
+        attrLength = uvAttribute.count;
         for(i=0; i<attrLength; i++) {
 
             let u = uvAttribute.getX(i),
                 v = uvAttribute.getY(i);
 
             u = u * (range.endU - range.startU) + range.startU;
-            v = v * (range.endV - (1 - range.startV)) + (1 - range.startV);
+            v = v * (range.startV - range.endV) + range.endV;
 
             uvAttribute.setXY(i, u, v);
             uvAttribute.needsUpdate = true;
@@ -178,10 +184,13 @@ class LoadTileMap {
 
             let deg90 = 1.5708;
             if(module.turn !== 0) {
-                object.rotation.z = deg90 * module.turn;
+                object.rotation.z += deg90 * module.turn;
             }
             object.position.y = module.pos[0] + module.aligners[module.turn][0];
             object.position.x = module.pos[1] + module.aligners[module.turn][1];
+            if(module.alignZ) {
+                object.position.z = module.alignZ;
+            }
             object.userData.moduleType = module.type;
             object.userData.moduleIndex = module.index;
             object.updateMatrix();
@@ -243,7 +252,7 @@ class LoadTileMap {
                     },
                     (xhr) => {},
                     (error) => {
-                        console.log('An GLTF loading error happened', error);
+                        console.log('Game engine error: A GLTF loading error happened', error);
                     }
                 );
             } else {
@@ -258,8 +267,8 @@ class LoadTileMap {
         if(module.part == "exterior") skinKey = "extSkin";
 
         // Load current module's textures (map, lightMap, bumpMap)
-        let mapTexture = getModuleTexture(module.module, module.level, module[skinKey], "map", module.part),
-            lightMapTexture = getModuleTexture(module.module, module.level, module[skinKey], "light", module.part),
+        let mapTexture = getModuleTexture(module.module, module.level, module[skinKey], "map", module.part);
+        let lightMapTexture = getModuleTexture(module.module, module.level, module[skinKey], "light", module.part),
             bumpMapTexture = getModuleTexture(module.module, module.level, module[skinKey], "bump", module.part);
         if(!this.mapTextures[mapTexture.key]) {
             this.mapTextures[mapTexture.key] = this.textureLoader.load("/images/objects/"+mapTexture.texturePath, this.textureLoaded);
@@ -337,7 +346,6 @@ class LoadTileMap {
                     visible: false
                 };
                 object.material.map = new THREE.TextureLoader().load("/images/objects/"+module.models[module.part].diffuseMap, (texture) => {
-                    console.log("FROM CALLBACK", texture);
                     texture.flipY = false;
                     texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
                     this.addLoadedTexture(scene);
@@ -466,6 +474,7 @@ class LoadTileMap {
         this.loaders.modules = modulesLoader;
         this.loaders.modulesLength = loaderLength;
         for(loader=0;loader<loaderLength;loader++) {
+            console.log('modulesLoader', modulesLoader);
             this.loadModuleAndTexture(modulesLoader[loader], renderer, scene);
         }
     }
