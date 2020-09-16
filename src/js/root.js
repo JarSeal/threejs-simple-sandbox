@@ -31,6 +31,8 @@ class TileMapRoot {
             tileMap: [],
             astarMap: [],
             uniforms: {},
+            mixer: undefined,
+            clock: new THREE.Clock(),
             timeSpeed: 1,
             particles: 0,
             settings: {},
@@ -95,6 +97,7 @@ class TileMapRoot {
             appUiLayer.renderUi();
             renderer.render(scene, camera);
             this.setShaderTime();
+            if(this.sceneState.mixer) this.sceneState.mixer.update(this.sceneState.clock.getDelta());
             //effect.render(scene, camera);
             stats.update(); // Debug statistics
         };
