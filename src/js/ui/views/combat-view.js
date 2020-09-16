@@ -1,5 +1,6 @@
-import DropDown from "../form-elems/drop-down.js";
-import OnOff from "../form-elems/on-off.js";
+import DropDown from '../form-elems/drop-down.js';
+import OnOff from '../form-elems/on-off.js';
+import { TimelineMax, Elastic, Sine } from 'gsap-ssr';
 
 class CombatView {
     constructor(sceneState) {
@@ -17,7 +18,7 @@ class CombatView {
                     pos: [this.size, window.innerHeight - this.size],
                     radius: 50,
                     resize: function() {
-                        this.pos = [this.size, document.getElementById("uiCanvas").height - this.size];
+                        this.pos = [this.size, document.getElementById('uiCanvas').height - this.size];
                     },
                     keepUpdatingWhenPressed: true,
                     firstClick: null,
@@ -39,16 +40,18 @@ class CombatView {
                         if(this.id == sceneState.ui.curId) {
                             if(sceneState.ui.curState == 'startClick') {
                                 if(sceneState.ui.viewData[this.index].colorPhase === 0) {
-                                    new TimelineMax().to(sceneState.ui.viewData[this.index], 0.1, {radius:60})
-                                                     .to(sceneState.ui.viewData[this.index], 0.4, {radius:50, ease: Elastic.easeOut});
+                                    new TimelineMax()
+                                        .to(sceneState.ui.viewData[this.index], 0.1, {radius:60})
+                                        .to(sceneState.ui.viewData[this.index], 0.4, {radius:50, ease: Elastic.easeOut});
                                     sceneState.ui.viewData[this.index].colorPhase = 1;
                                 }
                                 return this.colors[1];
                             }
                         }
                         if(sceneState.ui.viewData[this.index].colorPhase == 1) {
-                            new TimelineMax().to(sceneState.ui.viewData[this.index], 0.1, {radius:40})
-                                             .to(sceneState.ui.viewData[this.index], 0.4, {radius:50, ease: Elastic.easeOut});
+                            new TimelineMax()
+                                .to(sceneState.ui.viewData[this.index], 0.1, {radius:40})
+                                .to(sceneState.ui.viewData[this.index], 0.4, {radius:50, ease: Elastic.easeOut});
                             sceneState.ui.viewData[this.index].colorPhase = 0;
                         }
                         return this.colors[0];
@@ -68,8 +71,9 @@ class CombatView {
                                 let angle = calculateAngle(hero.pos, sceneState.ui.curSecondaryTarget);
                                 // prevent unnecessary spin moves :)
                                 if(Math.abs(hero.mesh.rotation.z - angle) > Math.PI) {
-                                    angle < 0 ? hero.mesh.rotation.z = hero.mesh.rotation.z + Math.PI * -2 :
-                                                hero.mesh.rotation.z = hero.mesh.rotation.z + Math.PI * 2;
+                                    angle < 0
+                                        ? hero.mesh.rotation.z = hero.mesh.rotation.z + Math.PI * -2
+                                        : hero.mesh.rotation.z = hero.mesh.rotation.z + Math.PI * 2;
                                 }
                                 new TimelineMax().to(
                                     hero.mesh.rotation,
@@ -113,9 +117,9 @@ class CombatView {
                         if(this.listOpen === undefined) this.listOpen = true;
                         this.listOpen = !this.listOpen;
                         if(this.listOpen) {
-                            document.getElementById('log-list').classList.remove("log-list--open");
+                            document.getElementById('log-list').classList.remove('log-list--open');
                         } else {
-                            document.getElementById('log-list').classList.add("log-list--open");
+                            document.getElementById('log-list').classList.add('log-list--open');
                         }
                     },
                     renderLogList: function(logList) {
@@ -132,7 +136,7 @@ class CombatView {
                             if(!logList[i][4]) {
                                 // New item found, recreate the list
                                 logList[i].push(now);
-                                logList[i].push("log-item-"+i+"-"+Math.round(now));
+                                logList[i].push('log-item-'+i+'-'+Math.round(now));
                                 this.listUlElem.insertAdjacentHTML('afterbegin',
                                     '<li class="log-list-item" id="'+logList[i][5]+'">'+
                                         '<span class="log-list-item__type">'+logList[i][3]+'</span>'+
@@ -140,7 +144,7 @@ class CombatView {
                                         logList[i][0]+'</span><br>'+
                                         '<span class="log-list-item__msg">'+logList[i][2]+'</span>'+
                                     '</li>'
-                                )
+                                );
                             } else
                             if(logList[i][4] + this.showEachLogItem < now) {
                                 let curElem = document.getElementById(logList[i][5]);
@@ -153,7 +157,7 @@ class CombatView {
                             } else
                             if(logList[i][4] + this.fadeTime < now) {
                                 let curElem = document.getElementById(logList[i][5]);
-                                curElem.classList.add("fadeIn");
+                                curElem.classList.add('fadeIn');
                             }
                         }
                         for(i=0; i<removeThese.length; i++) {
@@ -161,12 +165,12 @@ class CombatView {
                         }
                     },
                     createLogList: function() {
-                        let appElem = document.getElementById("mainApp"),
-                            toggleButton = document.createElement("div");
-                        toggleButton.setAttribute("id", "log-list__toggle");
+                        let appElem = document.getElementById('mainApp'),
+                            toggleButton = document.createElement('div');
+                        toggleButton.setAttribute('id', 'log-list__toggle');
                         toggleButton.onclick = this.toggleLogList;
                         this.listParentElem = document.createElement('div');
-                        this.listParentElem.setAttribute("id", "log-list");
+                        this.listParentElem.setAttribute('id', 'log-list');
                         this.listUlElem = document.createElement('ul');
                         this.listParentElem.appendChild(toggleButton);
                         this.listParentElem.appendChild(this.listUlElem);
@@ -180,12 +184,12 @@ class CombatView {
                             settingsTemplate(settingsUI, resetSettings, toggleSettings);
                         }
                         if(this.settingsOpen) {
-                            document.getElementById('settings-modal').classList.remove("settings-modal--open");
+                            document.getElementById('settings-modal').classList.remove('settings-modal--open');
                         } else {
-                            document.getElementById('settings-modal').classList.add("settings-modal--open");
+                            document.getElementById('settings-modal').classList.add('settings-modal--open');
                         }
                     },
-                    resetSettings: (e) => {
+                    resetSettings: () => {
                         let defaults = this.sceneState.defaultSettings;
                         this.sceneState.settings = Object.assign({}, defaults);
                         for (var key in defaults) {
@@ -194,9 +198,9 @@ class CombatView {
                     },
                     settingsUI: {},
                     createSettings: function() {
-                        let appElem = document.getElementById("mainApp"),
-                            settingsButton = document.createElement("div");
-                        settingsButton.setAttribute("id", "settings-button");
+                        let appElem = document.getElementById('mainApp'),
+                            settingsButton = document.createElement('div');
+                        settingsButton.setAttribute('id', 'settings-button');
                         settingsButton.onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings, this.toggleSettings);};
                         this.listParentElem.appendChild(settingsButton);
                         appElem.appendChild(this.listParentElem);
@@ -206,29 +210,29 @@ class CombatView {
                                 '<div class="modal-content" id="settings-modal-content"></div>'+
                             '</div>'
                         );
-                        document.getElementById("settings-modal-close").onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings);};
+                        document.getElementById('settings-modal-close').onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings);};
                     },
                     settingsTemplate: (settingsUI, resetSettings, toggleSettings) => {
-                        let modalContent = document.getElementById("settings-modal-content");
+                        let modalContent = document.getElementById('settings-modal-content');
                         let removeTemplate = () => {
                             settingsUI.maxParticles.removeListeners();
                             settingsUI.useOpacity.removeListeners();
                             settingsUI = {};
-                            modalContent.innerHTML = "";
+                            modalContent.innerHTML = '';
                         };
                         if(this.templateCreated === undefined) this.templateCreated = false;
                         if(this.templateCreated) {
                             removeTemplate();
                         } else {
                             // Add template
-                            settingsUI.maxParticles = new DropDown(this.sceneState, "maxSimultaneousParticles", "int", [
-                                {title: "20", value: 20},
-                                {title: "50", value: 50},
-                                {title: "200", value: 200},
-                                {title: "500", value: 500},
-                                {title: "1000", value: 1000},
+                            settingsUI.maxParticles = new DropDown(this.sceneState, 'maxSimultaneousParticles', 'int', [
+                                {title: '20', value: 20},
+                                {title: '50', value: 50},
+                                {title: '200', value: 200},
+                                {title: '500', value: 500},
+                                {title: '1000', value: 1000},
                             ]);
-                            settingsUI.useOpacity = new OnOff(this.sceneState, "useOpacity");
+                            settingsUI.useOpacity = new OnOff(this.sceneState, 'useOpacity');
                             modalContent.insertAdjacentHTML('afterbegin',
                                 '<ul class="settings-list">'+
                                     '<li class="sl-item">'+
@@ -256,7 +260,7 @@ class CombatView {
                             settingsUI.maxParticles.addListeners();
                             settingsUI.useOpacity.addListeners();
                             
-                            document.getElementById("reset-to-default").addEventListener("click", (e) => {
+                            document.getElementById('reset-to-default').addEventListener('click', (e) => {
                                 resetSettings(e);
                                 removeTemplate();
                                 toggleSettings(e);
@@ -272,4 +276,4 @@ class CombatView {
     }
 }
 
-export default CombatView
+export default CombatView;

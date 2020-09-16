@@ -1,5 +1,5 @@
-import * as THREE from 'three'
-import { TimelineMax } from 'gsap-ssr';
+import * as THREE from 'three';
+import { TimelineMax, Expo } from 'gsap-ssr';
 
 class TileMapCamera {
     constructor(scene, renderer, sceneState, AppUiLayer, PlayerController) {
@@ -67,13 +67,13 @@ class TileMapCamera {
         // }
         // scene.add(group);
 
-        let mainApp = document.getElementById("uiCanvas");
-        mainApp.addEventListener("touchmove", this.touchMove, {passive: false});
-        mainApp.addEventListener("touchstart", this.startTouchMove, {passive: false});
-        mainApp.addEventListener("touchend", this.endTouchMove, {passive: false});
-        mainApp.addEventListener("mousemove", this.touchMove, {passive: false});
-        mainApp.addEventListener("mousedown", this.startTouchMove, {passive: false});
-        mainApp.addEventListener("mouseup", this.endTouchMove, {passive: false});
+        let mainApp = document.getElementById('uiCanvas');
+        mainApp.addEventListener('touchmove', this.touchMove, {passive: false});
+        mainApp.addEventListener('touchstart', this.startTouchMove, {passive: false});
+        mainApp.addEventListener('touchend', this.endTouchMove, {passive: false});
+        mainApp.addEventListener('mousemove', this.touchMove, {passive: false});
+        mainApp.addEventListener('mousedown', this.startTouchMove, {passive: false});
+        mainApp.addEventListener('mouseup', this.endTouchMove, {passive: false});
         //this.centerCamera();
     }
 
@@ -128,9 +128,9 @@ class TileMapCamera {
             newY,
             clientX,
             clientY;
-		if(evt.touches && evt.touches.length) {
-			touch1 = evt.touches[0];
-			if(evt.touches.length > 1) touch2 = evt.touches[1];
+        if(evt.touches && evt.touches.length) {
+            touch1 = evt.touches[0];
+            if(evt.touches.length > 1) touch2 = evt.touches[1];
         } else {
             touch1 = evt;
         }
@@ -166,7 +166,7 @@ class TileMapCamera {
                 y: clientY
             };
         }
-        // if(touch1 && touch2) {
+        if(touch1 && touch2) {
         //     // Pinch zoom
         //     let scale,
         //         speedUp = 70,
@@ -195,7 +195,7 @@ class TileMapCamera {
         //     this.stageProps.tileSizes.half = this.stageProps.tileSize / 2;
         //     this.stageProps.tileSizes.quarter = this.stageProps.tileSize / 4;
         //     this.lastPinchDist = dist;
-        // }
+        }
         evt.preventDefault();
     }
 
@@ -221,7 +221,7 @@ class TileMapCamera {
             this.lastDist = {
                 x: this.clickStart.x,
                 y: this.clickStart.y,
-            }
+            };
         }
         if(!this.isClickStartTargetUi(this.clickStart)) {
             this.isDragging = true;
