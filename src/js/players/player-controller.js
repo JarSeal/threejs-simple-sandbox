@@ -1,10 +1,11 @@
 import * as THREE from 'three';
+import { TimelineMax, Sine, Power0 } from 'gsap-ssr';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { astar, Graph } from '../vendor/astar.js';
 import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
 import { calculateAngle } from '../util.js';
-import Projectiles from "./projectiles.js";
+import Projectiles from './projectiles.js';
 
 class PlayerController {
     constructor(scene, sceneState, doorAnimationController, SoundController) {
@@ -16,13 +17,12 @@ class PlayerController {
     }
 
     createNewPlayer(scene, renderer, sceneState, type) {
-        let player;
         switch(type) {
-            case 'hero':
-                this.createHero(sceneState, scene);
-                break;
-            default:
-                return;
+        case 'hero':
+            this.createHero(sceneState, scene);
+            break;
+        default:
+            return;
         }
     }
 
@@ -35,7 +35,7 @@ class PlayerController {
         
         // TEMP DUDE
         let tempDudePos = [33, 43];
-        sceneState.consequences.addPlayer({id:"testPLAYER",pos:[tempDudePos[0], tempDudePos[1],0]}); // TEMP PLAYER
+        sceneState.consequences.addPlayer({id:'testPLAYER',pos:[tempDudePos[0], tempDudePos[1],0]}); // TEMP PLAYER
         let tempGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
         let tempMaterial = new THREE.MeshLambertMaterial({color: 0xffEE44});
         let tempMesh = new THREE.Mesh(tempGeometry, tempMaterial);
@@ -81,7 +81,7 @@ class PlayerController {
         modelLoader.load(
             'images/objects/characters/hero1.glb',
             (gltf) => {
-                let charId = "hero",
+                let charId = 'hero',
                     object = gltf.scene;
                 sceneState.mixer = new THREE.AnimationMixer(object);
                 let fileAnimations = gltf.animations,
@@ -100,15 +100,15 @@ class PlayerController {
                 object.traverse(o => {
                     if (o.isMesh) {
                         // o.material.metalness = 0;
-                        // o.material.color.set("red");
-                        o.material = new THREE.MeshLambertMaterial({color: "lime", skinning: true});
+                        // o.material.color.set('red');
+                        o.material = new THREE.MeshLambertMaterial({color: 'lime', skinning: true});
                     }
                 });
                 scene.add(object);
                 sceneState.players.hero.mesh = object;
-                console.log('IMPORT', gltf, "IDLE", idle);
+                console.log('IMPORT', gltf, 'IDLE', idle);
             },
-            (xhr) => {},
+            () => {},
             (error) => {
                 console.log('An GLTF loading error (loading hero) happened', error);
             }
@@ -117,20 +117,21 @@ class PlayerController {
 
     getStartingPosition(sceneState, type) {
         let startingPosition = sceneState.players[type].startingPos;
+        return startingPosition;
         // TODO: finish this. We need moduleMap and shipMap to determine actual tile..
     }
 
     setPositions() {
         let playerTypes = [
-            "hero",
-        ],
-        playerTypesLength = playerTypes.length,
-        t;
+                'hero',
+            ],
+            playerTypesLength = playerTypes.length,
+            t;
         for(t=0;t<playerTypesLength;t++) {
             switch(playerTypes[t]) {
-                case "hero":
-                    this.animateMovement(this.sceneState.players.hero);
-                    break;
+            case 'hero':
+                this.animateMovement(this.sceneState.players.hero);
+                break;
             }
         }
     }
@@ -185,7 +186,7 @@ class PlayerController {
             this.sceneState.players.hero.newRoute = [dx, dy];
         }
         let endTime = performance.now(); // FOR DEBUGGING PURPOSES ONLY
-        console.log(dx, dy, 'route', (endTime - startTime) + "ms", resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
+        console.log(dx, dy, 'route', (endTime - startTime) + 'ms', resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
     }
 
     newMove(player) {
@@ -203,8 +204,9 @@ class PlayerController {
             );
         if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
             // prevent unnecessary spin moves :)
-            newDir < 0 ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2 :
-                         player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * 2;
+            newDir < 0
+                ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2
+                : player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * 2;
         }
         tlRotate.to(player.mesh.rotation, 0.2, {
             z: newDir,
@@ -252,7 +254,7 @@ class PlayerController {
                     player.routeIndex = 0;
                     player.curSpeed = 0;
                     this.doorAnims.checkDoors();
-                    this.calculateRoute("hero", dx, dy);
+                    this.calculateRoute('hero', dx, dy);
                 } else {
                     player.routeIndex++;
                     // Check if full destination is reached
@@ -402,4 +404,4 @@ class PlayerController {
     }
 }
 
-export default PlayerController
+export default PlayerController;

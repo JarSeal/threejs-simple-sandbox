@@ -1,10 +1,11 @@
+import { TimelineMax, Sine } from 'gsap-ssr';
 
 class DoorAnimationController {
     constructor(scene, sceneState, SoundController) {
         this.scene = scene;
         this.sceneState = sceneState;
         this.SoundController = SoundController;
-        this.sounds = SoundController.loadSoundsSprite("door", {volume: 0.1});
+        this.sounds = SoundController.loadSoundsSprite('door', {volume: 0.1});
     }
 
     checkDoors() {
@@ -54,7 +55,7 @@ class DoorAnimationController {
             duration = 0.3,
             doorOne = doorGroup[0],
             doorTwo = doorGroup[1],
-            orientationSplit = doorOne.name.split("--"),
+            orientationSplit = doorOne.name.split('--'),
             orientation = orientationSplit[orientationSplit.length-1];
         if(doorOne.userData.tl) {
             doorOne.userData.tl.kill();
@@ -70,8 +71,8 @@ class DoorAnimationController {
             doors[doorID].params['animating'] = true;
             doors[doorID].params['animatingDirOpen'] = true;
             doors[doorID].params.open = true;
-            this.sounds.play("door-slide-001");
-            if(orientation == "odd") {
+            this.sounds.play('door-slide-001');
+            if(orientation == 'odd') {
                 doorOne.userData.tl.to(doorOne.position, duration, {
                     y: doorOne.userData.pos[1] - door.openOffset,
                     ease: Sine.easeInOut,
@@ -110,15 +111,15 @@ class DoorAnimationController {
             doors[doorID].params['animating'] = true;
             doors[doorID].params['animatingDirOpen'] = false;
             doors[doorID].params.open = false;
-            this.sounds.play("door-slide-001");
-            if(orientation == "odd") {
+            this.sounds.play('door-slide-001');
+            if(orientation == 'odd') {
                 doorOne.userData.tl.to(doorOne.position, duration, {
                     y: doorOne.userData.pos[1] - door.closedOffset,
                     ease: Sine.easeInOut,
                     onComplete: () => {
                         doorOne.userData.tl = undefined;
                         doors[doorID].params['animating'] = false;
-                        this.sounds.play("door-closes-001");
+                        this.sounds.play('door-closes-001');
                     }
                 });
                 doorTwo.userData.tl.to(doorTwo.position, duration, {
@@ -127,7 +128,7 @@ class DoorAnimationController {
                     onComplete: () => {
                         doorTwo.userData.tl = undefined;
                         doors[doorID].params['animating'] = false;
-                        this.sounds.play("door-closes-001");
+                        this.sounds.play('door-closes-001');
                     }
                 });
             } else {
@@ -137,7 +138,7 @@ class DoorAnimationController {
                     onComplete: () => {
                         doorOne.userData.tl = undefined;
                         doors[doorID].params['animating'] = false;
-                        this.sounds.play("door-closes-001");
+                        this.sounds.play('door-closes-001');
                     }
                 });
                 doorTwo.userData.tl.to(doorTwo.position, duration, {
@@ -146,7 +147,7 @@ class DoorAnimationController {
                     onComplete: () => {
                         doorTwo.userData.tl = undefined;
                         doors[doorID].params['animating'] = false;
-                        this.sounds.play("door-closes-001");
+                        this.sounds.play('door-closes-001');
                     }
                 });
             }

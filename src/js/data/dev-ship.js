@@ -1,7 +1,6 @@
-
 // A ship for development purposes
 
-export function getShip() {
+export const getShip = () => {
     let floors = getShipFloors();
     return Object.assign(
         {},
@@ -13,13 +12,13 @@ export function getShip() {
     );
 };
 
-function getShipGlobalAttrs() {
+const getShipGlobalAttrs = () => {
     return {
-        name: "DEV DESTROYER!"
-    }
+        name: 'DEV DESTROYER!'
+    };
 };
 
-function getShipFloors() {
+const getShipFloors = () => {
     return [
         {
             floor: 1,
@@ -34,10 +33,10 @@ function getShipFloors() {
                 {module:[1,3],level:1,intSkin:1,extSkin:1,pos:[52,24],turn:2},
             ],
         },
-    ]
+    ];
 };
 
-// function getShipFloors() {
+// const getShipFloors = () => {
 //     return [
 //         {
 //             floor: 1,
@@ -54,5 +53,5 @@ function getShipFloors() {
 //                 {module:[2,9],level:1,pos:[42,20]},
 //             ],
 //         },
-//     ]
+//     ];
 // };

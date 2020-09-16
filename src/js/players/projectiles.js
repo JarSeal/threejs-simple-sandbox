@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { calculateAngle } from "../util";
+import { calculateAngle } from '../util';
+import { TimelineMax, Linear, Bounce } from 'gsap-ssr';
 
 class Projectiles {
     constructor(scene, sceneState, SoundController) {
@@ -15,7 +16,7 @@ class Projectiles {
             transparent: true,
             opacity: 0.2,
         });
-        let fxSpark = new THREE.TextureLoader().load("/images/sprites/fx-spark.png");
+        let fxSpark = new THREE.TextureLoader().load('/images/sprites/fx-spark.png');
         this.sparkMaterial = new THREE.PointsMaterial({
             size: 10,
             sizeAttenuation: false,
@@ -29,7 +30,7 @@ class Projectiles {
             hundredThirtyFive: 135 * (Math.PI/180),
             hundredEighty: 180 * (Math.PI/180),
         };
-        this.sounds = SoundController.loadSoundsSprite("projectile", {volume: 0.1});
+        this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
@@ -50,12 +51,12 @@ class Projectiles {
             raycaster = new THREE.Raycaster(),
             startPoint = new THREE.Vector3(from[0], from[1], 1),
             direction = new THREE.Vector3(),
-            hitObject = this.scene.getObjectByName("king-mesh");
-        direction.subVectors(new THREE.Vector3(target[0], target[1], 1), startPoint).normalize();;
+            hitObject = this.scene.getObjectByName('king-mesh');
+        direction.subVectors(new THREE.Vector3(target[0], target[1], 1), startPoint).normalize();
         raycaster.set(startPoint, direction, true);
         let intersects = raycaster.intersectObject(hitObject, true);
         let angle = 0,
-            name = "proje-" + shooter.id + "-" + performance.now();
+            name = 'proje-' + shooter.id + '-' + performance.now();
         let tileMap = sceneState.shipMap[sceneState.floor];
         let targetPos = [];
         let projectileLife = this.getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance);
@@ -73,16 +74,16 @@ class Projectiles {
         let particles = 0;
         let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
         meshInside.scale.set(0.35, 0.05, 1);
-        meshInside.name = name + "-inside";
+        meshInside.name = name + '-inside';
         let projectileGroup = new THREE.Group();
-        projectileGroup.name = name + "-group";
+        projectileGroup.name = name + '-group';
         projectileGroup.add(meshInside);
         particles++;
 
         let meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
         meshOutside.scale.set(0.51, 0.21, 1);
         meshOutside.position.set(0, 0, -0.01);
-        meshOutside.name = name + "-outside";
+        meshOutside.name = name + '-outside';
         projectileGroup.add(meshOutside);
         particles++;
         if(!this.sceneState.settings.useOpacity) {
@@ -95,8 +96,8 @@ class Projectiles {
         this.sceneState.particles += particles; // ADD PARTICLE(S)
         let tl = new TimelineMax();
         tl.startTime = performance.now();
-        this.sounds.play("projectile-002");
-        this.sounds.play("whoosh-001");
+        this.sounds.play('projectile-002');
+        this.sounds.play('whoosh-001');
         tl.to(projectileGroup.position, speed, {
             x: targetPos[0],
             y: targetPos[1],
@@ -151,130 +152,130 @@ class Projectiles {
         }
         for(i=0; i<loopLength; i++) {
             switch(dir) {
-                case 0:
+            case 0:
+                posExact = [
+                    from[0],
+                    from[1] - travel * i,
+                ];
+                pos = [
+                    posExact[0],
+                    Math.round(posExact[1]),
+                ];
+                break;
+            case 2:
+                posExact = [
+                    from[0] - travel * i,
+                    from[1],
+                ];
+                pos = [
+                    Math.round(posExact[0]),
+                    posExact[1],
+                ];
+                break;
+            case 4:
+                posExact = [
+                    from[0],
+                    from[1] + travel * i,
+                ];
+                pos = [
+                    posExact[0],
+                    Math.round(posExact[1]),
+                ];
+                break;
+            case 6:
+                posExact = [
+                    from[0] + travel * i,
+                    from[1],
+                ];
+                pos = [
+                    Math.round(posExact[0]),
+                    posExact[1],
+                ];
+                break;
+            case 1:
+                if(yLength > xLength) {
                     posExact = [
-                        from[0],
-                        from[1] - travel * i,
-                    ];
-                    pos = [
-                        posExact[0],
-                        Math.round(posExact[1]),
-                    ];
-                    break;
-                case 2:
-                    posExact = [
-                        from[0] - travel * i,
-                        from[1],
+                        from[0] - Math.sin(angle) * travel * i,
+                        from[1] - Math.cos(angle) * travel * i,
                     ];
                     pos = [
                         Math.round(posExact[0]),
-                        posExact[1],
-                    ];
-                    break;
-                case 4:
-                    posExact = [
-                        from[0],
-                        from[1] + travel * i,
-                    ];
-                    pos = [
-                        posExact[0],
                         Math.round(posExact[1]),
                     ];
-                    break;
-                case 6:
+                } else {
                     posExact = [
-                        from[0] + travel * i,
-                        from[1],
+                        from[0] - Math.cos(angle) * travel * i,
+                        from[1] - Math.sin(angle) * travel * i,
                     ];
                     pos = [
                         Math.round(posExact[0]),
-                        posExact[1],
+                        Math.round(posExact[1]),
                     ];
-                    break;
-                case 1:
-                    if(yLength > xLength) {
-                        posExact = [
-                            from[0] - Math.sin(angle) * travel * i,
-                            from[1] - Math.cos(angle) * travel * i,
-                        ];
-                        pos = [
-                            Math.round(posExact[0]),
-                            Math.round(posExact[1]),
-                        ];
-                    } else {
-                        posExact = [
-                            from[0] - Math.cos(angle) * travel * i,
-                            from[1] - Math.sin(angle) * travel * i,
-                        ];
-                        pos = [
-                            Math.round(posExact[0]),
-                            Math.round(posExact[1]),
-                        ];
-                    }
-                    break;
-                case 3:
-                    if(yLength > xLength) {
-                        posExact = [
-                            from[0] - Math.sin(angle) * travel * i,
-                            from[1] + Math.cos(angle) * travel * i,
-                        ];
-                        pos = [
-                            Math.round(posExact[0]),
-                            Math.round(posExact[1]),
-                        ];
-                    } else {
-                        posExact = [
-                            from[0] - Math.cos(angle) * travel * i,
-                            from[1] + Math.sin(angle) * travel * i,
-                        ];
-                        pos = [
-                            Math.round(posExact[0]),
-                            Math.round(posExact[1]),
-                        ];
-                    }
-                    break;
-                case 5:
-                    if(yLength > xLength) {
-                        posExact = [
-                            from[0] + Math.sin(angle) * travel * i,
-                            from[1] + Math.cos(angle) * travel * i,
-                        ];
-                        pos = [
-                            Math.round(posExact[0]),
-                            Math.round(posExact[1]),
-                        ];
-                    } else {
-                        posExact = [
-                            from[0] + Math.cos(angle) * travel * i,
-                            from[1] + Math.sin(angle) * travel * i,
-                        ];
-                        pos = [
-                            Math.round(posExact[0]),
-                            Math.round(posExact[1]),
-                        ];
-                    }
-                    break;
-                case 7:
-                    if(yLength > xLength) {
-                        posExact = [
-                            from[0] + Math.sin(angle) * travel * i,
-                            from[1] - Math.cos(angle) * travel * i,
-                        ];
-                        pos = [
-                            Math.round(posExact[0]),
-                            Math.round(posExact[1]),
-                        ];
-                    } else {
-                        posExact = [
-                            from[0] + Math.cos(angle) * travel * i,
-                            from[1] - Math.sin(angle) * travel * i,
-                        ];
-                        pos = [
-                            Math.round(posExact[0]),
-                            Math.round(posExact[1]),
-                        ];
-                    }
-                    break;
+                }
+                break;
+            case 3:
+                if(yLength > xLength) {
+                    posExact = [
+                        from[0] - Math.sin(angle) * travel * i,
+                        from[1] + Math.cos(angle) * travel * i,
+                    ];
+                    pos = [
+                        Math.round(posExact[0]),
+                        Math.round(posExact[1]),
+                    ];
+                } else {
+                    posExact = [
+                        from[0] - Math.cos(angle) * travel * i,
+                        from[1] + Math.sin(angle) * travel * i,
+                    ];
+                    pos = [
+                        Math.round(posExact[0]),
+                        Math.round(posExact[1]),
+                    ];
+                }
+                break;
+            case 5:
+                if(yLength > xLength) {
+                    posExact = [
+                        from[0] + Math.sin(angle) * travel * i,
+                        from[1] + Math.cos(angle) * travel * i,
+                    ];
+                    pos = [
+                        Math.round(posExact[0]),
+                        Math.round(posExact[1]),
+                    ];
+                } else {
+                    posExact = [
+                        from[0] + Math.cos(angle) * travel * i,
+                        from[1] + Math.sin(angle) * travel * i,
+                    ];
+                    pos = [
+                        Math.round(posExact[0]),
+                        Math.round(posExact[1]),
+                    ];
+                }
+                break;
+            case 7:
+                if(yLength > xLength) {
+                    posExact = [
+                        from[0] + Math.sin(angle) * travel * i,
+                        from[1] - Math.cos(angle) * travel * i,
+                    ];
+                    pos = [
+                        Math.round(posExact[0]),
+                        Math.round(posExact[1]),
+                    ];
+                } else {
+                    posExact = [
+                        from[0] + Math.cos(angle) * travel * i,
+                        from[1] - Math.sin(angle) * travel * i,
+                    ];
+                    pos = [
+                        Math.round(posExact[0]),
+                        Math.round(posExact[1]),
+                    ];
+                }
+                break;
             }
             if(!route.length || route[route.length-1].pos[0] !== pos[0] || route[route.length-1].pos[1] !== pos[1]) {
                 enterTime = startTime + i * travel * speedPerTile;
@@ -337,19 +338,19 @@ class Projectiles {
         }
         let distance = intersects[0].distance;
         let life = {
-            speed: speedPerTile * distance,
-            dir: noHit ? intersects[0].dir : 0,
-            turn: 0,
-            xOffset: 0,
-            yOffset: 0,
-            route: [],
-            special: false,
-            intersects,
-            noHit: noHit,
-        },
-        hitPos = [Math.round(intersects[0].point.x), Math.round(intersects[0].point.y)],
-        wallType,
-        defaultOffset = 0.05;
+                speed: speedPerTile * distance,
+                dir: noHit ? intersects[0].dir : 0,
+                turn: 0,
+                xOffset: 0,
+                yOffset: 0,
+                route: [],
+                special: false,
+                intersects,
+                noHit: noHit,
+            },
+            hitPos = [Math.round(intersects[0].point.x), Math.round(intersects[0].point.y)],
+            wallType,
+            defaultOffset = 0.05;
 
         if(!noHit) {
             // Check if the projectile travels on a straight line
@@ -380,138 +381,138 @@ class Projectiles {
                 // Diagonal shot
                 if(from[1] > target[1] && from[0] > target[0]) {
                     life.dir = 1;
-                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
-                    if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = "x"; } else
-                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
-                    { wallType = "posEdge" }
+                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = 'y'; } else 
+                    if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = 'x'; } else
+                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = 'negEdge'; } else
+                    { wallType = 'posEdge'; }
                     switch(wallType) {
-                        case "y":
+                    case 'y':
+                        life.turn = 0;
+                        life.xOffset = defaultOffset;
+                        break;
+                    case 'x':
+                        life.turn = this.preCountedTurns.ninety;
+                        life.yOffset = defaultOffset;
+                        break;
+                    case 'posEdge':
+                        if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25 && intersects[0].point.y > Math.round(intersects[0].point.y) + 0.25) {
+                            life.turn = this.preCountedTurns.fortyFive;
+                            break;
+                        } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
                             life.turn = 0;
                             life.xOffset = defaultOffset;
+                            life.special = true;
                             break;
-                        case "x":
+                        } else {
                             life.turn = this.preCountedTurns.ninety;
                             life.yOffset = defaultOffset;
                             break;
-                        case "posEdge":
-                            if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25 && intersects[0].point.y > Math.round(intersects[0].point.y) + 0.25) {
-                                life.turn = this.preCountedTurns.fortyFive;
-                                break;
-                            } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
-                                life.turn = 0;
-                                life.xOffset = defaultOffset;
-                                life.special = true;
-                                break;
-                            } else {
-                                life.turn = this.preCountedTurns.ninety;
-                                life.yOffset = defaultOffset;
-                                break;
-                            }
-                        case "negEdge":
-                            life.turn = this.preCountedTurns.fortyFive;
-                            break;
+                        }
+                    case 'negEdge':
+                        life.turn = this.preCountedTurns.fortyFive;
+                        break;
                     }
                 } else
                 if(from[1] < target[1] && from[0] > target[0]) {
                     life.dir = 3;
-                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "y"; } else 
-                    if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
-                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
-                    { wallType = "posEdge" }
+                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = 'y'; } else 
+                    if(this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = 'x'; } else
+                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) { wallType = 'negEdge'; } else
+                    { wallType = 'posEdge'; }
                     switch(wallType) {
-                        case "y":
+                    case 'y':
+                        life.turn = 0;
+                        life.xOffset = defaultOffset;
+                        break;
+                    case 'x':
+                        life.turn = -this.preCountedTurns.ninety;
+                        life.yOffset = -defaultOffset;
+                        break;
+                    case 'posEdge':
+                        if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25 && intersects[0].point.y < Math.round(intersects[0].point.y) - 0.25) {
+                            life.turn = -this.preCountedTurns.fortyFive;
+                            break;
+                        } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
                             life.turn = 0;
                             life.xOffset = defaultOffset;
+                            life.special = true;
                             break;
-                        case "x":
+                        } else {
                             life.turn = -this.preCountedTurns.ninety;
                             life.yOffset = -defaultOffset;
                             break;
-                        case "posEdge":
-                            if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25 && intersects[0].point.y < Math.round(intersects[0].point.y) - 0.25) {
-                                life.turn = -this.preCountedTurns.fortyFive;
-                                break;
-                            } else if(intersects[0].point.x > Math.round(intersects[0].point.x) + 0.25) {
-                                life.turn = 0;
-                                life.xOffset = defaultOffset;
-                                life.special = true;
-                                break;
-                            } else {
-                                life.turn = -this.preCountedTurns.ninety;
-                                life.yOffset = -defaultOffset;
-                                break;
-                            }
-                        case "negEdge":
-                            life.turn = -this.preCountedTurns.fortyFive;
-                            break;
+                        }
+                    case 'negEdge':
+                        life.turn = -this.preCountedTurns.fortyFive;
+                        break;
                     }
                 } else
                 if(from[1] < target[1] && from[0] < target[0]) {
                     life.dir = 5;
-                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "y"; } else 
-                    if(this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = "x"; } else
-                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
-                    { wallType = "posEdge" }
+                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && !this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = 'y'; } else 
+                    if(this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap)) { wallType = 'x'; } else
+                    if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = 'negEdge'; } else
+                    { wallType = 'posEdge'; }
                     switch(wallType) {
-                        case "y":
+                    case 'y':
+                        life.turn = this.preCountedTurns.hundredEighty;
+                        life.xOffset = -defaultOffset;
+                        break;
+                    case 'x':
+                        life.turn = -this.preCountedTurns.ninety;
+                        life.yOffset = -defaultOffset;
+                        break;
+                    case 'posEdge':
+                        if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25 && intersects[0].point.y < Math.round(intersects[0].point.y) - 0.25) {
+                            life.turn = -this.preCountedTurns.hundredThirtyFive;
+                            break;
+                        } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
                             life.turn = this.preCountedTurns.hundredEighty;
                             life.xOffset = -defaultOffset;
+                            life.special = true;
                             break;
-                        case "x":
+                        } else {
                             life.turn = -this.preCountedTurns.ninety;
                             life.yOffset = -defaultOffset;
                             break;
-                        case "posEdge":
-                            if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25 && intersects[0].point.y < Math.round(intersects[0].point.y) - 0.25) {
-                                life.turn = -this.preCountedTurns.hundredThirtyFive;
-                                break;
-                            } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
-                                life.turn = this.preCountedTurns.hundredEighty;
-                                life.xOffset = -defaultOffset;
-                                life.special = true;
-                                break;
-                            } else {
-                                life.turn = -this.preCountedTurns.ninety;
-                                life.yOffset = -defaultOffset;
-                                break;
-                            }
-                        case "negEdge":
-                            life.turn = -this.preCountedTurns.hundredThirtyFive;
-                            break;
+                        }
+                    case 'negEdge':
+                        life.turn = -this.preCountedTurns.hundredThirtyFive;
+                        break;
                     }
                 } else
                 if(from[1] > target[1] && from[0] < target[0]) {
                     life.dir = 7;
-                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "y"; } else 
-                    if(this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = "x"; } else
-                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = "negEdge"; } else
-                    { wallType = "posEdge" }
+                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && !this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = 'y'; } else 
+                    if(this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap) && !this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap)) { wallType = 'x'; } else
+                    if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) { wallType = 'negEdge'; } else
+                    { wallType = 'posEdge'; }
                     switch(wallType) {
-                        case "y":
+                    case 'y':
+                        life.turn = this.preCountedTurns.hundredEighty;
+                        life.xOffset = -defaultOffset;
+                        break;
+                    case 'x':
+                        life.turn = this.preCountedTurns.ninety;
+                        life.yOffset = defaultOffset;
+                        break;
+                    case 'posEdge':
+                        if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25 && intersects[0].point.y > Math.round(intersects[0].point.y) + 0.25) {
+                            life.turn = this.preCountedTurns.hundredThirtyFive;
+                            break;
+                        } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
                             life.turn = this.preCountedTurns.hundredEighty;
                             life.xOffset = -defaultOffset;
+                            life.special = true;
                             break;
-                        case "x":
+                        } else {
                             life.turn = this.preCountedTurns.ninety;
                             life.yOffset = defaultOffset;
                             break;
-                        case "posEdge":
-                            if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25 && intersects[0].point.y > Math.round(intersects[0].point.y) + 0.25) {
-                                life.turn = this.preCountedTurns.hundredThirtyFive;
-                                break;
-                            } else if(intersects[0].point.x < Math.round(intersects[0].point.x) - 0.25) {
-                                life.turn = this.preCountedTurns.hundredEighty;
-                                life.xOffset = -defaultOffset;
-                                life.special = true;
-                                break;
-                            } else {
-                                life.turn = this.preCountedTurns.ninety;
-                                life.yOffset = defaultOffset;
-                                break;
-                            }
-                        case "negEdge":
-                            life.turn = this.preCountedTurns.hundredThirtyFive;
-                            break;
+                        }
+                    case 'negEdge':
+                        life.turn = this.preCountedTurns.hundredThirtyFive;
+                        break;
                     }
                 }
             }
@@ -540,19 +541,19 @@ class Projectiles {
         if(type == 'solid') {
             this.createWallBurn(projectileLife, posWOffset, scene, camera);
             this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
-            this.sounds.play("ricochet-001");
+            this.sounds.play('ricochet-001');
         } else if(type == 'player' || type == 'door') {
             this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             if(type == 'door') {
-                this.sounds.play("ricochet-001");
+                this.sounds.play('ricochet-001');
             } else {
-                this.sounds.play("zap-001");
+                this.sounds.play('zap-001');
             }
         }
     }
 
     _randomIntInBetween(min, max) {
-        return Math.floor(Math.random() * (max - min + 1) + min)
+        return Math.floor(Math.random() * (max - min + 1) + min);
     }
 
     _randomFloatInBetween(min, max) {
@@ -564,124 +565,124 @@ class Projectiles {
         let min = 0.4,
             max = 1.6,
             amount = this._randomFloatInBetween(min, max);
-        if(target === "player" && (dir == 1 || dir == 3 || dir == 5 || dir == 7)) {
+        if(target === 'player' && (dir == 1 || dir == 3 || dir == 5 || dir == 7)) {
             let xOffset = hitPos[0] - Math.round(hitPos[0]);
             let yOffset = hitPos[1] - Math.round(hitPos[1]);
             switch(dir) {
-                case 1:
-                case 7:
-                    if(axis == 'x') {
-                        if(xOffset < 0) {
-                            return Math.round(Math.random() * 10) < 9 ? -amount : amount;
-                        } else {
-                            return Math.round(Math.random() * 10) < 9 ? amount : -amount;
-                        }
-                    }
-                    if(yOffset < 0) {
+            case 1:
+            case 7:
+                if(axis == 'x') {
+                    if(xOffset < 0) {
                         return Math.round(Math.random() * 10) < 9 ? -amount : amount;
                     } else {
                         return Math.round(Math.random() * 10) < 9 ? amount : -amount;
                     }
-                case 3:
-                case 5:
-                    if(axis == 'x') {
-                        if(xOffset < 0) {
-                            return Math.round(Math.random() * 10) < 9 ? -amount : amount;
-                        } else {
-                            return Math.round(Math.random() * 10) < 9 ? amount : -amount;
-                        }
-                    }
-                    if(yOffset < 0) {
+                }
+                if(yOffset < 0) {
+                    return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                } else {
+                    return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                }
+            case 3:
+            case 5:
+                if(axis == 'x') {
+                    if(xOffset < 0) {
                         return Math.round(Math.random() * 10) < 9 ? -amount : amount;
                     } else {
                         return Math.round(Math.random() * 10) < 9 ? amount : -amount;
                     }
+                }
+                if(yOffset < 0) {
+                    return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                } else {
+                    return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                }
             }
         }
         let tileMap = target;
         switch(dir) {
-            case 0:
-                if(axis == 'x') {
-                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+        case 0:
+            if(axis == 'x') {
+                return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+            }
+            return amount;
+        case 1:
+            if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) {
+                return amount;
+            } else
+            if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) || special) {
+                if(axis == 'y') {
+                    return Math.round(Math.random() * 10) < 9 ? -amount : amount;
                 }
                 return amount;
-            case 1:
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) {
-                    return amount;
-                } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) || special) {
-                    if(axis == 'y') {
-                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
-                    }
-                    return amount;
-                } else {
-                    if(axis == 'x') {
-                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
-                    }
-                    return amount;
-                }
-            case 2:
-                if(axis == 'y') {
-                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+            } else {
+                if(axis == 'x') {
+                    return Math.round(Math.random() * 10) < 9 ? -amount : amount;
                 }
                 return amount;
-            case 3:
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) {
-                    if(axis == 'y') { return -amount; }
-                    return amount;
-                } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) || special) {
-                    if(axis == 'y') {
-                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
-                    }
-                    return amount;
-                } else {
-                    if(axis == 'x') {
-                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
-                    }
-                    return -amount;
-                }
-            case 4:
-                if(axis == 'x') {
-                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
-                }
-                return -amount;
-            case 5:
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) {
-                    return -amount;
-                } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) || special) {
-                    if(axis == 'y') {
-                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
-                    }
-                    return -amount;
-                } else {
-                    if(axis == 'x') {
-                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
-                    }
-                    return -amount;
-                }
-            case 6:
+            }
+        case 2:
+            if(axis == 'y') {
+                return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+            }
+            return amount;
+        case 3:
+            if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] + 1, hitPos[1], tileMap)) {
+                if(axis == 'y') { return -amount; }
+                return amount;
+            } else
+            if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) || special) {
                 if(axis == 'y') {
-                    return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+                    return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                }
+                return amount;
+            } else {
+                if(axis == 'x') {
+                    return Math.round(Math.random() * 10) < 9 ? -amount : amount;
                 }
                 return -amount;
-            case 7:
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) {
-                    if(axis == 'y') { return amount; }
-                    return -amount;
-                } else
-                if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) || special) {
-                    if(axis == 'y') {
-                        return Math.round(Math.random() * 10) < 9 ? -amount : amount;
-                    }
-                    return -amount;
-                } else {
-                    if(axis == 'x') {
-                        return Math.round(Math.random() * 10) < 9 ? amount : -amount;
-                    }
-                    return amount;
+            }
+        case 4:
+            if(axis == 'x') {
+                return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+            }
+            return -amount;
+        case 5:
+            if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) {
+                return -amount;
+            } else
+            if(this.checkIfWall(hitPos[0], hitPos[1] - 1, tileMap) || special) {
+                if(axis == 'y') {
+                    return Math.round(Math.random() * 10) < 9 ? amount : -amount;
                 }
+                return -amount;
+            } else {
+                if(axis == 'x') {
+                    return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                }
+                return -amount;
+            }
+        case 6:
+            if(axis == 'y') {
+                return Math.round(Math.random() * 10) % 2 == 0 ? -amount : amount;
+            }
+            return -amount;
+        case 7:
+            if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) && this.checkIfWall(hitPos[0] - 1, hitPos[1], tileMap)) {
+                if(axis == 'y') { return amount; }
+                return -amount;
+            } else
+            if(this.checkIfWall(hitPos[0], hitPos[1] + 1, tileMap) || special) {
+                if(axis == 'y') {
+                    return Math.round(Math.random() * 10) < 9 ? -amount : amount;
+                }
+                return -amount;
+            } else {
+                if(axis == 'x') {
+                    return Math.round(Math.random() * 10) < 9 ? amount : -amount;
+                }
+                return amount;
+            }
         }
     }
 
@@ -715,7 +716,7 @@ class Projectiles {
                 }}).to(progressZ, time, {z: targetPositions[i][2], ease: Bounce.easeOut, onUpdate: () => {
                     positions.setZ(i, progressZ.z);
                     positions.needsUpdate = true;
-                }}, "-="+time);
+                }}, '-='+time);
                 if(i === 0) {
                     let materialValues = {size:10},
                         tl2 = new TimelineMax();
@@ -805,10 +806,10 @@ class Projectiles {
             vertexShader: vertexShader,
             fragmentShader: fragmentShader,
             transparent: true,
-        }
+        };
     }
 
-    createWallBurn(projectileLife, posWOffset, scene, camera) {
+    createWallBurn(projectileLife, posWOffset, scene) {
         let uTime = { value: 0 },
             uTotalTime = { value: this._randomFloatInBetween(3.0, 6.0) },
             uBurnSize = { value: this._randomIntInBetween(6, 9) / 100 },
@@ -824,7 +825,7 @@ class Projectiles {
             mesh = new THREE.Mesh(plane, material),
             group = new THREE.Group(),
             randomizer = Math.random() / 50,
-            offset = this.getBurnSpotOffset(projectileLife, "burn", randomizer);
+            offset = this.getBurnSpotOffset(projectileLife, 'burn', randomizer);
         mesh.rotation.set(0, 1.5708, 0);
         mesh.position.x = offset[0];
         mesh.position.y = offset[1];
@@ -854,22 +855,22 @@ class Projectiles {
             yPos = projectileLife.yOffset,
             glowOffset = 0.015;
         switch(dir) {
-            case 0:
-                yPos += randomizer;
-                if(elem == "mark") return [xPos, yPos];
-                return [xPos, yPos + glowOffset];
-            case 1:
-                if(elem == "mark") return [xPos, yPos];
-                return [xPos, yPos];
-            case 2:
-                xPos += randomizer;
-                if(elem == "mark") return [xPos, yPos];
-                return [xPos + glowOffset, yPos];
-            case 3:
-                if(elem == "mark") return [xPos, yPos];
-                return [xPos, yPos];
-            default:
-                return [randomizer, randomizer];
+        case 0:
+            yPos += randomizer;
+            if(elem == 'mark') return [xPos, yPos];
+            return [xPos, yPos + glowOffset];
+        case 1:
+            if(elem == 'mark') return [xPos, yPos];
+            return [xPos, yPos];
+        case 2:
+            xPos += randomizer;
+            if(elem == 'mark') return [xPos, yPos];
+            return [xPos + glowOffset, yPos];
+        case 3:
+            if(elem == 'mark') return [xPos, yPos];
+            return [xPos, yPos];
+        default:
+            return [randomizer, randomizer];
         }
     }
 

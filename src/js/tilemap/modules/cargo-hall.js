@@ -1,14 +1,14 @@
 
 // Cargo Hall
-export function getModule(module, level) {
-    let tilemap = getModuleLevelData(level, "tilemap"),
+export const getModule = (module, level) => {
+    let tilemap = getModuleLevelData(level, 'tilemap'),
         errors = checkErrors(tilemap),
         data = Object.assign(
             {},
             {
                 module: module,
                 dims: errors ? [] : [tilemap[0].length,tilemap.length],
-                name: "Cargo Hall",
+                name: 'Cargo Hall',
                 errors: errors,
             },
             getModuleLevelData(level)
@@ -16,32 +16,32 @@ export function getModule(module, level) {
     return data;
 };
 
-function getModuleLevelData(level, type) {
+const getModuleLevelData = (level, type) => {
     let data = [
         {
             level: 1,
             models: {
                 interior: {
-                    glb: "cargo-hall/cargo-hall-l1-interior.glb",
-                    //glb: "cargo-hall/cargo-hall-l1-interior2.glb",
-                    //glb: "cargo-hall/testi-palikka-w-normals.glb",
-                    mtlId: "cargo-hall-1-a-int",
-                    objFile: "cargo-hall/cargo-hall-int.obj",
-                    mtlFile: "cargo-hall/cargo-hall-int.mtl",
-                    diffuseMap: "cargo-hall/interior-baked.png",
-                    lightMap: "cargo-hall/interior-lightmap.png",
-                    normalMap: "cargo-hall/interior-normal.png",
-                    bumpMap: "cargo-hall/interior-bump.png", // TODO: Check if necessary (we have normal map)..
+                    glb: 'cargo-hall/cargo-hall-l1-interior.glb',
+                    //glb: 'cargo-hall/cargo-hall-l1-interior2.glb',
+                    //glb: 'cargo-hall/testi-palikka-w-normals.glb',
+                    mtlId: 'cargo-hall-1-a-int',
+                    objFile: 'cargo-hall/cargo-hall-int.obj',
+                    mtlFile: 'cargo-hall/cargo-hall-int.mtl',
+                    diffuseMap: 'cargo-hall/interior-baked.png',
+                    lightMap: 'cargo-hall/interior-lightmap.png',
+                    normalMap: 'cargo-hall/interior-normal.png',
+                    bumpMap: 'cargo-hall/interior-bump.png', // TODO: Check if necessary (we have normal map)..
                 },
                 exterior: {
-                    glb: "cargo-hall/cargo-hall-l1-exterior.glb",
-                    mtlId: "cargo-hall-1-a-ext",
-                    objFile: "cargo-hall/cargo-hall-ext.obj",
-                    mtlFile: "cargo-hall/cargo-hall-ext.mtl",
-                    diffuseMap: "cargo-hall/exterior-baked.png",
-                    lightMap: "cargo-hall/exterior-lightmap.png",
-                    normalMap: "cargo-hall/exterior-normal.png",
-                    bumpMap: "cargo-hall/exterior-bump.png",
+                    glb: 'cargo-hall/cargo-hall-l1-exterior.glb',
+                    mtlId: 'cargo-hall-1-a-ext',
+                    objFile: 'cargo-hall/cargo-hall-ext.obj',
+                    mtlFile: 'cargo-hall/cargo-hall-ext.mtl',
+                    diffuseMap: 'cargo-hall/exterior-baked.png',
+                    lightMap: 'cargo-hall/exterior-lightmap.png',
+                    normalMap: 'cargo-hall/exterior-normal.png',
+                    bumpMap: 'cargo-hall/exterior-bump.png',
                 },
                 doors: [{
                     pos: [3, 0],
@@ -50,7 +50,7 @@ function getModuleLevelData(level, type) {
                     openOffset: 0.8,
                     closedOffset: 0.35,
                     selfClosing: true,
-                    type: "slide-double",
+                    type: 'slide-double',
                     localTriggers: [[3,0], [2,1], [3,1], [4,1]],
                 }, {
                     pos: [0, 6],
@@ -59,7 +59,7 @@ function getModuleLevelData(level, type) {
                     openOffset: 0.8,
                     closedOffset: 0.35,
                     selfClosing: true,
-                    type: "slide-double",
+                    type: 'slide-double',
                     localTriggers: [[0,6], [1,5], [1,6], [1,7]],
                 }],
             },
@@ -89,8 +89,8 @@ function getModuleLevelData(level, type) {
     } else {
         return null;
     }
-}
+};
 
-function checkErrors(tilemap) {
-    if(!tilemap) return [{ error: 2 }] // Module level not found
-}
+const checkErrors = (tilemap) => {
+    if(!tilemap) return [{ error: 2 }]; // Module level not found
+};

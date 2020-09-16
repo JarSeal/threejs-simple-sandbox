@@ -2,10 +2,10 @@
 class Consequences {
     constructor() {
         this.tileMap = [];
-        this.hitList = {}; // {"someId": {type:"projectile", time:153.., pos:[25,25], shooterId:"someId", target:"player"||"object"||"turret", targetId:"someId"}}
+        this.hitList = {}; // {'someId': {type:'projectile', time:153.., pos:[25,25], shooterId:'someId', target:'player'||'object'||'turret', targetId:'someId'}}
         this.players = {}; // {playerId: [{pos:[25.555,25], posInt:[25,25],  enterTime:154..., leaveTime:155...}]}
-        this.projectiles = []; // [{shooterId:"someId", projectileId:"someId", route:[{pos:[25,25], enterTime:154..., leaveTime:155...}]}]
-        this.doors = {}; // {"doorID":"playerId":{enterTime:154..., leaveTime:155...}}
+        this.projectiles = []; // [{shooterId:'someId', projectileId:'someId', route:[{pos:[25,25], enterTime:154..., leaveTime:155...}]}]
+        this.doors = {}; // {'doorID':'playerId':{enterTime:154..., leaveTime:155...}}
         this.initTime = 0;
     }
 
@@ -185,11 +185,11 @@ class Consequences {
                         projectile.shooterId != playerKeys[pl]) {
                         // Add player hit to hitList
                         this.hitList[projectile.projectileId] = {
-                            type: "projectile",
+                            type: 'projectile',
                             shooterId: projectile.shooterId,
                             projectileId: projectile.projectileId,
                             time: prEnterTime,
-                            target: "player",
+                            target: 'player',
                             targetId: playerKeys[pl],
                             pos: prPos,
                             hitPos: projectile.route[r].posExact,
@@ -231,11 +231,11 @@ class Consequences {
                 if(!curTileDoor.open) {
                     // Add door hit to hitList
                     this.hitList[projectile.projectileId] = {
-                        type: "projectile",
+                        type: 'projectile',
                         shooterId: projectile.shooterId,
                         projectileId: projectile.projectileId,
                         time: prEnterTime,
-                        target: "door",
+                        target: 'door',
                         targetId: curTileDoor.params.doorID,
                         pos: prPos,
                         hitPos: projectile.route[r].posExact,
@@ -299,9 +299,9 @@ class Consequences {
             this.projectiles.splice(projIndex, 1);
         }
         if(scene.remove && scene.getObjectByName) {
-            scene.remove(scene.getObjectByName(id + "-inside"));
-            scene.remove(scene.getObjectByName(id + "-outside"));
-            scene.remove(scene.getObjectByName(id + "-group"));
+            scene.remove(scene.getObjectByName(id + '-inside'));
+            scene.remove(scene.getObjectByName(id + '-outside'));
+            scene.remove(scene.getObjectByName(id + '-group'));
         }
     }
 
