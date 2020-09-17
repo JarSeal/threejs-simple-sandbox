@@ -41,6 +41,7 @@ class TileMapRoot {
                 useOpacity: true,
             },
             localStorage: new LStorage(),
+            renderCalls: [],
         };
         this.init();
     }
@@ -91,6 +92,8 @@ class TileMapRoot {
 
         const camera = sceneController.getCamera();
         
+        let renderCallerI = 0,
+            renderCalls = this.sceneState.renderCalls;
         const render = () => {
             requestAnimationFrame(render);
             sceneController.doLoops();
@@ -98,6 +101,9 @@ class TileMapRoot {
             renderer.render(scene, camera);
             this.setShaderTime();
             if(this.sceneState.mixer) this.sceneState.mixer.update(this.sceneState.clock.getDelta());
+            for(renderCallerI=0; renderCallerI<renderCalls.length; renderCallerI++) {
+                renderCalls[renderCallerI]();
+            }
             //effect.render(scene, camera);
             stats.update(); // Debug statistics
         };

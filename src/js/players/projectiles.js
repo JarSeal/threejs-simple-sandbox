@@ -6,6 +6,10 @@ class Projectiles {
     constructor(scene, sceneState, SoundController) {
         this.scene = scene;
         this.sceneState = sceneState;
+        this.projectiles = {
+            count: 0,
+            fired: []
+        };
         this.projectileGeoInside = new THREE.PlaneBufferGeometry();
         this.projectileGeoOutside = new THREE.PlaneBufferGeometry();
         this.projectileMatInside = new THREE.MeshBasicMaterial({
@@ -31,6 +35,81 @@ class Projectiles {
             hundredEighty: 180 * (Math.PI/180),
         };
         this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
+
+        this.createTestProjectile(scene);
+    }
+
+    createTestProjectile(scene) {
+        const spriteMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
+        const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.6, 1);
+        const planeMat = new THREE.MeshBasicMaterial({map: spriteMap, side: THREE.DoubleSide, transparent: true});
+        planeMat.color.setHSL(0.035, 1, 0.5);
+        let uvAttribute = planeGeo.attributes.uv;
+        const spriteXlen = 128 / 4096;
+        const spriteYlen = spriteXlen / 2;
+        uvAttribute.setXY(1, spriteXlen, 1);
+        uvAttribute.setXY(2, 0, 1-spriteYlen);
+        uvAttribute.setXY(3, spriteXlen, 1-spriteYlen);
+        uvAttribute.needsUpdate = true;
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        plane.position.x = 35;
+        plane.position.y = 41;
+        plane.position.z = 1;
+        const plane2 = new THREE.Mesh(planeGeo, planeMat);
+        plane2.position.x = 35;
+        plane2.position.y = 41;
+        plane2.position.z = 1;
+        plane2.rotation.x = 1.5708;
+        scene.add(plane);
+        scene.add(plane2);
+        this.projectiles.count++;
+        this.projectiles.fired.push({
+            id: 'some-id',
+            geo: planeGeo,
+            phase: 2,
+            frame: 1,
+            spriteXlen,
+            spriteYlen: 1 - spriteYlen,
+            lastUpdate: performance.now(),
+            interval: 20,
+        });
+
+        console.log('Plane mat', planeMat);
+        this.sceneState.renderCalls.push(this.animateProjectile);
+    }
+
+    animateProjectile = () => { // RUNS IN EVERY FRAME
+        let count = this.projectiles.count;
+        if(!count) return;
+        let i = 0,
+            geo,
+            uvAttribute,
+            spriteXlen,
+            spriteYlen,
+            frame,
+            newX,
+            newXPrev;
+        for(i=0; i<count; i++) {
+            if(performance.now() - this.projectiles.fired[i].lastUpdate < this.projectiles.fired[i].interval) break;
+            geo = this.projectiles.fired[i].geo;
+            spriteXlen = this.projectiles.fired[i].spriteXlen;
+            spriteYlen = this.projectiles.fired[i].spriteYlen;
+            frame = this.projectiles.fired[i].frame;
+            newX = spriteXlen * frame;
+            newXPrev = spriteXlen * (frame - 1);
+            uvAttribute = geo.attributes.uv;
+            uvAttribute.setXY(0, newXPrev, 1);
+            uvAttribute.setXY(1, newX, 1);
+            uvAttribute.setXY(2, newXPrev, spriteYlen);
+            uvAttribute.setXY(3, newX, spriteYlen);
+            uvAttribute.needsUpdate = true;
+            this.projectiles.fired[i].lastUpdate = performance.now();
+            if(frame === 15) {
+                this.projectiles.fired[i].frame = 1;
+            } else {
+                this.projectiles.fired[i].frame++;
+            }
+        }
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
@@ -93,7 +172,7 @@ class Projectiles {
         projectileGroup.rotation.z = angle + 1.5708;
         projectileGroup.position.set(from[0], from[1], 1);
         scene.add(projectileGroup);
-        this.sceneState.particles += particles; // ADD PARTICLE(S)
+        this.sceneState.particles += particles;
         let tl = new TimelineMax();
         tl.startTime = performance.now();
         this.sounds.play('projectile-002');
