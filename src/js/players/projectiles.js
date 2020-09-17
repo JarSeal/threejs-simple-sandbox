@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { calculateAngle } from '../util';
 import { TimelineMax, Linear, Bounce } from 'gsap-ssr';
 
@@ -36,13 +37,15 @@ class Projectiles {
         };
         this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
 
-        this.createTestProjectile(scene);
+        this.createTestProjectile();
     }
 
-    createTestProjectile(scene) {
+    createTestProjectile() {
         const spriteMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
         const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.6, 1);
+        const planeGeo2 = planeGeo.clone();
         const planeMat = new THREE.MeshBasicMaterial({map: spriteMap, side: THREE.DoubleSide, transparent: true});
+        const geometries = [];
         planeMat.color.setHSL(0.035, 1, 0.5);
         let uvAttribute = planeGeo.attributes.uv;
         const spriteXlen = 128 / 4096;
@@ -52,29 +55,30 @@ class Projectiles {
         uvAttribute.setXY(3, spriteXlen, 1-spriteYlen);
         uvAttribute.needsUpdate = true;
         const plane = new THREE.Mesh(planeGeo, planeMat);
-        plane.position.x = 35;
-        plane.position.y = 41;
-        plane.position.z = 1;
-        const plane2 = new THREE.Mesh(planeGeo, planeMat);
-        plane2.position.x = 35;
-        plane2.position.y = 41;
-        plane2.position.z = 1;
+        const plane2 = new THREE.Mesh(planeGeo2, planeMat);
         plane2.rotation.x = 1.5708;
-        scene.add(plane);
-        scene.add(plane2);
+        plane2.updateMatrix();
+        plane2.geometry.applyMatrix4(plane2.matrix);
+        geometries.push(plane.geometry);
+        geometries.push(plane2.geometry);
+        const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
+        const mergedMesh = new THREE.Mesh(mergedGeo, planeMat);
+        mergedMesh.position.x = 35;
+        mergedMesh.position.y = 41;
+        mergedMesh.position.z = 1;
+        this.scene.add(mergedMesh);
         this.projectiles.count++;
         this.projectiles.fired.push({
             id: 'some-id',
-            geo: planeGeo,
+            geo: mergedGeo,
             phase: 2,
             frame: 1,
             spriteXlen,
             spriteYlen: 1 - spriteYlen,
             lastUpdate: performance.now(),
-            interval: 20,
+            interval: 35,
         });
-
-        console.log('Plane mat', planeMat);
+        
         this.sceneState.renderCalls.push(this.animateProjectile);
     }
 
