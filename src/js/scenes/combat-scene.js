@@ -56,4 +56,4 @@ class CombatScene {
     }
 }
 
-export default CombatScene
+export default CombatScene;

@@ -1,24 +1,23 @@
-import { getModule as captainsCabin } from './captains-cabin.js';
 import { getModule as cabin } from './cabin.js';
 import { getModule as cargoHall } from './cargo-hall.js';
 
 // Load a module
-export function getModule(module, level, turn, moduleID, doorParams) {
+export const getModule = (module, level, turn, moduleID, doorParams) => {
     let mod = {};
     switch(module) {
-        case 1:
-            mod = cabin(module, level);
-            break;
-        case 2:
-            mod = cargoHall(module, level);
-            break;
-        default:
-            return {errors: [{error: 1}]} // Module data not found
+    case 1:
+        mod = cabin(module, level);
+        break;
+    case 2:
+        mod = cargoHall(module, level);
+        break;
+    default:
+        return {errors: [{error: 1}]}; // Module data not found
     }
     return setDoorTriggers(mod, turn, moduleID, doorParams);
-}
+};
 
-function setDoorTriggers(module, turn, moduleID, doorParams) {
+const setDoorTriggers = (module, turn, moduleID, doorParams) => {
     let tilemap = module.tilemap;
     if(!module.tilemap.length) return {errors: [{error: 2}]}; // Tilemap data not found
     let rows = tilemap.length,
@@ -44,7 +43,7 @@ function setDoorTriggers(module, turn, moduleID, doorParams) {
                             params = Object.assign({}, params, doorParams[d]);
                         }
                         params.doorIndex = d;
-                        params.doorID = moduleID + "-d" + d;
+                        params.doorID = moduleID + '-d' + d;
                         if(params.pos[0] === c && params.pos[1] === r) {
                             params.isCurDoorTile = true;
                         } else {
@@ -58,9 +57,9 @@ function setDoorTriggers(module, turn, moduleID, doorParams) {
         }
     }
     return checkTurn(module, turn);
-}
+};
 
-function checkTurn(module, turn) {
+const checkTurn = (module, turn) => {
     if(turn !== 0) {
         module.tilemap = rotate(module.tilemap, turn);
         if(turn == 1 || turn == 3) {
@@ -69,9 +68,9 @@ function checkTurn(module, turn) {
         module.models.doors = getNewDoorPositions(module.models.doors, module.tilemap);
     }
     return module;
-}
+};
 
-function getNewDoorPositions(doors, tilemap) {
+const getNewDoorPositions = (doors, tilemap) => {
     let colLength = tilemap.length,
         rowLength = colLength ? tilemap[0].length : 0,
         col = 0,
@@ -84,15 +83,15 @@ function getNewDoorPositions(doors, tilemap) {
         }
     }
     return doors;
-}
+};
 
-function transpose(matrix) {
+const transpose = (matrix) => {
     return matrix.reduce((prev, next) => next.map((item, i) =>
-      (prev[i] || []).concat(next[i])
+        (prev[i] || []).concat(next[i])
     ), []).reverse();
-}
+};
 
-function rotate(matrix, times) {
+const rotate = (matrix, times) => {
     let copy = matrix.slice();
     for(let n=0; n<times; n++) {
         copy = copy.slice();

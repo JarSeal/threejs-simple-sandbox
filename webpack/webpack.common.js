@@ -67,15 +67,13 @@ module.exports = {
     new HtmlWebpackPlugin({
         template: commonPaths.templatePath,
     }),
-    new CopyWebpackPlugin([
-        {from:'src/images',to:'images'}
-    ]),
-    new CopyWebpackPlugin([
-        {from:'src/sounds',to:'sounds'}
-    ]),
-    new CopyWebpackPlugin([
-        {from:'src/js/vendor',to:'js'}
-    ]),
+    new CopyWebpackPlugin({
+      patterns: [
+        {from:'src/images',to:'images'},
+        {from:'src/sounds',to:'sounds'},
+        {from:'src/js/vendor',to:'js'},
+      ],
+    }),
     new MiniCssExtractPlugin({
       filename: 'css/main.css'
     }),

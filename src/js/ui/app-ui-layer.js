@@ -5,12 +5,12 @@ class AppUiLayer {
     constructor(sceneState) {
         this.logs = [];
         this.sceneState = sceneState;
-        this.uiCanvas = document.getElementById("uiCanvas");
+        this.uiCanvas = document.getElementById('uiCanvas');
         this.logList = [[
             sceneState.initTime.s + performance.now() / 1000,
-            "[SYSTEM]",
-            "START of logging!",
-            "S"
+            '[SYSTEM]',
+            'START of logging!',
+            'S'
         ]];
         this.uiContext;
         this.ctrl = {keyDown:false,keyUp:true};
@@ -20,7 +20,7 @@ class AppUiLayer {
                 this.ctrl.keyDown = true;
             }
         });
-        window.addEventListener('keyup', (e) => {
+        window.addEventListener('keyup', () => {
             this.ctrl.keyDown = false;
             this.ctrl.keyUp = true;
         });
@@ -29,10 +29,10 @@ class AppUiLayer {
 
     init() {
         let ui = this.sceneState.ui;
-        this.uiContext = this.uiCanvas.getContext("2d");
+        this.uiContext = this.uiCanvas.getContext('2d');
 
         if(!ui.view) {
-            ui.view = "combat";
+            ui.view = 'combat';
             ui.viewData = new CombatView(this.sceneState).getView();
         }
         this.resize();
@@ -64,22 +64,22 @@ class AppUiLayer {
             ctx.fill();
         }
         switch(view) {
-            case "combat":
-                data = this.sceneState.ui.viewData;
-                dataLength = data.length;
-                for(i=0; i<dataLength; i++) {
-                    if(data[i].type == 'circleButton') {
-                        ctx.fillStyle = data[i].color(this.sceneState, this.ctrl);
-                        ctx.beginPath();
-                        ctx.arc(data[i].pos[0], data[i].pos[1], data[i].radius, 0, 2 * Math.PI);
-                        ctx.fill();
-                        data[i].action(this.sceneState, calculateAngle);
-                    } else
-                    if(data[i].type == 'logDisplay') {
-                        data[i].renderLogList(this.logList);
-                    }
+        case 'combat':
+            data = this.sceneState.ui.viewData;
+            dataLength = data.length;
+            for(i=0; i<dataLength; i++) {
+                if(data[i].type == 'circleButton') {
+                    ctx.fillStyle = data[i].color(this.sceneState, this.ctrl);
+                    ctx.beginPath();
+                    ctx.arc(data[i].pos[0], data[i].pos[1], data[i].radius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    data[i].action(this.sceneState, calculateAngle);
+                } else
+                if(data[i].type == 'logDisplay') {
+                    data[i].renderLogList(this.logList);
                 }
-                break;
+            }
+            break;
         }
     }
 
@@ -93,11 +93,11 @@ class AppUiLayer {
     }
 
     logMessage(when, who, what, type) {
-        when = Math.round((when - this.sceneState.initTime.ms) / 1000) + "s"; // Temp solution
+        when = Math.round((when - this.sceneState.initTime.ms) / 1000) + 's'; // Temp solution
         this.logList.unshift([
             when, who, what, type
         ]);
     }
 }
 
-export default AppUiLayer
+export default AppUiLayer;

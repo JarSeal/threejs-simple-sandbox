@@ -4,7 +4,7 @@ class OnOff {
         this.sceneState = sceneState;
         this.key = key;
         this.isOn = sceneState.settings[this.key];
-        this.switch = (e) => {
+        this.switch = () => {
             let curElem = document.getElementById(this.getId());
             if(this.isOn) {
                 curElem.classList.remove('on-off--on');
@@ -29,12 +29,12 @@ class OnOff {
 
     addListeners() {
         let onOffElem = document.getElementById(this.getId());
-        onOffElem.addEventListener("click", this.switch);
+        onOffElem.addEventListener('click', this.switch);
     }
 
     removeListeners() {
         let onOffElem = document.getElementById(this.getId());
-        onOffElem.removeEventListener("click", this.switch);
+        onOffElem.removeEventListener('click', this.switch);
     }
 }
 

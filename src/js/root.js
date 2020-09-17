@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as Stats from './vendor/stats.min.js';
-import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
+// import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import Scene from './scene.js';
 import AppUiLayer from './ui/app-ui-layer.js';
 import SoundController from './sound-controller.js';
@@ -102,14 +102,14 @@ class TileMapRoot {
             stats.update(); // Debug statistics
         };
 
-        document.getElementsByTagName("body")[0].style.width = document.documentElement.clientWidth+"px";
-        document.getElementsByTagName("body")[0].style.height = document.documentElement.clientHeight+"px";
+        document.getElementsByTagName('body')[0].style.width = document.documentElement.clientWidth+'px';
+        document.getElementsByTagName('body')[0].style.height = document.documentElement.clientHeight+'px';
 
         window.addEventListener('resize', () => {
             sceneController.resize();
             appUiLayer.resize();
-            document.getElementsByTagName("body")[0].style.width = document.documentElement.clientWidth+"px";
-            document.getElementsByTagName("body")[0].style.height = document.documentElement.clientHeight+"px";
+            document.getElementsByTagName('body')[0].style.width = document.documentElement.clientWidth+'px';
+            document.getElementsByTagName('body')[0].style.height = document.documentElement.clientHeight+'px';
         });
 
         render();
@@ -128,9 +128,9 @@ class TileMapRoot {
             s: unixTimestamp + now / 1000,
             ms: unixTimestamp + now,
             performanceStart: now,
-            dayName: "Mon",
+            dayName: 'Mon',
             dayNameNumber: 1
-        }
+        };
     }
 
     getLocalSettingsData() {

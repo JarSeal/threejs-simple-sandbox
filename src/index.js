@@ -1,6 +1,6 @@
 import './sass/index.scss';
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
     
     require('./js/root.js');
 

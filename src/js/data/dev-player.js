@@ -1,10 +1,9 @@
+// A player for development purposes
 
-// A ship for development purposes
-
-export function getPlayer() {
+export const getPlayer = () => {
     return {
-        name: "DEV PLAYER",
-        id: "devPlayer001",
+        name: 'DEV PLAYER',
+        id: 'devPlayer001',
         pos: [],
         microPos: [],
         startPos: [3,4,0,2,0], // x,y,floor,moduleId,moduleIndex,

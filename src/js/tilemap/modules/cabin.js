@@ -1,14 +1,13 @@
-
 // Cabin
-export function getModule(module, level) {
-    let tilemap = getModuleLevelData(level, "tilemap"),
+export const getModule = (module, level) => {
+    let tilemap = getModuleLevelData(level, 'tilemap'),
         errors = checkErrors(tilemap),
         data = Object.assign(
             {},
             {
                 module: module,
                 dims: errors ? [] : [tilemap[0].length,tilemap.length],
-                name: "Cabin",
+                name: 'Cabin',
                 errors: errors,
             },
             getModuleLevelData(level)
@@ -16,18 +15,18 @@ export function getModule(module, level) {
     return data;
 };
 
-function getModuleLevelData(level, type) {
+const getModuleLevelData = (level, type) => {
     let data = [
         {
             level: 1,
             models: {
                 interior: {
-                    glb: "cabin/cabin01-v2-int.glb",
-                    mtlId: "cabin-1-a-int",
+                    glb: 'cabin/cabin01-v2-int.glb',
+                    mtlId: 'cabin-1-a-int',
                 },
                 exterior: {
-                    glb: "cabin/cabin01-v2-ext.glb",
-                    mtlId: "cabin-1-a-ext",
+                    glb: 'cabin/cabin01-v2-ext.glb',
+                    mtlId: 'cabin-1-a-ext',
                 },
                 doors: [{
                     pos: [7, 4],
@@ -36,7 +35,7 @@ function getModuleLevelData(level, type) {
                     openOffset: 0.8,
                     closedOffset: 0.35,
                     selfClosing: true,
-                    type: "slide-double",
+                    type: 'slide-double',
                     localTriggers: [[7,4], [6,4], [6,3], [6,5]],
                 }],
             },
@@ -66,8 +65,8 @@ function getModuleLevelData(level, type) {
     } else {
         return null;
     }
-}
+};
 
-function checkErrors(tilemap) {
-    if(!tilemap) return [{ error: 2 }] // Module level not found
-}
+const checkErrors = (tilemap) => {
+    if(!tilemap) return [{ error: 2 }]; // Module level not found
+};

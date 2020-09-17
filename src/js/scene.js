@@ -16,14 +16,13 @@ class Scene {
     loadScene(view) {
         this.sceneState.ui.viewLoading = true;
         switch(view) {
-            case 'combat':
-                const combatScene = new CombatScene();
-                this.resize = () => {combatScene.resize();};
-                this.curViewClass = combatScene;
-                this.curScene = combatScene.initView(this.renderer, this.sceneState, this.AppUiLayer, this.SoundController);
-                this.camera = combatScene.getCamera();
-                //this.addWorldHelpers(this.curScene);
-                return this.curScene;
+        case 'combat':
+            this.curViewClass = new CombatScene();
+            this.resize = () => {this.curViewClass.resize();};
+            this.curScene = this.curViewClass.initView(this.renderer, this.sceneState, this.AppUiLayer, this.SoundController);
+            this.camera = this.curViewClass.getCamera();
+            //this.addWorldHelpers(this.curScene);
+            return this.curScene;
         }
     }
 
@@ -58,4 +57,4 @@ class Scene {
     }
 }
 
-export default Scene
+export default Scene;

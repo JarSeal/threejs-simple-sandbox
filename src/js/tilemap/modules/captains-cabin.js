@@ -1,33 +1,32 @@
-import { randomTimeNow } from '../../util.js';
-
 // Captain's Cabin
-export function getModule(module, level) {
-    let tilemap = getModuleLevelData(level, "tilemap"),
+
+export const getModule = (module, level) => {
+    let tilemap = getModuleLevelData(level, 'tilemap'),
         errors = checkErrors(tilemap);
     return Object.assign(
         {},
         {
             module: module,
             dims: errors ? [] : [tilemap[0].length,tilemap.length],
-            name: "Captain's Cabin",
+            name: 'Captain\'s Cabin',
             errors: errors,
         },
         getModuleLevelData(level)
     );
 };
 
-function getModuleLevelData(level, type) {
+const getModuleLevelData = (level, type) => {
     let data = [
         {
             level: 1,
             models: {
                 exterior: {
-                    mtlId: "captains-cabin-1-a-ext",
-                    objFile: "captains-cabin-lowpoly.obj",
-                    mtlFile: "captains-cabin-lowpoly.mtl",
-                    diffuseMap: "captains-cabin-1-a.png",
-                    lightMap: "captains-cabin-1-a-lightmap.png",
-                    bumpMap: "captains-cabin-1-a-bump.png",
+                    mtlId: 'captains-cabin-1-a-ext',
+                    objFile: 'captains-cabin-lowpoly.obj',
+                    mtlFile: 'captains-cabin-lowpoly.mtl',
+                    diffuseMap: 'captains-cabin-1-a.png',
+                    lightMap: 'captains-cabin-1-a-lightmap.png',
+                    bumpMap: 'captains-cabin-1-a-bump.png',
                 }
             },
             aligners: [ // Based on turn value (0 = no turn, 1 = 90 deg, 2 = 180 deg, 3 = 270 deg)
@@ -46,7 +45,7 @@ function getModuleLevelData(level, type) {
             ],
             // lights: [
             //     {
-            //         type: "capsule", // this string is used as an object key
+            //         type: 'capsule', // this string is used as an object key
             //         color: 0xffffff,
             //         onColor: 0xffffff,
             //         offColor: 0x999999,
@@ -92,8 +91,8 @@ function getModuleLevelData(level, type) {
     } else {
         return null;
     }
-}
+};
 
-function checkErrors(tilemap) {
-    if(!tilemap) return [{ error: 2 }] // Module level not found
-}
+const checkErrors = (tilemap) => {
+    if(!tilemap) return [{ error: 2 }]; // Module level not found
+};

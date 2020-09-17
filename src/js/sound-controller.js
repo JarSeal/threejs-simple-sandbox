@@ -7,7 +7,7 @@ class SoundController {
         this.soundSprites = {
             door: doorSprite,
             projectile: projectileSprite,
-        }
+        };
     }
 
     loadSoundsSprite(spriteKey, generalParams) {

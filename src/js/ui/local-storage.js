@@ -18,7 +18,7 @@ class LStorage {
 
     checkIfItemExists(key) {
         if(!this.localStorageAvailable) return false;
-        return localStorage.hasOwnProperty(key);
+        return Object.prototype.hasOwnProperty.call(localStorage, key);
     }
 
     setItem(key, value) {
