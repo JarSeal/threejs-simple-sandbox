@@ -41,12 +41,12 @@ class Projectiles {
         };
         this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
 
-        this.createTestProjectile();
+        this.createProjectile();
     }
 
-    createTestProjectile() {
+    createProjectile() {
         const spriteMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
-        const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.6, 1);
+        const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.4, 1);
         const planeGeo2 = planeGeo.clone();
         const planeGeo3 = planeGeo.clone();
         const redMat = new THREE.MeshBasicMaterial({
@@ -57,7 +57,8 @@ class Projectiles {
             depthTest: true
         });
         const geometries = [];
-        redMat.color.setHSL(0.0035, 1, 0.5);
+        // redMat.color.setHSL(0.0035, 1, 0.5);
+        // redMat.color.multiply(new THREE.Color(1.7, 0, 0));
         const spriteXlen = this.laserObjects.spriteXlen;
         const spriteYlen = this.laserObjects.spriteYlen;
         const plane = new THREE.Mesh(planeGeo, redMat);
@@ -189,7 +190,7 @@ class Projectiles {
         let particles = 0;
 
         const laser = this.laserObjects.red.clone();
-        laser.name = name;
+        // laser.name = name;
         laser.rotation.z = angle;
         laser.position.set(from[0], from[1], 1);
         scene.add(laser);
