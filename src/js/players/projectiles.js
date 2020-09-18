@@ -190,7 +190,7 @@ class Projectiles {
         let particles = 0;
 
         const laser = this.laserObjects.red.clone();
-        // laser.name = name;
+        laser.name = name;
         laser.rotation.z = angle;
         laser.position.set(from[0], from[1], 1);
         scene.add(laser);
