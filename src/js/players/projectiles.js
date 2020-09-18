@@ -7,9 +7,13 @@ class Projectiles {
     constructor(scene, sceneState, SoundController) {
         this.scene = scene;
         this.sceneState = sceneState;
-        this.projectiles = {
+        this.projectileAnims = {
             count: 0,
             fired: []
+        };
+        this.laserObjects = {
+            spriteXlen: 128 / 4096,
+            spriteYlen: 64 / 4096,
         };
         this.projectileGeoInside = new THREE.PlaneBufferGeometry();
         this.projectileGeoOutside = new THREE.PlaneBufferGeometry();
@@ -44,74 +48,102 @@ class Projectiles {
         const spriteMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
         const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.6, 1);
         const planeGeo2 = planeGeo.clone();
-        const planeMat = new THREE.MeshBasicMaterial({map: spriteMap, side: THREE.DoubleSide, transparent: true});
+        const planeGeo3 = planeGeo.clone();
+        const redMat = new THREE.MeshBasicMaterial({
+            map: spriteMap,
+            side: THREE.DoubleSide,
+            transparent: true,
+            depthWrite: false,
+            depthTest: true
+        });
         const geometries = [];
-        planeMat.color.setHSL(0.035, 1, 0.5);
-        let uvAttribute = planeGeo.attributes.uv;
-        const spriteXlen = 128 / 4096;
-        const spriteYlen = spriteXlen / 2;
-        uvAttribute.setXY(1, spriteXlen, 1);
-        uvAttribute.setXY(2, 0, 1-spriteYlen);
-        uvAttribute.setXY(3, spriteXlen, 1-spriteYlen);
-        uvAttribute.needsUpdate = true;
-        const plane = new THREE.Mesh(planeGeo, planeMat);
-        const plane2 = new THREE.Mesh(planeGeo2, planeMat);
+        redMat.color.setHSL(0.0035, 1, 0.5);
+        const spriteXlen = this.laserObjects.spriteXlen;
+        const spriteYlen = this.laserObjects.spriteYlen;
+        const plane = new THREE.Mesh(planeGeo, redMat);
+        plane.rotation.z = -1.5708;
+        plane.updateMatrix();
+        plane.geometry.applyMatrix4(plane.matrix);
+        const plane2 = new THREE.Mesh(planeGeo2, redMat);
+        plane2.rotation.z = -1.5708;
         plane2.rotation.x = 1.5708;
         plane2.updateMatrix();
         plane2.geometry.applyMatrix4(plane2.matrix);
+
+        // Flare
+        let flareUvs = planeGeo3.attributes.uv;
+        flareUvs.setXY(0, spriteXlen * 15, 1);
+        flareUvs.setXY(1, spriteXlen * 16, 1);
+        flareUvs.setXY(2, spriteXlen * 15, 1 - spriteYlen);
+        flareUvs.setXY(3, spriteXlen * 16, 1 - spriteYlen);
+        flareUvs.needsUpdate = true;
+        const flare = new THREE.Mesh(planeGeo3, redMat);
+        flare.position.z = -0.8;
+        flare.scale.x = 2;
+        flare.scale.y = 1.5;
+        flare.rotation.z = -1.5708;
+        flare.updateMatrix();
+        flare.geometry.applyMatrix4(flare.matrix);
+
+        // Merge into one mesh
         geometries.push(plane.geometry);
         geometries.push(plane2.geometry);
+        geometries.push(flare.geometry);
         const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
-        const mergedMesh = new THREE.Mesh(mergedGeo, planeMat);
-        mergedMesh.position.x = 35;
-        mergedMesh.position.y = 41;
-        mergedMesh.position.z = 1;
-        this.scene.add(mergedMesh);
-        this.projectiles.count++;
-        this.projectiles.fired.push({
+        const redLaser = new THREE.Mesh(mergedGeo, redMat);
+        this.laserObjects['red'] = redLaser;
+        redLaser.position.x = 35;
+        redLaser.position.y = 41;
+        redLaser.position.z = 1;
+        this.scene.add(redLaser);
+        this.projectileAnims.count++;
+        this.projectileAnims.fired.push({
             id: 'some-id',
             geo: mergedGeo,
             phase: 2,
             frame: 1,
             spriteXlen,
-            spriteYlen: 1 - spriteYlen,
+            vStart: 1,
+            vEnd: 1 - spriteYlen,
             lastUpdate: performance.now(),
             interval: 35,
         });
-        
+
         this.sceneState.renderCalls.push(this.animateProjectile);
     }
 
     animateProjectile = () => { // RUNS IN EVERY FRAME
-        let count = this.projectiles.count;
+        let count = this.projectileAnims.count;
         if(!count) return;
         let i = 0,
             geo,
             uvAttribute,
             spriteXlen,
-            spriteYlen,
+            vStart,
+            vEnd,
             frame,
             newX,
             newXPrev;
         for(i=0; i<count; i++) {
-            if(performance.now() - this.projectiles.fired[i].lastUpdate < this.projectiles.fired[i].interval) break;
-            geo = this.projectiles.fired[i].geo;
-            spriteXlen = this.projectiles.fired[i].spriteXlen;
-            spriteYlen = this.projectiles.fired[i].spriteYlen;
-            frame = this.projectiles.fired[i].frame;
+            if(performance.now() - this.projectileAnims.fired[i].lastUpdate < this.projectileAnims.fired[i].interval) break;
+            geo = this.projectileAnims.fired[i].geo;
+            spriteXlen = this.projectileAnims.fired[i].spriteXlen;
+            vStart = this.projectileAnims.fired[i].vStart;
+            vEnd = this.projectileAnims.fired[i].vEnd;
+            frame = this.projectileAnims.fired[i].frame;
             newX = spriteXlen * frame;
             newXPrev = spriteXlen * (frame - 1);
             uvAttribute = geo.attributes.uv;
-            uvAttribute.setXY(0, newXPrev, 1);
-            uvAttribute.setXY(1, newX, 1);
-            uvAttribute.setXY(2, newXPrev, spriteYlen);
-            uvAttribute.setXY(3, newX, spriteYlen);
+            uvAttribute.setXY(0, newXPrev, vStart);
+            uvAttribute.setXY(1, newX, vStart);
+            uvAttribute.setXY(2, newXPrev, vEnd);
+            uvAttribute.setXY(3, newX, vEnd);
             uvAttribute.needsUpdate = true;
-            this.projectiles.fired[i].lastUpdate = performance.now();
+            this.projectileAnims.fired[i].lastUpdate = performance.now();
             if(frame === 15) {
-                this.projectiles.fired[i].frame = 1;
+                this.projectileAnims.fired[i].frame = 1;
             } else {
-                this.projectiles.fired[i].frame++;
+                this.projectileAnims.fired[i].frame++;
             }
         }
     }
@@ -155,40 +187,38 @@ class Projectiles {
         let speed = intersects[0].distance * speedPerTile;
         this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route);
         let particles = 0;
-        let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
-        meshInside.scale.set(0.35, 0.05, 1);
-        meshInside.name = name + '-inside';
-        let projectileGroup = new THREE.Group();
-        projectileGroup.name = name + '-group';
-        projectileGroup.add(meshInside);
-        particles++;
 
-        let meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
-        meshOutside.scale.set(0.51, 0.21, 1);
-        meshOutside.position.set(0, 0, -0.01);
-        meshOutside.name = name + '-outside';
-        projectileGroup.add(meshOutside);
-        particles++;
-        if(!this.sceneState.settings.useOpacity) {
-            meshOutside.material.opacity = 1;
-            meshOutside.material.color.setHex(0X664646);
-        }
-        projectileGroup.rotation.z = angle + 1.5708;
-        projectileGroup.position.set(from[0], from[1], 1);
-        scene.add(projectileGroup);
+        const laser = this.laserObjects.red.clone();
+        laser.name = name;
+        laser.rotation.z = angle;
+        laser.position.set(from[0], from[1], 1);
+        scene.add(laser);
+        this.projectileAnims.count++;
+        this.projectileAnims.fired.push({
+            id: name,
+            geo: laser.geometry,
+            phase: 2,
+            frame: 1,
+            spriteXlen: this.laserObjects.spriteXlen,
+            vStart: 1,
+            vEnd: 1 - this.laserObjects.spriteYlen,
+            lastUpdate: performance.now(),
+            interval: 35,
+        });
+
         this.sceneState.particles += particles;
         let tl = new TimelineMax();
         tl.startTime = performance.now();
         this.sounds.play('projectile-002');
         this.sounds.play('whoosh-001');
-        tl.to(projectileGroup.position, speed, {
+        tl.to(laser.position, speed, {
             x: targetPos[0],
             y: targetPos[1],
             ease: Linear.easeNone,
             onUpdate: () => {
                 let hitter = this.sceneState.consequences.checkHitTime(name, this.sceneState.initTime.s);
                 if(hitter) {
-                    this.sceneState.consequences.doHitConsequence(name, hitter, scene);
+                    this.sceneState.consequences.doHitConsequence(name, scene, this.projectileAnims);
                     this.sceneState.particles -= particles;
                     this.hitObstacle(hitter.target, scene, name, camera, tileMap, hitter.hitPos, projectileLife);
                     tl.kill();
@@ -196,7 +226,7 @@ class Projectiles {
                 }
                 let timeNow = this.sceneState.initTime.s + performance.now() / 1000;
                 if(timeNow > projectileLife.route[projectileLife.route.length - 1].leaveTime + 0.5) {
-                    this.sceneState.consequences.removeProjectile(name, scene);
+                    this.sceneState.consequences.removeProjectile(name, scene, this.projectileAnims);
                     this.sceneState.particles -= particles;
                     tl.kill();
                 }
@@ -206,7 +236,7 @@ class Projectiles {
                 if(!projectileLife.noHit) {
                     this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
                 }
-                this.sceneState.consequences.removeProjectile(name, scene);
+                this.sceneState.consequences.removeProjectile(name, scene, this.projectileAnims);
                 // scene.remove(helperLine);
             }
         });
