@@ -223,7 +223,7 @@ class TileMapCamera {
                 y: this.clickStart.y,
             };
         }
-        if(!this.isClickStartTargetUi(this.clickStart)) {
+        if(!this.isClickStartTargetUi(this.clickStart) && !this.sceneState.ui.curSecondaryState) {
             this.isDragging = true;
         }
     }
