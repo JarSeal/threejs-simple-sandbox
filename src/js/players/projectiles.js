@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { calculateAngle } from '../util';
 import { TimelineMax, Linear, Bounce } from 'gsap-ssr';
@@ -7,7 +9,13 @@ class Projectiles {
     constructor(scene, sceneState, SoundController) {
         this.scene = scene;
         this.sceneState = sceneState;
+        this.shotHeight = 1.4;
+        this.vfxMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
         this.projectileAnims = {
+            count: 0,
+            fired: []
+        };
+        this.explosionsAnims = {
             count: 0,
             fired: []
         };
@@ -41,16 +49,149 @@ class Projectiles {
         };
         this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
 
+        this.createWallHitArea();
         this.createProjectile();
     }
 
+    createWallHitArea() {
+        let modelLoader = new GLTFLoader(),
+            dracoLoader = new DRACOLoader();
+        const spriteXlen = 0.03125, // 128px (128 / 4096)
+            spriteYlen = 0.03125, // 128px
+            startPosX = 0.78125, // frame 16 (128 * 16 / 4096)
+            startPosY = 1, // 0px (top)
+            totalFrames = 73;
+        dracoLoader.setDecoderPath('/js/draco/');
+        modelLoader.setDRACOLoader(dracoLoader);
+        modelLoader.load(
+            'images/objects/vfx/wall-hit.glb',
+            (gltf) => {
+                let object = gltf.scene.children[0];
+                console.log('WALL HIT LOADED', object, gltf);
+                const tempMat = new THREE.MeshBasicMaterial({
+                    map: this.vfxMap,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    depthWrite: false,
+                    depthTest: true,
+                });
+                const tempGeo = object.geometry;
+                let flareUvs = tempGeo.attributes.uv, i;
+                const attrLength = flareUvs.count;
+                for(i=0; i<attrLength; i++) {
+
+                    let u = flareUvs.getX(i),
+                        v = flareUvs.getY(i);
+
+                    u = u * ((startPosX + spriteXlen) - startPosX) + startPosX;
+                    v = v * (startPosY - (startPosY - spriteYlen)) + (startPosY - spriteYlen);
+
+                    flareUvs.setXY(i, u, v);
+                }
+                flareUvs.needsUpdate = true;
+                console.log('UV LENGTH', flareUvs.count, flareUvs);
+                // flareUvs.setXY(0, startPosX, 1);
+                // flareUvs.setXY(1, startPosX, 1);
+                // flareUvs.setXY(2, startPosX + spriteXlen, 1 - spriteYlen);
+                // flareUvs.setXY(3, startPosX + spriteXlen, 1 - spriteYlen);
+                // flareUvs.needsUpdate = true;
+                const tempMesh = new THREE.Mesh(tempGeo, tempMat);
+                tempMesh.position.set(31.3, 42, 1.4);
+                this.scene.add(tempMesh);
+                this.explosionsAnims.count++;
+                this.explosionsAnims.fired.push({
+                    id: 'some-id2',
+                    geo: tempGeo,
+                    phase: 2,
+                    frame: 1,
+                    row: 1,
+                    startPosX,
+                    startPosY,
+                    spriteXlen,
+                    spriteYlen,
+                    vStart: 1,
+                    vEnd: 1 - spriteYlen,
+                    lastUpdate: performance.now(),
+                    interval: 35,
+                    totalFrames,
+                    row: 1,
+
+                });
+
+                //this.sceneState.renderCalls.push(this.animateExplosions);
+            },
+            () => {},
+            (error) => {
+                console.log('Game engine error: A GLTF loading error happened for wall hit vfx model.', error);
+            }
+        );
+    }
+
+    animateExplosions = () => { // RUNS IN EVERY FRAME
+        let count = this.explosionsAnims.count;
+        //console.log('RUNNING');
+        if(!count) return;
+        let i = 0,
+            geo,
+            uvAttribute,
+            startPosX,
+            startPosY,
+            totalFrames,
+            spriteXlen,
+            spriteYlen,
+            vStart,
+            vEnd,
+            frame,
+            row,
+            newX,
+            newXPrev;
+        for(i=0; i<count; i++) {
+            if(performance.now() - this.explosionsAnims.fired[i].lastUpdate < this.explosionsAnims.fired[i].interval) break;
+            geo = this.explosionsAnims.fired[i].geo;
+            spriteXlen = this.explosionsAnims.fired[i].spriteXlen;
+            spriteYlen = this.explosionsAnims.fired[i].spriteYlen;
+            startPosX = this.explosionsAnims.fired[i].startPosX;
+            startPosY = this.explosionsAnims.fired[i].startPosY;
+            totalFrames = this.explosionsAnims.fired[i].totalFrames;
+            vStart = this.explosionsAnims.fired[i].vStart;
+            vEnd = this.explosionsAnims.fired[i].vEnd;
+            frame = this.explosionsAnims.fired[i].frame;
+            row = this.explosionsAnims.fired[i].row;
+            newX = spriteXlen * frame;
+            newXPrev = spriteXlen * (frame - 1);
+            uvAttribute = geo.attributes.uv;
+            let j;
+            const attrLength = uvAttribute.count;
+            for(j=0; j<attrLength; j++) {
+
+                let u = uvAttribute.getX(j),
+                    v = uvAttribute.getY(j);
+
+                u = u * ((startPosX + spriteXlen) - startPosX) + startPosX;
+                v = v * (startPosY - (startPosY - spriteYlen)) + (startPosY - spriteYlen);
+
+                uvAttribute.setXY(j, u, v);
+            }
+            uvAttribute.needsUpdate = true;
+            this.explosionsAnims.fired[i].lastUpdate = performance.now();
+            if(frame * row === totalFrames) {
+                this.explosionsAnims.fired[i].frame = 1;
+                this.explosionsAnims.fired[i].row = 1;
+            } else if(frame === 32 || frame === 64) {
+                this.explosionsAnims.fired[i].frame = 1;
+                //this.explosionsAnims.fired[i].row++;
+            } else {
+                this.explosionsAnims.fired[i].frame++;
+            }
+        }
+    }
+
     createProjectile() {
-        const spriteMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
-        const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.4, 1);
+        const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.4, this.shotHeight);
         const planeGeo2 = planeGeo.clone();
         const planeGeo3 = planeGeo.clone();
         const redMat = new THREE.MeshBasicMaterial({
-            map: spriteMap,
+            map: this.vfxMap,
             side: THREE.DoubleSide,
             transparent: true,
             depthWrite: false,
@@ -95,7 +236,7 @@ class Projectiles {
         this.laserObjects['red'] = redLaser;
         redLaser.position.x = 35;
         redLaser.position.y = 41;
-        redLaser.position.z = 1;
+        redLaser.position.z = this.shotHeight;
         this.scene.add(redLaser);
         this.projectileAnims.count++;
         this.projectileAnims.fired.push({
@@ -192,7 +333,11 @@ class Projectiles {
         const laser = this.laserObjects.red.clone();
         laser.name = name;
         laser.rotation.z = angle;
-        laser.position.set(from[0], from[1], 1);
+        laser.position.set(
+            from[0],
+            from[1],
+            this.shotHeight
+        );
         scene.add(laser);
         this.projectileAnims.count++;
         this.projectileAnims.fired.push({
@@ -807,7 +952,11 @@ class Projectiles {
             targetPositions = [],
             i = 0;
         for(i=0; i<floorParticles; i++) {
-            vertices.push(posWOffset[0], posWOffset[1], 1);
+            vertices.push(
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            );
             targetPositions.push([
                 posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
                 posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
@@ -944,7 +1093,11 @@ class Projectiles {
         mesh.position.x = offset[0];
         mesh.position.y = offset[1];
         group.add(mesh);
-        group.position.set(posWOffset[0], posWOffset[1], 1);
+        group.position.set(
+            posWOffset[0],
+            posWOffset[1],
+            this.shotHeight
+        );
         group.rotation.z = projectileLife.turn;
         scene.add(group);
         let tl = new TimelineMax();
