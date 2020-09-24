@@ -47,9 +47,10 @@ class Projectiles {
         this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
 
         // this.createWallHitArea();
-        this.createHitBlast();
+        // this.createHitBlast();
         // this.createProjectile();
         VisualEffects.createProjectile();
+        VisualEffects.createHitBlast();
     }
 
     createHitBlast() {
@@ -131,298 +132,6 @@ class Projectiles {
         // this.sceneState.renderCalls.push(this.animateHitBlasts);
     }
 
-    animateHitBlasts = () => { // RUNS IN EVERY FRAME
-        let count = this.projectileAnims.count;
-        if(!count) return;
-        let i = 0,
-            geo,
-            uvAttribute,
-            spriteXlen,
-            vStart,
-            vEnd,
-            frame,
-            newX,
-            newXPrev;
-        // for(i=0; i<count; i++) {
-        //     if(performance.now() - this.projectileAnims.fired[i].lastUpdate < this.projectileAnims.fired[i].interval) break;
-        //     geo = this.projectileAnims.fired[i].geo;
-        //     spriteXlen = this.projectileAnims.fired[i].spriteXlen;
-        //     vStart = this.projectileAnims.fired[i].vStart;
-        //     vEnd = this.projectileAnims.fired[i].vEnd;
-        //     frame = this.projectileAnims.fired[i].frame;
-        //     newX = spriteXlen * frame;
-        //     newXPrev = spriteXlen * (frame - 1);
-        //     uvAttribute = geo.attributes.uv;
-        //     uvAttribute.setXY(0, newXPrev, vStart);
-        //     uvAttribute.setXY(1, newX, vStart);
-        //     uvAttribute.setXY(2, newXPrev, vEnd);
-        //     uvAttribute.setXY(3, newX, vEnd);
-        //     uvAttribute.needsUpdate = true;
-        //     this.projectileAnims.fired[i].lastUpdate = performance.now();
-        //     if(frame === 15) {
-        //         this.projectileAnims.fired[i].frame = 1;
-        //     } else {
-        //         this.projectileAnims.fired[i].frame++;
-        //     }
-        // }
-    }
-
-    createWallHitArea() {
-        let modelLoader = new GLTFLoader(),
-            dracoLoader = new DRACOLoader();
-        const spriteXlen = 0.03125, // 128px (128 / 4096)
-            spriteYlen = 0.03125, // 128px
-            startPosX = 0.78125, // frame 16 (128 * 16 / 4096)
-            startPosY = 1, // 0px (top)
-            totalFrames = 73,
-            startU = [],
-            startV = [];
-        dracoLoader.setDecoderPath('/js/draco/');
-        modelLoader.setDRACOLoader(dracoLoader);
-        modelLoader.load(
-            'images/objects/vfx/wall-hit.glb',
-            (gltf) => {
-                let object = gltf.scene.children[0];
-                console.log('WALL HIT LOADED', object, gltf);
-                const tempMat = new THREE.MeshBasicMaterial({
-                    map: this.vfxMap,
-                    side: THREE.DoubleSide,
-                    transparent: true,
-                    depthWrite: false,
-                    depthTest: true,
-                });
-                const tempGeo = object.geometry;
-                let flareUvs = tempGeo.attributes.uv, i;
-                const attrLength = flareUvs.count;
-                for(i=0; i<attrLength; i++) {
-
-                    let u = flareUvs.getX(i),
-                        v = flareUvs.getY(i);
-                    
-
-                    startU.push(u);
-                    startV.push(v);
-
-                    u = u * ((startPosX + spriteXlen) - startPosX) + startPosX;
-                    v = v * (startPosY - (startPosY - spriteYlen)) + (startPosY - spriteYlen);
-
-                    // flareUvs.setXY(i, u, v);
-                }
-                flareUvs.needsUpdate = true;
-                console.log('UV LENGTH', flareUvs.count, flareUvs);
-                const tempMesh = new THREE.Mesh(tempGeo, tempMat);
-                tempMesh.position.set(31.3, 42, 1.4);
-                this.scene.add(tempMesh);
-                this.explosionsAnims.count++;
-                this.explosionsAnims.fired.push({
-                    id: 'some-id2',
-                    geo: tempGeo,
-                    phase: 2,
-                    frame: 1,
-                    row: 1,
-                    startPosX,
-                    startPosY,
-                    spriteXlen,
-                    spriteYlen,
-                    startU,
-                    startV,
-                    vStart: 1,
-                    vEnd: 1 - spriteYlen,
-                    lastUpdate: performance.now(),
-                    interval: 35,
-                    totalFrames,
-                    row: 1,
-
-                });
-
-                this.sceneState.renderCalls.push(this.animateExplosions);
-            },
-            () => {},
-            (error) => {
-                console.log('Game engine error: A GLTF loading error happened for wall hit vfx model.', error);
-            }
-        );
-    }
-
-    animateExplosions = () => { // RUNS IN EVERY FRAME
-        let count = this.explosionsAnims.count;
-        if(!count) return;
-        let i = 0,
-            geo,
-            uvAttribute,
-            startPosX,
-            startPosY,
-            totalFrames,
-            spriteXlen,
-            spriteYlen,
-            startU,
-            startV,
-            vStart,
-            vEnd,
-            frame,
-            row,
-            newX,
-            newXPrev;
-        for(i=0; i<count; i++) {
-            if(performance.now() - this.explosionsAnims.fired[i].lastUpdate < this.explosionsAnims.fired[i].interval) break;
-            geo = this.explosionsAnims.fired[i].geo;
-            spriteXlen = this.explosionsAnims.fired[i].spriteXlen;
-            spriteYlen = this.explosionsAnims.fired[i].spriteYlen;
-            startPosX = this.explosionsAnims.fired[i].startPosX;
-            startPosY = this.explosionsAnims.fired[i].startPosY;
-            startU = this.explosionsAnims.fired[i].startU;
-            startV = this.explosionsAnims.fired[i].startV;
-            totalFrames = this.explosionsAnims.fired[i].totalFrames;
-            vStart = this.explosionsAnims.fired[i].vStart;
-            vEnd = this.explosionsAnims.fired[i].vEnd;
-            frame = this.explosionsAnims.fired[i].frame;
-            row = this.explosionsAnims.fired[i].row;
-            newX = spriteXlen * frame;
-            newXPrev = spriteXlen * (frame - 1);
-            uvAttribute = geo.attributes.uv;
-            let j;
-            const attrLength = uvAttribute.count;
-            startPosX = 0;
-            row = 2;
-            for(j=0; j<attrLength; j++) {
-
-                let u = uvAttribute.getX(j),
-                    v = uvAttribute.getY(j);
-
-                u = startU[j] * ((startPosX + spriteXlen) - startPosX) + startPosX;
-                v = startV[j] * (startPosY - (startPosY - spriteYlen * row)) + (startPosY - spriteYlen * row);
-
-                uvAttribute.setXY(j, u, v);
-            }
-            uvAttribute.needsUpdate = true;
-            this.explosionsAnims.fired[i].lastUpdate = performance.now();
-            if((row === 1 && frame < 16) || (row === 2 && frame < 32) || (row === 3 && frame < 25)) {
-                this.explosionsAnims.fired[i].frame++;
-            } else if(row !== 3) {
-                this.explosionsAnims.fired[i].frame = 1;
-                this.explosionsAnims.fired[i].row++;
-                this.explosionsAnims.fired[i].startPosX = 0;
-            } else {
-                this.explosionsAnims.fired[i].frame = 1;
-                this.explosionsAnims.fired[i].row = 1;
-                this.explosionsAnims.fired[i].startPosX = 0.5;
-            }
-            // if(frame * row === totalFrames) {
-            //     this.explosionsAnims.fired[i].frame = 1;
-            //     this.explosionsAnims.fired[i].row = 1;
-            // } else if(frame === 32 || frame === 64) {
-            //     this.explosionsAnims.fired[i].frame = 1;
-            //     //this.explosionsAnims.fired[i].row++;
-            // } else {
-            //     this.explosionsAnims.fired[i].frame++;
-            // }
-        }
-    }
-
-    createProjectile() {
-        const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.4, 1);
-        const planeGeo2 = planeGeo.clone();
-        const planeGeo3 = planeGeo.clone();
-        const redMat = new THREE.MeshBasicMaterial({
-            map: this.vfxMap,
-            side: THREE.DoubleSide,
-            transparent: true,
-            depthWrite: false,
-            depthTest: true
-        });
-        const geometries = [];
-        // redMat.color.setHSL(0.0035, 1, 0.5);
-        // redMat.color.multiply(new THREE.Color(1.7, 0, 0));
-        const spriteXlen = this.laserObjects.spriteXlen;
-        const spriteYlen = this.laserObjects.spriteYlen;
-        const plane = new THREE.Mesh(planeGeo, redMat);
-        plane.rotation.z = -1.5708;
-        plane.updateMatrix();
-        plane.geometry.applyMatrix4(plane.matrix);
-        const plane2 = new THREE.Mesh(planeGeo2, redMat);
-        plane2.rotation.z = -1.5708;
-        plane2.rotation.x = 1.5708;
-        plane2.updateMatrix();
-        plane2.geometry.applyMatrix4(plane2.matrix);
-
-        // Flare
-        let flareUvs = planeGeo3.attributes.uv;
-        flareUvs.setXY(0, spriteXlen * 15, 1);
-        flareUvs.setXY(1, spriteXlen * 16, 1);
-        flareUvs.setXY(2, spriteXlen * 15, 1 - spriteYlen);
-        flareUvs.setXY(3, spriteXlen * 16, 1 - spriteYlen);
-        flareUvs.needsUpdate = true;
-        const flare = new THREE.Mesh(planeGeo3, redMat);
-        flare.position.z = -0.8;
-        flare.scale.x = 2;
-        flare.scale.y = 1.5;
-        flare.rotation.z = -1.5708;
-        flare.updateMatrix();
-        flare.geometry.applyMatrix4(flare.matrix);
-
-        // Merge into one mesh
-        geometries.push(plane.geometry);
-        geometries.push(plane2.geometry);
-        geometries.push(flare.geometry);
-        const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
-        const redLaser = new THREE.Mesh(mergedGeo, redMat);
-        this.laserObjects['red'] = redLaser;
-        redLaser.position.x = 35;
-        redLaser.position.y = 41;
-        redLaser.position.z = this.shotHeight;
-        this.scene.add(redLaser);
-        this.projectileAnims.count++;
-        this.projectileAnims.fired.push({
-            id: 'some-id',
-            geo: mergedGeo,
-            phase: 2,
-            frame: 1,
-            spriteXlen,
-            vStart: 1,
-            vEnd: 1 - spriteYlen,
-            lastUpdate: performance.now(),
-            interval: 35,
-        });
-
-        this.sceneState.renderCalls.push(this.animateProjectile);
-    }
-
-    animateProjectile = () => { // RUNS IN EVERY FRAME
-        let count = this.projectileAnims.count;
-        if(!count) return;
-        let i = 0,
-            geo,
-            uvAttribute,
-            spriteXlen,
-            vStart,
-            vEnd,
-            frame,
-            newX,
-            newXPrev;
-        for(i=0; i<count; i++) {
-            if(performance.now() - this.projectileAnims.fired[i].lastUpdate < this.projectileAnims.fired[i].interval) break;
-            geo = this.projectileAnims.fired[i].geo;
-            spriteXlen = this.projectileAnims.fired[i].spriteXlen;
-            vStart = this.projectileAnims.fired[i].vStart;
-            vEnd = this.projectileAnims.fired[i].vEnd;
-            frame = this.projectileAnims.fired[i].frame;
-            newX = spriteXlen * frame;
-            newXPrev = spriteXlen * (frame - 1);
-            uvAttribute = geo.attributes.uv;
-            uvAttribute.setXY(0, newXPrev, vStart);
-            uvAttribute.setXY(1, newX, vStart);
-            uvAttribute.setXY(2, newXPrev, vEnd);
-            uvAttribute.setXY(3, newX, vEnd);
-            uvAttribute.needsUpdate = true;
-            this.projectileAnims.fired[i].lastUpdate = performance.now();
-            if(frame === 15) {
-                this.projectileAnims.fired[i].frame = 1;
-            } else {
-                this.projectileAnims.fired[i].frame++;
-            }
-        }
-    }
-
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
         
         // AppUiLayer.logMessage(
@@ -476,18 +185,6 @@ class Projectiles {
             id: name,
             meshName: 'redBlaster',
         });
-        // this.projectileAnims.count++;
-        // this.projectileAnims.fired.push({
-        //     id: name,
-        //     geo: laser.geometry,
-        //     phase: 2,
-        //     frame: 1,
-        //     spriteXlen: this.laserObjects.spriteXlen,
-        //     vStart: 1,
-        //     vEnd: 1 - this.laserObjects.spriteYlen,
-        //     lastUpdate: performance.now(),
-        //     interval: 35,
-        // });
 
         this.sceneState.particles += particles;
         let tl = new TimelineMax();
@@ -935,7 +632,7 @@ class Projectiles {
             maxFloorParticles = 36,
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
         if(type == 'solid') {
-            this.createWallBurn(projectileLife, posWOffset, scene, camera);
+            // this.createWallBurn(projectileLife, posWOffset, scene, camera);
             this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             this.sounds.play('ricochet-001');
         } else if(type == 'player' || type == 'door') {
@@ -1088,6 +785,27 @@ class Projectiles {
             vertices = [],
             targetPositions = [],
             i = 0;
+        
+        // Hit blast
+        const blast = this.VisualEffects.getEffectMesh('hitBlast', true),
+            randomTwist = parseFloat((Math.random() * 3.1416).toFixed(4));
+        blast.rotation.set(randomTwist, randomTwist, randomTwist);
+        blast.name = name;
+        blast.position.set(
+            posWOffset[0],
+            posWOffset[1],
+            this.shotHeight
+        );
+        scene.add(blast);
+        this.VisualEffects.startAnim({
+            id: 'hit-blast-' + performance.now(),
+            meshName: 'hitBlast',
+            clone: true,
+            geo: blast.geometry,
+            onComplete: () => scene.remove(blast),
+        });
+
+        // Particles
         for(i=0; i<floorParticles; i++) {
             vertices.push(
                 posWOffset[0],
