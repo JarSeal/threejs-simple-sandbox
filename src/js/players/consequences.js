@@ -249,10 +249,10 @@ class Consequences {
         }
     }
 
-    doHitConsequence(id, scene, animations) {
+    doHitConsequence(id, scene, removeAnim) {
         // TODO: Do the damage for the player here...
         this.removeFromHitList(id);
-        this.removeProjectile(id, scene, animations);
+        this.removeProjectile(id, scene, removeAnim);
     }
 
     checkHitTime(id, initTime) {
@@ -285,7 +285,7 @@ class Consequences {
         return this.hitList[id];
     }
 
-    removeProjectile(id, scene, animations) {
+    removeProjectile(id, scene, removeAnim) {
         let i=0,
             projIndex;
         const projLength = this.projectiles.length,
@@ -299,21 +299,7 @@ class Consequences {
         if(projIndex !== undefined) {
             this.projectiles.splice(projIndex, 1);
         }
-        if(animations) {
-            const count = animations.count,
-                fired = animations.fired;
-            projIndex = undefined;
-            for(i=0; i<count; i++) {
-                if(fired[i].id == id) {
-                    projIndex = i;
-                    break;
-                }
-            }
-            if(projIndex !== undefined) {
-                animations.fired.splice(projIndex, 1);
-                animations.count--;
-            }
-        }
+        if(removeAnim) removeAnim(id);
         if(scene.remove && scene.getObjectByName) {
             scene.remove(scene.getObjectByName(id));
         }

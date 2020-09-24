@@ -6,16 +6,13 @@ import { calculateAngle } from '../util';
 import { TimelineMax, Linear, Bounce } from 'gsap-ssr';
 
 class Projectiles {
-    constructor(scene, sceneState, SoundController) {
+    constructor(scene, sceneState, SoundController, VisualEffects) {
         this.scene = scene;
         this.sceneState = sceneState;
+        this.VisualEffects = VisualEffects;
         this.shotHeight = 1.4;
         this.vfxMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
         this.projectileAnims = {
-            count: 0,
-            fired: []
-        };
-        this.explosionsAnims = {
             count: 0,
             fired: []
         };
@@ -49,8 +46,125 @@ class Projectiles {
         };
         this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
 
-        this.createWallHitArea();
-        this.createProjectile();
+        // this.createWallHitArea();
+        this.createHitBlast();
+        // this.createProjectile();
+        VisualEffects.createProjectile();
+    }
+
+    createHitBlast() {
+        const planeGeo = new THREE.PlaneBufferGeometry(1.5, 1.5, 1);
+        const planeGeo2 = planeGeo.clone();
+        const planeGeo3 = planeGeo.clone();
+        const vfxMat = new THREE.MeshBasicMaterial({
+            map: this.vfxMap,
+            side: THREE.DoubleSide,
+            transparent: true,
+            depthWrite: false,
+            depthTest: true,
+        });
+        const geometries = [];
+        const spriteXlen = 128 / 4096;
+        const spriteYlen = 128 / 4096;
+        const redMat = new THREE.MeshBasicMaterial({
+            side: THREE.DoubleSide,
+            transparent: true,
+            depthWrite: false,
+            depthTest: true,
+            color: 0xff0000,
+        });
+        const plane = new THREE.Mesh(planeGeo, vfxMat);
+        const plane2 = new THREE.Mesh(planeGeo2, vfxMat);
+        plane2.rotation.x = 1.5708;
+        plane2.updateMatrix();
+        plane2.geometry.applyMatrix4(plane2.matrix);
+        const plane3 = new THREE.Mesh(planeGeo3, vfxMat);
+        plane3.rotation.y = 1.5708;
+        plane3.updateMatrix();
+        plane3.geometry.applyMatrix4(plane3.matrix);
+
+        const frame = 21;
+
+        const uvs = plane.geometry.attributes.uv,
+            uvs2 = plane2.geometry.attributes.uv,
+            uvs3 = plane3.geometry.attributes.uv;
+        uvs.setXY(0, spriteXlen * frame, 1);
+        uvs.setXY(1, spriteXlen * (frame+1), 1);
+        uvs.setXY(2, spriteXlen * frame, 1 - spriteYlen);
+        uvs.setXY(3, spriteXlen * (frame+1), 1 - spriteYlen);
+        uvs2.setXY(0, spriteXlen * frame, 1);
+        uvs2.setXY(1, spriteXlen * (frame+1), 1);
+        uvs2.setXY(2, spriteXlen * frame, 1 - spriteYlen);
+        uvs2.setXY(3, spriteXlen * (frame+1), 1 - spriteYlen);
+        uvs3.setXY(0, spriteXlen * frame, 1);
+        uvs3.setXY(1, spriteXlen * (frame+1), 1);
+        uvs3.setXY(2, spriteXlen * frame, 1 - spriteYlen);
+        uvs3.setXY(3, spriteXlen * (frame+1), 1 - spriteYlen);
+        uvs.needsUpdate = true;
+        uvs2.needsUpdate = true;
+        uvs3.needsUpdate = true;
+
+        // Merge into one mesh
+        geometries.push(plane.geometry);
+        geometries.push(plane2.geometry);
+        geometries.push(plane3.geometry);
+        const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, false);
+        const redLaser = new THREE.Mesh(mergedGeo, vfxMat);
+        this.laserObjects['blue'] = redLaser;
+        redLaser.position.x = 31.3;
+        redLaser.position.y = 41;
+        redLaser.position.z = this.shotHeight;
+        this.scene.add(redLaser);
+        // this.projectileAnims.count++;
+        // this.projectileAnims.fired.push({
+        //     id: 'some-id',
+        //     geo: mergedGeo,
+        //     phase: 2,
+        //     frame: 1,
+        //     spriteXlen,
+        //     vStart: 1,
+        //     vEnd: 1 - spriteYlen,
+        //     lastUpdate: performance.now(),
+        //     interval: 35,
+        // });
+
+        // this.sceneState.renderCalls.push(this.animateHitBlasts);
+    }
+
+    animateHitBlasts = () => { // RUNS IN EVERY FRAME
+        let count = this.projectileAnims.count;
+        if(!count) return;
+        let i = 0,
+            geo,
+            uvAttribute,
+            spriteXlen,
+            vStart,
+            vEnd,
+            frame,
+            newX,
+            newXPrev;
+        // for(i=0; i<count; i++) {
+        //     if(performance.now() - this.projectileAnims.fired[i].lastUpdate < this.projectileAnims.fired[i].interval) break;
+        //     geo = this.projectileAnims.fired[i].geo;
+        //     spriteXlen = this.projectileAnims.fired[i].spriteXlen;
+        //     vStart = this.projectileAnims.fired[i].vStart;
+        //     vEnd = this.projectileAnims.fired[i].vEnd;
+        //     frame = this.projectileAnims.fired[i].frame;
+        //     newX = spriteXlen * frame;
+        //     newXPrev = spriteXlen * (frame - 1);
+        //     uvAttribute = geo.attributes.uv;
+        //     uvAttribute.setXY(0, newXPrev, vStart);
+        //     uvAttribute.setXY(1, newX, vStart);
+        //     uvAttribute.setXY(2, newXPrev, vEnd);
+        //     uvAttribute.setXY(3, newX, vEnd);
+        //     uvAttribute.needsUpdate = true;
+        //     this.projectileAnims.fired[i].lastUpdate = performance.now();
+        //     if(frame === 15) {
+        //         this.projectileAnims.fired[i].frame = 1;
+        //     } else {
+        //         this.projectileAnims.fired[i].frame++;
+        //     }
+        // }
     }
 
     createWallHitArea() {
@@ -60,7 +174,9 @@ class Projectiles {
             spriteYlen = 0.03125, // 128px
             startPosX = 0.78125, // frame 16 (128 * 16 / 4096)
             startPosY = 1, // 0px (top)
-            totalFrames = 73;
+            totalFrames = 73,
+            startU = [],
+            startV = [];
         dracoLoader.setDecoderPath('/js/draco/');
         modelLoader.setDRACOLoader(dracoLoader);
         modelLoader.load(
@@ -82,19 +198,18 @@ class Projectiles {
 
                     let u = flareUvs.getX(i),
                         v = flareUvs.getY(i);
+                    
+
+                    startU.push(u);
+                    startV.push(v);
 
                     u = u * ((startPosX + spriteXlen) - startPosX) + startPosX;
                     v = v * (startPosY - (startPosY - spriteYlen)) + (startPosY - spriteYlen);
 
-                    flareUvs.setXY(i, u, v);
+                    // flareUvs.setXY(i, u, v);
                 }
                 flareUvs.needsUpdate = true;
                 console.log('UV LENGTH', flareUvs.count, flareUvs);
-                // flareUvs.setXY(0, startPosX, 1);
-                // flareUvs.setXY(1, startPosX, 1);
-                // flareUvs.setXY(2, startPosX + spriteXlen, 1 - spriteYlen);
-                // flareUvs.setXY(3, startPosX + spriteXlen, 1 - spriteYlen);
-                // flareUvs.needsUpdate = true;
                 const tempMesh = new THREE.Mesh(tempGeo, tempMat);
                 tempMesh.position.set(31.3, 42, 1.4);
                 this.scene.add(tempMesh);
@@ -109,6 +224,8 @@ class Projectiles {
                     startPosY,
                     spriteXlen,
                     spriteYlen,
+                    startU,
+                    startV,
                     vStart: 1,
                     vEnd: 1 - spriteYlen,
                     lastUpdate: performance.now(),
@@ -118,7 +235,7 @@ class Projectiles {
 
                 });
 
-                //this.sceneState.renderCalls.push(this.animateExplosions);
+                this.sceneState.renderCalls.push(this.animateExplosions);
             },
             () => {},
             (error) => {
@@ -129,7 +246,6 @@ class Projectiles {
 
     animateExplosions = () => { // RUNS IN EVERY FRAME
         let count = this.explosionsAnims.count;
-        //console.log('RUNNING');
         if(!count) return;
         let i = 0,
             geo,
@@ -139,6 +255,8 @@ class Projectiles {
             totalFrames,
             spriteXlen,
             spriteYlen,
+            startU,
+            startV,
             vStart,
             vEnd,
             frame,
@@ -152,6 +270,8 @@ class Projectiles {
             spriteYlen = this.explosionsAnims.fired[i].spriteYlen;
             startPosX = this.explosionsAnims.fired[i].startPosX;
             startPosY = this.explosionsAnims.fired[i].startPosY;
+            startU = this.explosionsAnims.fired[i].startU;
+            startV = this.explosionsAnims.fired[i].startV;
             totalFrames = this.explosionsAnims.fired[i].totalFrames;
             vStart = this.explosionsAnims.fired[i].vStart;
             vEnd = this.explosionsAnims.fired[i].vEnd;
@@ -162,32 +282,45 @@ class Projectiles {
             uvAttribute = geo.attributes.uv;
             let j;
             const attrLength = uvAttribute.count;
+            startPosX = 0;
+            row = 2;
             for(j=0; j<attrLength; j++) {
 
                 let u = uvAttribute.getX(j),
                     v = uvAttribute.getY(j);
 
-                u = u * ((startPosX + spriteXlen) - startPosX) + startPosX;
-                v = v * (startPosY - (startPosY - spriteYlen)) + (startPosY - spriteYlen);
+                u = startU[j] * ((startPosX + spriteXlen) - startPosX) + startPosX;
+                v = startV[j] * (startPosY - (startPosY - spriteYlen * row)) + (startPosY - spriteYlen * row);
 
                 uvAttribute.setXY(j, u, v);
             }
             uvAttribute.needsUpdate = true;
             this.explosionsAnims.fired[i].lastUpdate = performance.now();
-            if(frame * row === totalFrames) {
+            if((row === 1 && frame < 16) || (row === 2 && frame < 32) || (row === 3 && frame < 25)) {
+                this.explosionsAnims.fired[i].frame++;
+            } else if(row !== 3) {
+                this.explosionsAnims.fired[i].frame = 1;
+                this.explosionsAnims.fired[i].row++;
+                this.explosionsAnims.fired[i].startPosX = 0;
+            } else {
                 this.explosionsAnims.fired[i].frame = 1;
                 this.explosionsAnims.fired[i].row = 1;
-            } else if(frame === 32 || frame === 64) {
-                this.explosionsAnims.fired[i].frame = 1;
-                //this.explosionsAnims.fired[i].row++;
-            } else {
-                this.explosionsAnims.fired[i].frame++;
+                this.explosionsAnims.fired[i].startPosX = 0.5;
             }
+            // if(frame * row === totalFrames) {
+            //     this.explosionsAnims.fired[i].frame = 1;
+            //     this.explosionsAnims.fired[i].row = 1;
+            // } else if(frame === 32 || frame === 64) {
+            //     this.explosionsAnims.fired[i].frame = 1;
+            //     //this.explosionsAnims.fired[i].row++;
+            // } else {
+            //     this.explosionsAnims.fired[i].frame++;
+            // }
         }
     }
 
     createProjectile() {
-        const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.4, this.shotHeight);
+        const planeGeo = new THREE.PlaneBufferGeometry(1.2, 0.4, 1);
         const planeGeo2 = planeGeo.clone();
         const planeGeo3 = planeGeo.clone();
         const redMat = new THREE.MeshBasicMaterial({
@@ -330,7 +463,7 @@ class Projectiles {
         this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route);
         let particles = 0;
 
-        const laser = this.laserObjects.red.clone();
+        const laser = this.VisualEffects.getEffectMesh('redBlaster');
         laser.name = name;
         laser.rotation.z = angle;
         laser.position.set(
@@ -339,18 +472,22 @@ class Projectiles {
             this.shotHeight
         );
         scene.add(laser);
-        this.projectileAnims.count++;
-        this.projectileAnims.fired.push({
+        this.VisualEffects.startAnim({
             id: name,
-            geo: laser.geometry,
-            phase: 2,
-            frame: 1,
-            spriteXlen: this.laserObjects.spriteXlen,
-            vStart: 1,
-            vEnd: 1 - this.laserObjects.spriteYlen,
-            lastUpdate: performance.now(),
-            interval: 35,
+            meshName: 'redBlaster',
         });
+        // this.projectileAnims.count++;
+        // this.projectileAnims.fired.push({
+        //     id: name,
+        //     geo: laser.geometry,
+        //     phase: 2,
+        //     frame: 1,
+        //     spriteXlen: this.laserObjects.spriteXlen,
+        //     vStart: 1,
+        //     vEnd: 1 - this.laserObjects.spriteYlen,
+        //     lastUpdate: performance.now(),
+        //     interval: 35,
+        // });
 
         this.sceneState.particles += particles;
         let tl = new TimelineMax();
@@ -364,7 +501,7 @@ class Projectiles {
             onUpdate: () => {
                 let hitter = this.sceneState.consequences.checkHitTime(name, this.sceneState.initTime.s);
                 if(hitter) {
-                    this.sceneState.consequences.doHitConsequence(name, scene, this.projectileAnims);
+                    this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
                     this.sceneState.particles -= particles;
                     this.hitObstacle(hitter.target, scene, name, camera, tileMap, hitter.hitPos, projectileLife);
                     tl.kill();
@@ -372,7 +509,7 @@ class Projectiles {
                 }
                 let timeNow = this.sceneState.initTime.s + performance.now() / 1000;
                 if(timeNow > projectileLife.route[projectileLife.route.length - 1].leaveTime + 0.5) {
-                    this.sceneState.consequences.removeProjectile(name, scene, this.projectileAnims);
+                    this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
                     this.sceneState.particles -= particles;
                     tl.kill();
                 }
@@ -382,7 +519,7 @@ class Projectiles {
                 if(!projectileLife.noHit) {
                     this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
                 }
-                this.sceneState.consequences.removeProjectile(name, scene, this.projectileAnims);
+                this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
                 // scene.remove(helperLine);
             }
         });
