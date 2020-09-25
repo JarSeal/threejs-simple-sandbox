@@ -45,6 +45,7 @@ class Projectiles {
 
         VisualEffects.createEffect('projectile', 'redBlast');
         VisualEffects.createEffect('hitBlast', 'basic');
+        VisualEffects.createEffect('sparks', 'wallHit');
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
@@ -704,8 +705,8 @@ class Projectiles {
         
         // Hit blast
         const blast = this.VisualEffects.getEffectMesh('hitBlast_basic', true),
-            randomTwist = Math.random() * 3.1416,
-            randomSize = Math.random() * (0.8 - 0.25) + 0.25;
+            randomTwist = Math.random() * 3.1416;
+        let randomSize = Math.random() * (0.8 - 0.25) + 0.25;
         if(blast) {
             blast.rotation.set(randomTwist, randomTwist, randomTwist);
             blast.name = name;
@@ -722,6 +723,26 @@ class Projectiles {
                 meshName: 'hitBlast_basic',
                 geo: blast.geometry,
                 onComplete: () => scene.remove(blast),
+            });
+        }
+
+        // FX Sparks
+        const sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', true);
+        randomSize = Math.random() * (1 - 0.25) + 0.25;
+        if(sparks) {
+            sparksFx.rotation.z = randomTwist;
+            sparksFx.scale.set(randomSize, randomSize, randomSize);
+            sparksFx.position.set(
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            );
+            scene.add(sparksFx);
+            this.VisualEffects.startAnim({
+                id: 'sparks-fx-' + performance.now(),
+                meshName: 'sparks_wallHit',
+                geo: sparksFx.geometry,
+                onComplete: () => scene.remove(sparksFx),
             });
         }
 

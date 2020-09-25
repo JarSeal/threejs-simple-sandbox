@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import hitBlastFx from './combat/hit-blast-fx.js';
 import projectileFx from './combat/projectile-fx.js';
+import sparksFx from './combat/sparks-fx.js';
 
 class VisualEffects {
     constructor(scene, sceneState) {
@@ -124,11 +125,14 @@ class VisualEffects {
 
     createEffect = (effectName, type) => {
         switch(effectName) {
-        case "hitBlast":
+        case 'hitBlast':
             hitBlastFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData);
             break;
-        case "projectile":
+        case 'projectile':
             projectileFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData);
+            break;
+        case 'sparks':
+            sparksFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData);
             break;
         default: console.error('Game engine error: could not create effect with name "' + effectName + '" and type "' + type + '".');
         }
