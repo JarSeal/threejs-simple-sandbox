@@ -3,6 +3,7 @@ import TileMapCamera from './../tilemap-camera.js';
 import LoadTileMap from './../tilemap/load-map.js';
 import PlayerController from './../players/player-controller.js';
 import DoorAnimationController from './../players/door-animation-controller.js';
+import VisualEffects from './../vfx/VisualEffects.js';
 
 class CombatScene {
     constructor() {
@@ -14,6 +15,7 @@ class CombatScene {
         this.playerController;
         this.lastCheckInterval = 2000; // in milliseconds
         this.lastConsequenceCheck = performance.now();
+        this.VisualEffects;
     }
 
     initView(renderer, sceneState, AppUiLayer, SoundController) {
@@ -24,8 +26,10 @@ class CombatScene {
         this.scene.add(hemi);
         this.scene.add(new THREE.AmbientLight(0xf0f0f0, 0.5));
 
+        this.VisualEffects = new VisualEffects(this.scene, this.sceneState);
+
         let doorAnimationController = new DoorAnimationController(this.scene, sceneState, SoundController);
-        this.playerController = new PlayerController(this.scene, sceneState, doorAnimationController, SoundController);
+        this.playerController = new PlayerController(this.scene, sceneState, doorAnimationController, SoundController, this.VisualEffects);
 
         this.tileMapCamera = new TileMapCamera(this.scene, renderer, sceneState, AppUiLayer, this.playerController);
         this.camera = this.tileMapCamera.getCamera();
@@ -34,6 +38,7 @@ class CombatScene {
         this.tileMapCamera.centerCamera(this.sceneState.players.hero.pos);
 
         this.tileMapController = new LoadTileMap(this.scene, renderer, sceneState);
+        this.VisualEffects.cacheEffects();
 
         return this.scene;
     }

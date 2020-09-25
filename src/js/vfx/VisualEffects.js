@@ -1,12 +1,19 @@
 import * as THREE from 'three';
-import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import hitBlastFx from './combat/hit-blast-fx.js';
 import projectileFx from './combat/projectile-fx.js';
 
 class VisualEffects {
     constructor(scene, sceneState) {
         this.scene = scene;
+        this.sceneState = sceneState;
         this.vfxMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
+        this.vfxMaterial = new THREE.MeshBasicMaterial({
+            map: this.vfxMap,
+            side: THREE.DoubleSide,
+            transparent: true,
+            depthWrite: false,
+            depthTest: true,
+        });
         this.anims = {
             count: 0,
             fired: [],
@@ -84,7 +91,6 @@ class VisualEffects {
             }
             uvAttribute.needsUpdate = true;
             this.anims.fired[i].lastUpdate = performance.now();
-            // if(fired.id == 'some-id2') console.log('FRAME', fired.frame);
             if(fired.frame === fired.totalFrames) {
                 if(!fired.loop) endAnims.push(fired);
                 this.anims.fired[i].frame = 1;
@@ -97,20 +103,36 @@ class VisualEffects {
             const end = endAnims[i];
             if(end.clone) end.geo.dispose();
             if(end.onComplete) end.onComplete();
-            this.removeAnim();
+            this.removeAnim(end.id);
         }
+    }
+
+    cacheEffects() {
+        for (const property in this.effectMeshes) {
+            this.cacheEffect(property);
+        }
+    }
+
+    cacheEffect(meshId) {
+        if(!this.sceneState.players.hero || !this.sceneState.players.hero.pos) return;
+        const tempMesh = this.getEffectMesh(meshId),
+            heroPos = this.sceneState.players.hero.pos;
+        tempMesh.position.set(heroPos[0], heroPos[1], -8);
+        this.scene.add(tempMesh);
+        setTimeout(() => this.scene.remove(tempMesh), 1000); // This is currently pretty dirty, but works.
     }
 
     createEffect = (effectName, type) => {
         switch(effectName) {
         case "hitBlast":
-            hitBlastFx(type, this.vfxMap, this.effectMeshes, this.effectData);
+            hitBlastFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData);
             break;
         case "projectile":
-            projectileFx(type, this.vfxMap, this.effectMeshes, this.effectData);
+            projectileFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData);
             break;
-        default: console.error('Game engine error: could not create effect with name ' + effectName + '.');
+        default: console.error('Game engine error: could not create effect with name "' + effectName + '" and type "' + type + '".');
         }
+        this.cacheEffect(effectName + '_' + type);
     }
 }
 

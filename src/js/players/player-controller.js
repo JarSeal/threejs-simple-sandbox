@@ -6,16 +6,14 @@ import { astar, Graph } from '../vendor/astar.js';
 import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
 import { calculateAngle } from '../util.js';
 import Projectiles from './projectiles.js';
-import VisualEffects from '../vfx/VisualEffects.js';
 
 class PlayerController {
-    constructor(scene, sceneState, doorAnimationController, SoundController) {
+    constructor(scene, sceneState, doorAnimationController, SoundController, VisualEffects) {
         this.sceneState = sceneState;
         this.chars = {};
         this.doorAnims = doorAnimationController;
         this.SoundController = SoundController;
-        this.VisualEffects = new VisualEffects(scene, sceneState);
-        this.projectiles = new Projectiles(scene, sceneState, SoundController, this.VisualEffects);
+        this.projectiles = new Projectiles(scene, sceneState, SoundController, VisualEffects);
     }
 
     createNewPlayer(scene, renderer, sceneState, type) {

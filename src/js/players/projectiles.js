@@ -1,7 +1,4 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { calculateAngle } from '../util';
 import { TimelineMax, Linear, Bounce } from 'gsap-ssr';
 
@@ -90,7 +87,7 @@ class Projectiles {
         this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route);
         let particles = 0;
 
-        const laser = this.VisualEffects.getEffectMesh('redBlaster');
+        const laser = this.VisualEffects.getEffectMesh('projectile_redBlast');
         laser.name = name;
         laser.rotation.z = angle;
         laser.position.set(
@@ -101,7 +98,7 @@ class Projectiles {
         scene.add(laser);
         this.VisualEffects.startAnim({
             id: name,
-            meshName: 'redBlaster',
+            meshName: 'projectile_redBlast',
         });
 
         this.sceneState.particles += particles;
@@ -706,7 +703,7 @@ class Projectiles {
             i = 0;
         
         // Hit blast
-        const blast = this.VisualEffects.getEffectMesh('hitBlast', true),
+        const blast = this.VisualEffects.getEffectMesh('hitBlast_basic', true),
             randomTwist = Math.random() * 3.1416,
             randomSize = Math.random() * (0.8 - 0.25) + 0.25;
         if(blast) {
@@ -721,8 +718,8 @@ class Projectiles {
             scene.add(blast);
             this.VisualEffects.startAnim({
                 id: 'hit-blast-' + performance.now(),
-                meshName: 'hitBlast',
                 clone: true,
+                meshName: 'hitBlast_basic',
                 geo: blast.geometry,
                 onComplete: () => scene.remove(blast),
             });

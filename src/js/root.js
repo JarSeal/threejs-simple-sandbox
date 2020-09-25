@@ -47,6 +47,7 @@ class TileMapRoot {
     }
 
     init() {
+        THREE.Cache.enabled = true;
         this.sceneState.initTime = this.getInitTime();
         console.log(this.sceneState.initTime);
         const appUiLayer = new AppUiLayer(this.sceneState);
