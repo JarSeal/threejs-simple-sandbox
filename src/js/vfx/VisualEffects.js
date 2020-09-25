@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import hitBlastFx from './combat/hit-blast-fx.js';
+import projectileFx from './combat/projectile-fx.js';
 
 class VisualEffects {
     constructor(scene, sceneState) {
@@ -18,7 +20,7 @@ class VisualEffects {
     getEffectMesh(key, cloneGeo) {
         const masterMesh = this.effectMeshes[key];
         if(!masterMesh) {
-            console.error('Game engine error: Could not locate effect ' + key + '.');
+            console.error('Game engine error: Could not locate effect (it has not been created) ' + key + '.');
             return;
         }
         if(cloneGeo) {
@@ -56,153 +58,6 @@ class VisualEffects {
             this.anims.count--;
             if(this.anims.meshCount[meshName]) this.anims.meshCount[meshName]--;
         }
-    }
-
-    createHitBlast() {
-        const planeGeo = new THREE.PlaneBufferGeometry(1.5, 1.5, 1);
-        const planeGeo2 = planeGeo.clone();
-        const planeGeo3 = planeGeo.clone();
-        const vfxMat = new THREE.MeshBasicMaterial({
-            map: this.vfxMap,
-            side: THREE.DoubleSide,
-            transparent: true,
-            depthWrite: false,
-            depthTest: true,
-        });
-        const geometries = [];
-        const spriteXlen = 128 / 4096;
-        const spriteYlen = 128 / 4096;
-        const redMat = new THREE.MeshBasicMaterial({
-            side: THREE.DoubleSide,
-            transparent: true,
-            depthWrite: false,
-            depthTest: true,
-            color: 0xff0000,
-        });
-        const plane = new THREE.Mesh(planeGeo, vfxMat);
-        const plane2 = new THREE.Mesh(planeGeo2, vfxMat);
-        plane2.rotation.x = 1.5708;
-        plane2.updateMatrix();
-        plane2.geometry.applyMatrix4(plane2.matrix);
-        const plane3 = new THREE.Mesh(planeGeo3, vfxMat);
-        plane3.rotation.y = 1.5708;
-        plane3.updateMatrix();
-        plane3.geometry.applyMatrix4(plane3.matrix);
-
-        // Merge into one mesh
-        geometries.push(plane.geometry);
-        geometries.push(plane2.geometry);
-        geometries.push(plane3.geometry);
-        plane.geometry.dispose();
-        plane2.geometry.dispose();
-        plane3.geometry.dispose();
-        const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, false);
-        const hitBlast = new THREE.Mesh(mergedGeo, vfxMat);
-        this.effectMeshes['hitBlast'] = hitBlast;
-        this.effectData['hitBlast'] = {
-            spriteXlen,
-            spriteYlen,
-            startPosU: 0.5 + spriteXlen * 2, // skip 2 first frames
-            startPosV: 1,
-            geo: mergedGeo,
-            phase: 2,
-            frame: 1,
-            rectSets: 3,
-            totalFrames: 11, // actually 13frames, but skipping 2 from beginning
-            lastUpdate: performance.now(),
-            interval: 20,
-        };
-
-        // TEMP BLAST
-        // const blast = this.getEffectMesh('hitBlast', true);
-        // blast.position.x = 31.3;
-        // blast.position.y = 41;
-        // blast.position.z = 1.4;
-        // this.scene.add(blast);
-
-        // this.startAnim({
-        //     id: 'some-id2',
-        //     meshName: 'hitBlast',
-        //     geo: blast.geometry,
-        //     clone: true,
-        //     loop: true,
-        // });
-    }
-
-    createProjectile() {
-        const planeGeo = new THREE.PlaneBufferGeometry(1, 0.2, 1);
-        const planeGeo2 = planeGeo.clone();
-        const planeGeo3 = planeGeo.clone();
-        const redMat = new THREE.MeshBasicMaterial({
-            map: this.vfxMap,
-            side: THREE.DoubleSide,
-            transparent: true,
-            depthWrite: false,
-            depthTest: true,
-        });
-        const geometries = [];
-        const spriteXlen = 128 / 4096;
-        const spriteYlen = 64 / 4096;
-        const plane = new THREE.Mesh(planeGeo, redMat);
-        plane.rotation.z = -1.5708;
-        plane.updateMatrix();
-        plane.geometry.applyMatrix4(plane.matrix);
-        const plane2 = new THREE.Mesh(planeGeo2, redMat);
-        plane2.rotation.z = -1.5708;
-        plane2.rotation.x = 1.5708;
-        plane2.updateMatrix();
-        plane2.geometry.applyMatrix4(plane2.matrix);
-
-        // Flare
-        let flareUvs = planeGeo3.attributes.uv;
-        flareUvs.setXY(0, spriteXlen * 15, 1);
-        flareUvs.setXY(1, spriteXlen * 16, 1);
-        flareUvs.setXY(2, spriteXlen * 15, 1 - spriteYlen);
-        flareUvs.setXY(3, spriteXlen * 16, 1 - spriteYlen);
-        flareUvs.needsUpdate = true;
-        const flare = new THREE.Mesh(planeGeo3, redMat);
-        flare.position.z = -0.8;
-        flare.scale.x = 1.7;
-        flare.scale.y = 1.5;
-        flare.rotation.z = -1.5708;
-        flare.updateMatrix();
-        flare.geometry.applyMatrix4(flare.matrix);
-
-        // Merge into one mesh
-        geometries.push(plane.geometry);
-        geometries.push(plane2.geometry);
-        geometries.push(flare.geometry);
-        plane.geometry.dispose();
-        plane2.geometry.dispose();
-        flare.geometry.dispose();
-        const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
-        const redBlaster = new THREE.Mesh(mergedGeo, redMat);
-        this.effectMeshes['redBlaster'] = redBlaster;
-        this.effectData['redBlaster'] = {
-            spriteXlen,
-            spriteYlen,
-            startPosU: 0,
-            startPosV: 1,
-            geo: mergedGeo,
-            loop: true,
-            phase: 2,
-            rectSets: 1,
-            frame: 1,
-            totalFrames: 15,
-            lastUpdate: performance.now(),
-            interval: 35,
-        };
-
-        // TEMP PROJECTILE
-        const redBlaster2 = redBlaster.clone();
-        redBlaster2.position.x = 37;
-        redBlaster2.position.y = 41;
-        redBlaster2.position.z = 1.4;
-        this.scene.add(redBlaster2);
-        this.startAnim({
-            id: 'Some-id',
-            meshName: 'redBlaster',
-        });
     }
 
     animate = () => {
@@ -243,6 +98,18 @@ class VisualEffects {
             if(end.clone) end.geo.dispose();
             if(end.onComplete) end.onComplete();
             this.removeAnim();
+        }
+    }
+
+    createEffect = (effectName, type) => {
+        switch(effectName) {
+        case "hitBlast":
+            hitBlastFx(type, this.vfxMap, this.effectMeshes, this.effectData);
+            break;
+        case "projectile":
+            projectileFx(type, this.vfxMap, this.effectMeshes, this.effectData);
+            break;
+        default: console.error('Game engine error: could not create effect with name ' + effectName + '.');
         }
     }
 }

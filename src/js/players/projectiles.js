@@ -46,90 +46,8 @@ class Projectiles {
         };
         this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
 
-        // this.createWallHitArea();
-        // this.createHitBlast();
-        // this.createProjectile();
-        VisualEffects.createProjectile();
-        VisualEffects.createHitBlast();
-    }
-
-    createHitBlast() {
-        const planeGeo = new THREE.PlaneBufferGeometry(1.5, 1.5, 1);
-        const planeGeo2 = planeGeo.clone();
-        const planeGeo3 = planeGeo.clone();
-        const vfxMat = new THREE.MeshBasicMaterial({
-            map: this.vfxMap,
-            side: THREE.DoubleSide,
-            transparent: true,
-            depthWrite: false,
-            depthTest: true,
-        });
-        const geometries = [];
-        const spriteXlen = 128 / 4096;
-        const spriteYlen = 128 / 4096;
-        const redMat = new THREE.MeshBasicMaterial({
-            side: THREE.DoubleSide,
-            transparent: true,
-            depthWrite: false,
-            depthTest: true,
-            color: 0xff0000,
-        });
-        const plane = new THREE.Mesh(planeGeo, vfxMat);
-        const plane2 = new THREE.Mesh(planeGeo2, vfxMat);
-        plane2.rotation.x = 1.5708;
-        plane2.updateMatrix();
-        plane2.geometry.applyMatrix4(plane2.matrix);
-        const plane3 = new THREE.Mesh(planeGeo3, vfxMat);
-        plane3.rotation.y = 1.5708;
-        plane3.updateMatrix();
-        plane3.geometry.applyMatrix4(plane3.matrix);
-
-        const frame = 21;
-
-        const uvs = plane.geometry.attributes.uv,
-            uvs2 = plane2.geometry.attributes.uv,
-            uvs3 = plane3.geometry.attributes.uv;
-        uvs.setXY(0, spriteXlen * frame, 1);
-        uvs.setXY(1, spriteXlen * (frame+1), 1);
-        uvs.setXY(2, spriteXlen * frame, 1 - spriteYlen);
-        uvs.setXY(3, spriteXlen * (frame+1), 1 - spriteYlen);
-        uvs2.setXY(0, spriteXlen * frame, 1);
-        uvs2.setXY(1, spriteXlen * (frame+1), 1);
-        uvs2.setXY(2, spriteXlen * frame, 1 - spriteYlen);
-        uvs2.setXY(3, spriteXlen * (frame+1), 1 - spriteYlen);
-        uvs3.setXY(0, spriteXlen * frame, 1);
-        uvs3.setXY(1, spriteXlen * (frame+1), 1);
-        uvs3.setXY(2, spriteXlen * frame, 1 - spriteYlen);
-        uvs3.setXY(3, spriteXlen * (frame+1), 1 - spriteYlen);
-        uvs.needsUpdate = true;
-        uvs2.needsUpdate = true;
-        uvs3.needsUpdate = true;
-
-        // Merge into one mesh
-        geometries.push(plane.geometry);
-        geometries.push(plane2.geometry);
-        geometries.push(plane3.geometry);
-        const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, false);
-        const redLaser = new THREE.Mesh(mergedGeo, vfxMat);
-        this.laserObjects['blue'] = redLaser;
-        redLaser.position.x = 31.3;
-        redLaser.position.y = 41;
-        redLaser.position.z = this.shotHeight;
-        this.scene.add(redLaser);
-        // this.projectileAnims.count++;
-        // this.projectileAnims.fired.push({
-        //     id: 'some-id',
-        //     geo: mergedGeo,
-        //     phase: 2,
-        //     frame: 1,
-        //     spriteXlen,
-        //     vStart: 1,
-        //     vEnd: 1 - spriteYlen,
-        //     lastUpdate: performance.now(),
-        //     interval: 35,
-        // });
-
-        // this.sceneState.renderCalls.push(this.animateHitBlasts);
+        VisualEffects.createEffect('projectile', 'redBlast');
+        VisualEffects.createEffect('hitBlast', 'basic');
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
@@ -148,10 +66,10 @@ class Projectiles {
         let speedPerTile = 0.085 * sceneState.timeSpeed, // in seconds
             maxDistance = 20,
             raycaster = new THREE.Raycaster(),
-            startPoint = new THREE.Vector3(from[0], from[1], 1),
+            startPoint = new THREE.Vector3(from[0], from[1], this.shotHeight),
             direction = new THREE.Vector3(),
             hitObject = this.scene.getObjectByName('king-mesh');
-        direction.subVectors(new THREE.Vector3(target[0], target[1], 1), startPoint).normalize();
+        direction.subVectors(new THREE.Vector3(target[0], target[1], this.shotHeight), startPoint).normalize();
         raycaster.set(startPoint, direction, true);
         let intersects = raycaster.intersectObject(hitObject, true);
         let angle = 0,
@@ -204,8 +122,9 @@ class Projectiles {
                     tl.kill();
                     return;
                 }
-                let timeNow = this.sceneState.initTime.s + performance.now() / 1000;
-                if(timeNow > projectileLife.route[projectileLife.route.length - 1].leaveTime + 0.5) {
+                const timeNow = this.sceneState.initTime.s + performance.now() / 1000,
+                    lastTile = projectileLife.route[projectileLife.route.length - 1];
+                if(!lastTile || timeNow > lastTile.leaveTime + 0.5) {
                     this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
                     this.sceneState.particles -= particles;
                     tl.kill();
@@ -788,22 +707,26 @@ class Projectiles {
         
         // Hit blast
         const blast = this.VisualEffects.getEffectMesh('hitBlast', true),
-            randomTwist = parseFloat((Math.random() * 3.1416).toFixed(4));
-        blast.rotation.set(randomTwist, randomTwist, randomTwist);
-        blast.name = name;
-        blast.position.set(
-            posWOffset[0],
-            posWOffset[1],
-            this.shotHeight
-        );
-        scene.add(blast);
-        this.VisualEffects.startAnim({
-            id: 'hit-blast-' + performance.now(),
-            meshName: 'hitBlast',
-            clone: true,
-            geo: blast.geometry,
-            onComplete: () => scene.remove(blast),
-        });
+            randomTwist = Math.random() * 3.1416,
+            randomSize = Math.random() * (0.8 - 0.25) + 0.25;
+        if(blast) {
+            blast.rotation.set(randomTwist, randomTwist, randomTwist);
+            blast.name = name;
+            blast.scale.set(randomSize, randomSize, randomSize);
+            blast.position.set(
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            );
+            scene.add(blast);
+            this.VisualEffects.startAnim({
+                id: 'hit-blast-' + performance.now(),
+                meshName: 'hitBlast',
+                clone: true,
+                geo: blast.geometry,
+                onComplete: () => scene.remove(blast),
+            });
+        }
 
         // Particles
         for(i=0; i<floorParticles; i++) {
