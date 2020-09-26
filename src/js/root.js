@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import * as Stats from './vendor/stats.min.js';
 // import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import Scene from './scene.js';
 import AppUiLayer from './ui/app-ui-layer.js';
 import SoundController from './sound-controller.js';
@@ -42,6 +46,8 @@ class TileMapRoot {
             },
             localStorage: new LStorage(),
             renderCalls: [],
+            outlinePass: null,
+            outlinePassObjects: [],
         };
         this.init();
     }
@@ -62,10 +68,10 @@ class TileMapRoot {
         // renderer.gammaOutput = true;
         document.body.appendChild(renderer.domElement);
 
-        // const effect = new OutlineEffect(renderer, {defaultThickness: 0.0045});
-
         const sceneController = new Scene(renderer, this.sceneState, appUiLayer, soundController);
-        let scene = sceneController.loadScene(this.sceneState.ui.view);
+        const scene = sceneController.loadScene(this.sceneState.ui.view);
+
+        // const effect = new OutlineEffect(renderer, {defaultThickness: 0.0045});
         
         const geometry = new THREE.BoxGeometry(1,1,1);
         const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
@@ -91,6 +97,23 @@ class TileMapRoot {
         // Debug statisctics [END]
 
         const camera = sceneController.getCamera();
+
+        // Postprocessing [START]
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+        this.sceneState.outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+        this.sceneState.outlinePass.overlayMaterial.blending = THREE.SubtractiveBlending;
+        this.sceneState.outlinePass.edgeStrength = 2;
+        this.sceneState.outlinePass.edgeThickness = 0.1;
+        this.sceneState.outlinePass.visibleEdgeColor.set('#ffffff');
+        this.sceneState.outlinePass.hiddenEdgeColor.set('#000000');
+        this.sceneState.outlinePass.selectedObjects = this.sceneState.outlinePassObjects;
+        console.log(this.sceneState.outlinePass);
+        composer.addPass(this.sceneState.outlinePass);
+        const glitchPass = new GlitchPass();
+        //composer.addPass( glitchPass );
+        // Postprocessing [END]
         
         let renderCallerI = 0,
             renderCalls = this.sceneState.renderCalls;
@@ -104,6 +127,7 @@ class TileMapRoot {
             for(renderCallerI=0; renderCallerI<renderCalls.length; renderCallerI++) {
                 renderCalls[renderCallerI]();
             }
+            composer.render();
             //effect.render(scene, camera);
             stats.update(); // Debug statistics
         };
