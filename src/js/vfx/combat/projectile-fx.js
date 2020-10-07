@@ -13,12 +13,12 @@ const projectileFx = (effectName, type, vfxMaterial, effectMeshes, effectData) =
 };
 
 const redBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
-    const planeGeo = new THREE.PlaneBufferGeometry(1, 0.2, 1);
+    const planeGeo = new THREE.PlaneBufferGeometry(1, 1, 1);
     const planeGeo2 = planeGeo.clone();
     const planeGeo3 = planeGeo.clone();
     const geometries = [];
     const spriteXlen = 128 / 4096;
-    const spriteYlen = 64 / 4096;
+    const spriteYlen = 128 / 4096;
     const plane = new THREE.Mesh(planeGeo, vfxMaterial);
     plane.rotation.z = -1.5708;
     plane.updateMatrix();
@@ -31,10 +31,10 @@ const redBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
 
     // Flare
     let flareUvs = planeGeo3.attributes.uv;
-    flareUvs.setXY(0, spriteXlen * 15, 1);
-    flareUvs.setXY(1, spriteXlen * 16, 1);
-    flareUvs.setXY(2, spriteXlen * 15, 1 - spriteYlen);
-    flareUvs.setXY(3, spriteXlen * 16, 1 - spriteYlen);
+    flareUvs.setXY(0, spriteXlen * 15, 1 - (spriteYlen * 3));
+    flareUvs.setXY(1, spriteXlen * 16, 1 - (spriteYlen * 3));
+    flareUvs.setXY(2, spriteXlen * 15, 1 - (spriteYlen * 3) - spriteYlen);
+    flareUvs.setXY(3, spriteXlen * 16, 1 - (spriteYlen * 3) - spriteYlen);
     flareUvs.needsUpdate = true;
     const flare = new THREE.Mesh(planeGeo3, vfxMaterial);
     flare.position.z = -0.8;
@@ -46,7 +46,7 @@ const redBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
 
     // Merge into one mesh
     geometries.push(plane.geometry);
-    geometries.push(plane2.geometry);
+    // geometries.push(plane2.geometry);
     geometries.push(flare.geometry);
     const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
     const redBlaster = new THREE.Mesh(mergedGeo, vfxMaterial);
@@ -62,7 +62,7 @@ const redBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
         phase: 2,
         rectSets: 1,
         frame: 1,
-        totalFrames: 15,
+        totalFrames: 44,
         lastUpdate: performance.now(),
         interval: 35,
     };

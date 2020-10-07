@@ -46,7 +46,7 @@ class PlayerController {
         tempMesh.position.z = 1;
         scene.add(tempMesh);
         // Outline postprocessing pass objects addition
-        sceneState.outlinePassObjects = [tempMesh];
+        // sceneState.outlinePassObjects = [tempMesh];
         
         let group = new THREE.Group();
         let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
@@ -108,11 +108,12 @@ class PlayerController {
                 });
                 scene.add(object);
                 sceneState.players.hero.mesh = object;
-                if(sceneState.outlinePass) {
-                    sceneState.outlinePass.selectedObjects = sceneState.outlinePass.selectedObjects.concat(object);
-                } else {
-                    sceneState.outlinePassObjects = sceneState.outlinePassObjects.concat(object);
-                }
+                // if(sceneState.outlinePass) {
+                //     sceneState.outlinePass.selectedObjects = sceneState.outlinePass.selectedObjects.concat(object);
+                // } else {
+                //     sceneState.outlinePassObjects = sceneState.outlinePassObjects.concat(object);
+                // }
+                sceneState.outlinePass.selectedObjects = [object.children[0].children[1]];
             },
             () => {},
             (error) => {

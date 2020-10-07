@@ -29,11 +29,15 @@ class Projectiles {
         });
         let fxSpark = new THREE.TextureLoader().load('/images/sprites/fx-spark.png');
         this.sparkMaterial = new THREE.PointsMaterial({
-            size: 10,
-            sizeAttenuation: false,
+            size: 0.1,
+            sizeAttenuation: true,
             map: fxSpark,
             alphaTest: 0.5,
-            transparent: true
+            // blending: THREE.noBlending,
+            premultipliedAlpha: true,
+            // transparent: true,
+            // depthWrite: false,
+            // depthTest: true,
         });
         this.preCountedTurns = {
             fortyFive: 45 * (Math.PI/180),
@@ -46,6 +50,20 @@ class Projectiles {
         VisualEffects.createEffect('projectile', 'redBlast');
         VisualEffects.createEffect('hitBlast', 'basic');
         VisualEffects.createEffect('sparks', 'wallHit');
+
+        setTimeout(() => {
+            const laser = this.VisualEffects.getEffectMesh('projectile_redBlast');
+            laser.position.set(
+                33,
+                41,
+                this.shotHeight
+            );
+            scene.add(laser);
+            VisualEffects.startAnim({
+                id: "kukka",
+                meshName: 'projectile_redBlast',
+            });
+        }, 5000);
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
@@ -706,7 +724,7 @@ class Projectiles {
         // Hit blast
         const blast = this.VisualEffects.getEffectMesh('hitBlast_basic', true),
             randomTwist = Math.random() * 3.1416;
-        let randomSize = Math.random() * (0.8 - 0.25) + 0.25;
+        let randomSize = Math.random() * (1 - 0.25) + 0.25;
         if(blast) {
             blast.rotation.set(randomTwist, randomTwist, randomTwist);
             blast.name = name;
@@ -726,10 +744,12 @@ class Projectiles {
             });
         }
 
+        return;
+
         // FX Sparks
         const sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', true);
         randomSize = Math.random() * (1 - 0.25) + 0.25;
-        if(sparks) {
+        if(sparksFx) {
             sparksFx.rotation.z = randomTwist;
             sparksFx.scale.set(randomSize, randomSize, randomSize);
             sparksFx.position.set(
@@ -761,6 +781,7 @@ class Projectiles {
         }
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
         scene.add(sparks);
+        console.log("SPARKS", this.sceneState.outlinePass.selectedObjects);
         for(i=0; i<floorParticles; i++) {
             (function(i, particles, sparks, targetPositions, scene, time) {
                 let tl = new TimelineMax();
@@ -777,7 +798,7 @@ class Projectiles {
                     positions.needsUpdate = true;
                 }}, '-='+time);
                 if(i === 0) {
-                    let materialValues = {size:10},
+                    let materialValues = {size:0.3},
                         tl2 = new TimelineMax();
                     tl2.to(materialValues, 1.7, {size: 0.001, onUpdate: () => {
                         sparks.material.size = materialValues.size;

@@ -73,7 +73,7 @@ class LoadTileMap {
 
     createShaderMaterial(texture) {
         const uniforms = {
-            texture: { type: 't', value: texture },
+            mapTexture: { type: 't', value: texture },
         };
 
         const vertexShader = `
@@ -85,11 +85,11 @@ class LoadTileMap {
 
         const fragmentShader = `
         varying vec2 vUv;
-        uniform sampler2D texture;
+        uniform sampler2D mapTexture;
         void main() {
             float coordX = vUv.x;
             float coordY = vUv.y;
-            gl_FragColor = texture2D(texture, vec2(coordX, coordY));
+            gl_FragColor = texture2D(mapTexture, vec2(coordX, coordY));
         }`;
 
         return {
@@ -101,8 +101,8 @@ class LoadTileMap {
 
     createShaderMaterial2(texture, texture2) {
         const uniforms = {
-            texture: { type: 't', value: texture },
-            texture2: { type: 't', value: texture2 }
+            mapTexture: { type: 't', value: texture },
+            mapTexture2: { type: 't', value: texture2 }
         };
 
         const vertexShader = `
@@ -129,21 +129,21 @@ class LoadTileMap {
         }`;
 
         const fragmentShader = `
-        uniform sampler2D texture;
-        uniform sampler2D texture2;
+        uniform sampler2D mapTexture;
+        uniform sampler2D mapTexture2;
         varying vec2 vUv;
 
         varying vec2 vN;
         void main() {
             float coordX = vUv.x;
             float coordY = vUv.y;
-            vec4 Ca = texture2D(texture2, vN);
-            vec4 Cb = texture2D( texture, vec2(coordX, coordY) );
+            vec4 Ca = texture2D(mapTexture2, vN);
+            vec4 Cb = texture2D(mapTexture, vec2(coordX, coordY));
             vec3 c = Ca.rgb * Ca.a + Cb.rgb * Cb.a * (1.0 - Ca.a);
             gl_FragColor = vec4(c, 1.0);
 
-            // vec3 Cb = texture2D( texture, vN ).rgb;
-            // gl_FragColor = vec4( Cb, 1. );
+            // vec3 Cb = texture2D(mapTexture, vN).rgb;
+            // gl_FragColor = vec4(Cb, 1.);
         }`;
 
         return {

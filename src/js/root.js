@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import * as Stats from './vendor/stats.min.js';
 // import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
-import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import Scene from './scene.js';
@@ -99,20 +100,31 @@ class TileMapRoot {
         const camera = sceneController.getCamera();
 
         // Postprocessing [START]
+        const pixelRatio = window.devicePixelRatio || 1;
         const composer = new EffectComposer(renderer);
+        composer.setPixelRatio = pixelRatio;
         const renderPass = new RenderPass(scene, camera);
         composer.addPass(renderPass);
         this.sceneState.outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
-        this.sceneState.outlinePass.overlayMaterial.blending = THREE.SubtractiveBlending;
-        this.sceneState.outlinePass.edgeStrength = 2;
+        // this.sceneState.outlinePass.depthMaterial.skinning = true;
+        this.sceneState.outlinePass.prepareMaskMaterial.skinning = true;
+        this.sceneState.outlinePass.prepareMaskMaterial.transparent = true;
+        this.sceneState.outlinePass.prepareMaskMaterial.depthWrite = false;
+        this.sceneState.outlinePass.prepareMaskMaterial.depthTest = true;
+        // this.sceneState.outlinePass.overlayMaterial.blending = THREE.SubtractiveBlending;
+        this.sceneState.outlinePass.overlayMaterial.blending = THREE.NormalBlending;
         this.sceneState.outlinePass.edgeThickness = 0.1;
-        this.sceneState.outlinePass.visibleEdgeColor.set('#ffffff');
-        this.sceneState.outlinePass.hiddenEdgeColor.set('#000000');
+        this.sceneState.outlinePass.edgeStrength = 3;
+        this.sceneState.outlinePass.edgeGlow = 0;
+        this.sceneState.outlinePass.setSize(window.innerWidth, window.innerHeight);
+        this.sceneState.outlinePass.visibleEdgeColor.set('#000000');
+        this.sceneState.outlinePass.hiddenEdgeColor.set('#66ffff');
         this.sceneState.outlinePass.selectedObjects = this.sceneState.outlinePassObjects;
         console.log(this.sceneState.outlinePass);
         composer.addPass(this.sceneState.outlinePass);
-        const glitchPass = new GlitchPass();
-        //composer.addPass( glitchPass );
+        this.sceneState.effectFXAA = new ShaderPass(FXAAShader);
+        this.sceneState.effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+        composer.addPass(this.sceneState.effectFXAA);
         // Postprocessing [END]
         
         let renderCallerI = 0,

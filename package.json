@@ -7,6 +7,7 @@
         "start": "cross-env NODE_ENV=development webpack-dev-server --host 0.0.0.0 --port 4000",
         "build:front": "cross-env NODE_ENV=production webpack",
         "lint": "eslint .",
+        "copy-draco": "cd src/js/vendor && rm -rf draco && mkdir draco && cp ../../../node_modules/three/examples/js/libs/draco/*.* draco && cd ../../..",
         "deploy:set-php": "yarn build:front && cd build && echo '<?php header(\"Location: index.html\") ?>' > index.php && cd ..",
         "deploy": "yarn deploy:set-php && cd build && git init && heroku git:remote -a $appName && git add . && git commit -m \"Deploy\" && git push -f heroku master",
         "howToDeploy": "echo \"To run deploy, provide the appName env variable like this: appName=somename yarn deploy\""
@@ -26,12 +27,12 @@
         "babel-loader": "8.0.4",
         "babel-plugin-transform-class-properties": "^6.24.1",
         "clean-webpack-plugin": "0.1.19",
-        "copy-webpack-plugin": "^6.1.0",
+        "copy-webpack-plugin": "^6.2.0",
         "cross-env": "5.2.0",
-        "eslint": "^7.9.0",
+        "eslint": "^7.10.0",
         "html-webpack-plugin": "3.2.0",
         "mini-css-extract-plugin": "0.4.4",
-        "webpack": "^4.44.1",
+        "webpack": "^4.44.2",
         "webpack-cli": "^3.3.12",
         "webpack-dev-server": "^3.11.0",
         "webpack-merge": "^4.2.2"
@@ -42,7 +43,7 @@
         "howler": "^2.2.0",
         "node-sass": "^4.14.1",
         "sass-loader": "^8.0.2",
-        "style-loader": "^1.2.1",
-        "three": "^0.116.1"
+        "style-loader": "^1.3.0",
+        "three": "^0.121.1"
     }
 }

@@ -13,7 +13,7 @@ const hitBlastFx = (effectName, type, vfxMaterial, effectMeshes, effectData) => 
 };
 
 const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
-    const planeGeo = new THREE.PlaneBufferGeometry(1.5, 1.5, 1);
+    const planeGeo = new THREE.PlaneBufferGeometry(2.5, 2.5, 1);
     const planeGeo2 = planeGeo.clone();
     const planeGeo3 = planeGeo.clone();
     const geometries = [];
@@ -39,15 +39,15 @@ const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => 
     effectData[effectName + '_' + type] = {
         spriteXlen,
         spriteYlen,
-        startPosU: 0.5,
-        startPosV: 1,
+        startPosU: 0,
+        startPosV: 1 - (2 * spriteYlen),
         geo: mergedGeo,
         phase: 2,
         frame: 1,
         rectSets: 3,
-        totalFrames: 11,
+        totalFrames: 29,
         lastUpdate: performance.now(),
-        interval: 20,
+        interval: 5,
     };
     plane.geometry.dispose();
     plane2.geometry.dispose();
