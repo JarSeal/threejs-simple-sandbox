@@ -47,7 +47,7 @@ const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => 
         rectSets: 3,
         totalFrames: 29,
         lastUpdate: performance.now(),
-        interval: 5,
+        interval: 0,
     };
     plane.geometry.dispose();
     plane2.geometry.dispose();

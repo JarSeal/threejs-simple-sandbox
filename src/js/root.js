@@ -128,18 +128,20 @@ class TileMapRoot {
         // Postprocessing [END]
         
         let renderCallerI = 0,
-            renderCalls = this.sceneState.renderCalls;
+            renderCalls = this.sceneState.renderCalls,
+            delta;
         const render = () => {
             requestAnimationFrame(render);
+            delta = this.sceneState.clock.getDelta();
             sceneController.doLoops();
             appUiLayer.renderUi();
-            renderer.render(scene, camera);
             this.setShaderTime();
-            if(this.sceneState.mixer) this.sceneState.mixer.update(this.sceneState.clock.getDelta());
+            if(this.sceneState.mixer) this.sceneState.mixer.update(delta);
             for(renderCallerI=0; renderCallerI<renderCalls.length; renderCallerI++) {
-                renderCalls[renderCallerI]();
+                renderCalls[renderCallerI](delta, renderer);
             }
             composer.render();
+            //renderer.render(scene, camera);
             //effect.render(scene, camera);
             stats.update(); // Debug statistics
         };

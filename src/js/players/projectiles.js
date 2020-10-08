@@ -51,19 +51,19 @@ class Projectiles {
         VisualEffects.createEffect('hitBlast', 'basic');
         VisualEffects.createEffect('sparks', 'wallHit');
 
-        setTimeout(() => {
-            const laser = this.VisualEffects.getEffectMesh('projectile_redBlast');
-            laser.position.set(
-                33,
-                41,
-                this.shotHeight
-            );
-            scene.add(laser);
-            VisualEffects.startAnim({
-                id: "kukka",
-                meshName: 'projectile_redBlast',
-            });
-        }, 5000);
+        // setTimeout(() => {
+        //     const laser = this.VisualEffects.getEffectMesh('projectile_redBlast');
+        //     laser.position.set(
+        //         33,
+        //         41, 
+        //         this.shotHeight
+        //     );
+        //     scene.add(laser);
+        //     VisualEffects.startAnim({
+        //         id: "kukka",
+        //         meshName: 'projectile_redBlast',
+        //     });
+        // }, 500);
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {

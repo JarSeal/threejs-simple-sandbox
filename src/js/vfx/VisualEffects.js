@@ -2,6 +2,24 @@ import * as THREE from 'three';
 import hitBlastFx from './combat/hit-blast-fx.js';
 import projectileFx from './combat/projectile-fx.js';
 import sparksFx from './combat/sparks-fx.js';
+import {
+    NodeFrame,
+    SpriteNodeMaterial,
+    MathNode,
+    OperatorNode,
+    TextureNode,
+    Vector2Node,
+    TimerNode,
+    SwitchNode,
+    FunctionNode,
+    FunctionCallNode,
+    PositionNode,
+    UVNode,
+    UVTransformNode,
+    BasicNodeMaterial,
+    PhongNodeMaterial,
+    FloatNode
+} from 'three/examples/jsm/nodes/Nodes.js';
 
 class VisualEffects {
     constructor(scene, sceneState) {
@@ -23,12 +41,86 @@ class VisualEffects {
         this.effectMeshes = {};
         this.effectData = {};
         sceneState.renderCalls.push(this.animate);
+
+        this.frame = new NodeFrame();
+        console.log('FRAME', this.frame);
+        this.mesh;
+        this.uvStart = { u: -0.5 + 0.03125 / 2, v: 0.5 - 0.03125 / 2 };
+        this.uvStart = { u: 0, v: 1 - (1/32) };
+        this.createTestNode(scene);
+    }
+
+    createHorizontalSpriteSheetNode(hCount, speed) {
+        var speed = new Vector2Node(30, 0); // frame per second
+        var scale = new Vector2Node(1/32, 1/32); // 32 horizontal and vertical images in sprite-sheet
+        
+        // var timer = new TimerNode();
+
+        var uvTimer = new OperatorNode(
+            new TimerNode(),
+            speed,
+            OperatorNode.MUL
+        );
+
+        var uvTimerFrameCounter = new MathNode(
+            uvTimer,
+            new FloatNode(7),
+            MathNode.MOD
+        );
+
+        var uvIntegerTimer = new MathNode(
+            uvTimerFrameCounter,
+            MathNode.FLOOR
+        );
+
+        var uvFrameOffset = new OperatorNode(
+            uvIntegerTimer,
+            new Vector2Node(1/32, 1),
+            OperatorNode.MUL
+        );
+
+        var offset = new OperatorNode(
+            uvFrameOffset,
+            new Vector2Node(this.uvStart.u, this.uvStart.v),
+            OperatorNode.ADD
+        );
+
+        var uvScale = new OperatorNode(
+            new UVNode(),
+            scale,
+            OperatorNode.MUL
+        );
+
+        var uvFrame = new OperatorNode(
+            uvScale,
+            offset,
+            OperatorNode.ADD
+        );
+
+        return uvFrame;
+    }
+
+    createTestNode(scene) {
+        const geo = new THREE.PlaneBufferGeometry(5, 5, 1);
+        this.mesh = new THREE.Mesh(geo);
+        const mtl = new BasicNodeMaterial();
+        const texture = new TextureNode(this.vfxMap);
+        // texture.uv = new UVTransformNode();
+        // texture.uv.setUvTransform(this.uvStart.u, this.uvStart.v, 0.03125, 0.03125, 0);
+        texture.uv = this.createHorizontalSpriteSheetNode(32, 10);
+        mtl.color = texture;
+        mtl.side =  THREE.DoubleSide;
+        mtl.alpha = new MathNode(new SwitchNode(mtl.color, 'a'), OperatorNode.ADD);
+        this.mesh.material = mtl;
+        this.mesh.position.set(35, 43, 1);
+        scene.add(this.mesh);
+        console.log("TESERRET", this.mesh.material.color);
     }
 
     getEffectMesh(key, cloneGeo) {
         const masterMesh = this.effectMeshes[key];
         if(!masterMesh) {
-            console.error('Game engine error: Could not locate effect (it has not been created) ' + key + '.');
+            console.error('Game engine error: Could not locate effect (effect mesh has not been created) ' + key + '.');
             return;
         }
         if(cloneGeo) {
@@ -68,7 +160,9 @@ class VisualEffects {
         }
     }
 
-    animate = () => {
+    animate = (delta, renderer) => {
+        this.frame.update(delta).updateNode(this.mesh.material);
+
         const count = this.anims.count;
         if(!count) return;
         let i = 0,
@@ -106,6 +200,10 @@ class VisualEffects {
             if(end.onComplete) end.onComplete();
             this.removeAnim(end.id);
         }
+
+        // Node material anims
+        let modulo = Math.floor((this.sceneState.clock.getElapsedTime() * 10) % 16);
+        console.log(modulo);
     }
 
     cacheEffects() {
