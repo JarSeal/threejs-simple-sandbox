@@ -43,28 +43,26 @@ class VisualEffects {
         sceneState.renderCalls.push(this.animate);
 
         this.frame = new NodeFrame();
-        console.log('FRAME', this.frame);
         this.mesh;
         this.uvStart = { u: -0.5 + 0.03125 / 2, v: 0.5 - 0.03125 / 2 };
-        this.uvStart = { u: 0, v: 1 - (1/32) };
+        this.uvStart = { u: 0, v: 1 - (3/32) };
         this.createTestNode(scene);
     }
 
-    createHorizontalSpriteSheetNode(hCount, speed) {
-        var speed = new Vector2Node(30, 0); // frame per second
-        var scale = new Vector2Node(1/32, 1/32); // 32 horizontal and vertical images in sprite-sheet
-        
-        // var timer = new TimerNode();
+    createHorizontalSpriteSheetNode(hCount, vCount, startU, startV, frames, speed) {
+        var animSpeed = new Vector2Node(speed, 0); // frame per second
+        var scale = new Vector2Node(1/hCount, 1/vCount); // 32 horizontal and vertical images in sprite-sheet
+        // TODO: make the ability to start the sprite from the middle (some kind of offset)
 
         var uvTimer = new OperatorNode(
             new TimerNode(),
-            speed,
+            animSpeed,
             OperatorNode.MUL
         );
 
         var uvTimerFrameCounter = new MathNode(
             uvTimer,
-            new FloatNode(7),
+            new FloatNode(frames),
             MathNode.MOD
         );
 
@@ -75,13 +73,13 @@ class VisualEffects {
 
         var uvFrameOffset = new OperatorNode(
             uvIntegerTimer,
-            new Vector2Node(1/32, 1),
+            new Vector2Node(1/hCount, 1), // TODO: make it change rows, if frame count goes over 32 (if hCount is 32)
             OperatorNode.MUL
         );
 
         var offset = new OperatorNode(
             uvFrameOffset,
-            new Vector2Node(this.uvStart.u, this.uvStart.v),
+            new Vector2Node(startU, startV),
             OperatorNode.ADD
         );
 
@@ -105,29 +103,49 @@ class VisualEffects {
         this.mesh = new THREE.Mesh(geo);
         const mtl = new BasicNodeMaterial();
         const texture = new TextureNode(this.vfxMap);
-        // texture.uv = new UVTransformNode();
-        // texture.uv.setUvTransform(this.uvStart.u, this.uvStart.v, 0.03125, 0.03125, 0);
-        texture.uv = this.createHorizontalSpriteSheetNode(32, 10);
+        texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(3/32), 42, 30);
         mtl.color = texture;
         mtl.side =  THREE.DoubleSide;
         mtl.alpha = new MathNode(new SwitchNode(mtl.color, 'a'), OperatorNode.ADD);
+        mtl.depthWrite = false;
         this.mesh.material = mtl;
         this.mesh.position.set(35, 43, 1);
         scene.add(this.mesh);
-        console.log("TESERRET", this.mesh.material.color);
+    }
+
+    createFxMaterial(key) {
+        const data = this.effectData[key];
+        const mtl = new BasicNodeMaterial();
+        const texture = new TextureNode(this.vfxMap);
+        texture.uv = this.createHorizontalSpriteSheetNode(
+            32,         // hCount
+            32,         // vCount
+            0,          // startU
+            1-(3/32),   // startV
+            42,         // frames
+            30          // speed
+        );
+        mtl.color = texture;
+        mtl.side =  THREE.DoubleSide;
+        mtl.alpha = new MathNode(new SwitchNode(mtl.color, 'a'), OperatorNode.ADD);
+        mtl.depthWrite = false;
+        return mtl;
     }
 
     getEffectMesh(key, cloneGeo) {
-        const masterMesh = this.effectMeshes[key];
+        let masterMesh = this.effectMeshes[key];
         if(!masterMesh) {
-            console.error('Game engine error: Could not locate effect (effect mesh has not been created) ' + key + '.');
-            return;
+            // Create the mesh
+            const nameAndType = key.split('_');
+            this.createEffect(nameAndType[0], nameAndType[1]);
+            masterMesh = this.effectMeshes[key];
         }
-        if(cloneGeo) {
-            return new THREE.Mesh(masterMesh.geometry.clone(), masterMesh.material);
-        } else {
-            return masterMesh.clone();
-        }
+        const newMesh = masterMesh.clone();
+        if(newMesh.material) newMesh.material.dispose();
+        newMesh.material = this.createFxMaterial(key);
+        newMesh['frame'] = new NodeFrame();
+        console.log("NEWMESh", newMesh, this.anims);
+        return newMesh;
     }
 
     startAnim(data) {
@@ -160,7 +178,7 @@ class VisualEffects {
         }
     }
 
-    animate = (delta, renderer) => {
+    animate = (delta) => {
         this.frame.update(delta).updateNode(this.mesh.material);
 
         const count = this.anims.count;
@@ -173,6 +191,14 @@ class VisualEffects {
         const endAnims = [];
         for(i=0; i<count; i++) {
             const fired = this.anims.fired[i];
+            const mesh = this.effectMeshes[fired.meshName];
+            console.log('TRREE', mesh);
+            if(mesh.frame) {
+                console.log('HÄÄR');
+                mesh.frame.updateNode(mesh.material);
+            }
+            break;
+
             if(performance.now() - fired.lastUpdate < fired.interval) break;
             newX = fired.spriteXlen * fired.frame + fired.startPosU;
             newXPrev = fired.spriteXlen * (fired.frame - 1) + fired.startPosU;
@@ -202,8 +228,8 @@ class VisualEffects {
         }
 
         // Node material anims
-        let modulo = Math.floor((this.sceneState.clock.getElapsedTime() * 10) % 16);
-        console.log(modulo);
+        // let modulo = Math.floor((this.sceneState.clock.getElapsedTime() * 10) % 16);
+        // console.log(modulo);
     }
 
     cacheEffects() {

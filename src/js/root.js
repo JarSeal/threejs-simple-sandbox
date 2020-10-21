@@ -138,7 +138,7 @@ class TileMapRoot {
             this.setShaderTime();
             if(this.sceneState.mixer) this.sceneState.mixer.update(delta);
             for(renderCallerI=0; renderCallerI<renderCalls.length; renderCallerI++) {
-                renderCalls[renderCallerI](delta, renderer);
+                renderCalls[renderCallerI](delta);
             }
             composer.render();
             //renderer.render(scene, camera);
