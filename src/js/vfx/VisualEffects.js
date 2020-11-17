@@ -4,20 +4,14 @@ import projectileFx from './combat/projectile-fx.js';
 import sparksFx from './combat/sparks-fx.js';
 import {
     NodeFrame,
-    SpriteNodeMaterial,
     MathNode,
     OperatorNode,
     TextureNode,
     Vector2Node,
     TimerNode,
     SwitchNode,
-    FunctionNode,
-    FunctionCallNode,
-    PositionNode,
     UVNode,
-    UVTransformNode,
     BasicNodeMaterial,
-    PhongNodeMaterial,
     FloatNode
 } from 'three/examples/jsm/nodes/Nodes.js';
 
@@ -113,8 +107,7 @@ class VisualEffects {
         scene.add(this.mesh);
     }
 
-    createFxMaterial(key) {
-        const data = this.effectData[key];
+    createFxMaterial() {
         const mtl = new BasicNodeMaterial();
         const texture = new TextureNode(this.vfxMap);
         texture.uv = this.createHorizontalSpriteSheetNode(
@@ -132,7 +125,7 @@ class VisualEffects {
         return mtl;
     }
 
-    getEffectMesh(key, cloneGeo) {
+    getEffectMesh(key) {
         let masterMesh = this.effectMeshes[key];
         if(!masterMesh) {
             // Create the mesh
@@ -142,9 +135,8 @@ class VisualEffects {
         }
         const newMesh = masterMesh.clone();
         if(newMesh.material) newMesh.material.dispose();
-        newMesh.material = this.createFxMaterial(key);
+        newMesh.material = this.createFxMaterial();
         newMesh['frame'] = new NodeFrame();
-        console.log("NEWMESh", newMesh, this.anims);
         return newMesh;
     }
 
@@ -183,11 +175,11 @@ class VisualEffects {
 
         const count = this.anims.count;
         if(!count) return;
-        let i = 0,
-            j = 0,
-            newX,
-            newXPrev,
-            uvAttribute;
+        let i = 0;
+        // j = 0,
+        // newX,
+        // newXPrev,
+        // uvAttribute;
         const endAnims = [];
         for(i=0; i<count; i++) {
             const fired = this.anims.fired[i];
@@ -197,27 +189,26 @@ class VisualEffects {
                 console.log('HÄÄR');
                 mesh.frame.updateNode(mesh.material);
             }
-            break;
 
-            if(performance.now() - fired.lastUpdate < fired.interval) break;
-            newX = fired.spriteXlen * fired.frame + fired.startPosU;
-            newXPrev = fired.spriteXlen * (fired.frame - 1) + fired.startPosU;
-            uvAttribute = fired.geo.attributes.uv;
-            for(j=0; j<fired.rectSets; j++) {
-                const indexAdder = j * 4;
-                uvAttribute.setXY(0+indexAdder, newXPrev, fired.startPosV);
-                uvAttribute.setXY(1+indexAdder, newX, fired.startPosV);
-                uvAttribute.setXY(2+indexAdder, newXPrev, fired.startPosV - fired.spriteYlen);
-                uvAttribute.setXY(3+indexAdder, newX, fired.startPosV - fired.spriteYlen);
-            }
-            uvAttribute.needsUpdate = true;
-            this.anims.fired[i].lastUpdate = performance.now();
-            if(fired.frame === fired.totalFrames) {
-                if(!fired.loop) endAnims.push(fired);
-                this.anims.fired[i].frame = 1;
-            } else {
-                this.anims.fired[i].frame++;
-            }
+            // if(performance.now() - fired.lastUpdate < fired.interval) break;
+            // newX = fired.spriteXlen * fired.frame + fired.startPosU;
+            // newXPrev = fired.spriteXlen * (fired.frame - 1) + fired.startPosU;
+            // uvAttribute = fired.geo.attributes.uv;
+            // for(j=0; j<fired.rectSets; j++) {
+            //     const indexAdder = j * 4;
+            //     uvAttribute.setXY(0+indexAdder, newXPrev, fired.startPosV);
+            //     uvAttribute.setXY(1+indexAdder, newX, fired.startPosV);
+            //     uvAttribute.setXY(2+indexAdder, newXPrev, fired.startPosV - fired.spriteYlen);
+            //     uvAttribute.setXY(3+indexAdder, newX, fired.startPosV - fired.spriteYlen);
+            // }
+            // uvAttribute.needsUpdate = true;
+            // this.anims.fired[i].lastUpdate = performance.now();
+            // if(fired.frame === fired.totalFrames) {
+            //     if(!fired.loop) endAnims.push(fired);
+            //     this.anims.fired[i].frame = 1;
+            // } else {
+            //     this.anims.fired[i].frame++;
+            // }
         }
         const endAnimsLength = endAnims.length;
         for(i=0; i<endAnimsLength; i++) {

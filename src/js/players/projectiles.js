@@ -744,7 +744,8 @@ class Projectiles {
             });
         }
 
-        return;
+        const a = true;
+        if(a) return;
 
         // FX Sparks
         const sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', true);
@@ -781,7 +782,6 @@ class Projectiles {
         }
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
         scene.add(sparks);
-        console.log("SPARKS", this.sceneState.outlinePass.selectedObjects);
         for(i=0; i<floorParticles; i++) {
             (function(i, particles, sparks, targetPositions, scene, time) {
                 let tl = new TimelineMax();

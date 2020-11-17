@@ -5,7 +5,7 @@ import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtil
 
 const hitBlastFx = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
     switch(type) {
-    case "basic":
+    case 'basic':
         basicBlast(effectName, type, vfxMaterial, effectMeshes, effectData);
         break;
     default: console.error('Game engine error: could not find VFX type ' + type + '.');
