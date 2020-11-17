@@ -38,8 +38,6 @@ class VisualEffects {
 
         this.frame = new NodeFrame();
         this.mesh;
-        this.uvStart = { u: -0.5 + 0.03125 / 2, v: 0.5 - 0.03125 / 2 };
-        this.uvStart = { u: 0, v: 1 - (3/32) };
         this.createTestNode(scene);
     }
 
@@ -97,26 +95,28 @@ class VisualEffects {
         this.mesh = new THREE.Mesh(geo);
         const mtl = new BasicNodeMaterial();
         const texture = new TextureNode(this.vfxMap);
-        texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(3/32), 42, 30);
+        // texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(3/32), 42, 30); // Wall hit
+        texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(1/32), 6, 30); // projectile
         mtl.color = texture;
         mtl.side =  THREE.DoubleSide;
         mtl.alpha = new MathNode(new SwitchNode(mtl.color, 'a'), OperatorNode.ADD);
         mtl.depthWrite = false;
         this.mesh.material = mtl;
         this.mesh.position.set(35, 43, 1);
-        scene.add(this.mesh);
+        //scene.add(this.mesh);
     }
 
-    createFxMaterial() {
+    createFxMaterial(key) {
+        console.log('DATA', this.effectData[key]);
         const mtl = new BasicNodeMaterial();
         const texture = new TextureNode(this.vfxMap);
         texture.uv = this.createHorizontalSpriteSheetNode(
-            32,         // hCount
-            32,         // vCount
-            0,          // startU
-            1-(3/32),   // startV
-            42,         // frames
-            30          // speed
+            32,                                  // hCount
+            32,                                  // vCount
+            this.effectData[key].startPosU,
+            this.effectData[key].startPosV,
+            this.effectData[key].totalFrames,
+            this.effectData[key].speed
         );
         mtl.color = texture;
         mtl.side =  THREE.DoubleSide;
@@ -125,7 +125,7 @@ class VisualEffects {
         return mtl;
     }
 
-    getEffectMesh(key) {
+    getEffectMesh(key, id) {
         let masterMesh = this.effectMeshes[key];
         if(!masterMesh) {
             // Create the mesh
@@ -134,20 +134,26 @@ class VisualEffects {
             masterMesh = this.effectMeshes[key];
         }
         const newMesh = masterMesh.clone();
+        newMesh.name = id;
         if(newMesh.material) newMesh.material.dispose();
-        newMesh.material = this.createFxMaterial();
-        newMesh['frame'] = new NodeFrame();
+        newMesh.material = this.createFxMaterial(key);
+        newMesh.userData['frame'] = new NodeFrame();
         return newMesh;
     }
 
     startAnim(data) {
         const meshName = data.meshName;
-        const combined = Object.assign({}, this.effectData[meshName], data);
+        const combined = Object.assign(
+            {},
+            this.effectData[meshName],
+            { animStart: performance.now() },
+            data);
         !this.anims.meshCount[meshName]
             ? this.anims.meshCount[meshName] = 1
             : this.anims.meshCount[meshName]++;
         this.anims.count++;
         this.anims.fired.push(combined);
+        console.log('ANIMS', this.anims);
     }
 
     removeAnim = (id) => {
@@ -171,44 +177,21 @@ class VisualEffects {
     }
 
     animate = (delta) => {
-        this.frame.update(delta).updateNode(this.mesh.material);
+        //this.frame.update(delta).updateNode(this.mesh.material); // temp anim
 
         const count = this.anims.count;
         if(!count) return;
         let i = 0;
-        // j = 0,
-        // newX,
-        // newXPrev,
-        // uvAttribute;
         const endAnims = [];
         for(i=0; i<count; i++) {
             const fired = this.anims.fired[i];
-            const mesh = this.effectMeshes[fired.meshName];
-            console.log('TRREE', mesh);
-            if(mesh.frame) {
-                console.log('HÄÄR');
-                mesh.frame.updateNode(mesh.material);
+            const mesh = fired.mesh;
+            if(mesh.userData.frame) {
+                mesh.userData.frame.update(delta).updateNode(mesh.material);
             }
-
-            // if(performance.now() - fired.lastUpdate < fired.interval) break;
-            // newX = fired.spriteXlen * fired.frame + fired.startPosU;
-            // newXPrev = fired.spriteXlen * (fired.frame - 1) + fired.startPosU;
-            // uvAttribute = fired.geo.attributes.uv;
-            // for(j=0; j<fired.rectSets; j++) {
-            //     const indexAdder = j * 4;
-            //     uvAttribute.setXY(0+indexAdder, newXPrev, fired.startPosV);
-            //     uvAttribute.setXY(1+indexAdder, newX, fired.startPosV);
-            //     uvAttribute.setXY(2+indexAdder, newXPrev, fired.startPosV - fired.spriteYlen);
-            //     uvAttribute.setXY(3+indexAdder, newX, fired.startPosV - fired.spriteYlen);
-            // }
-            // uvAttribute.needsUpdate = true;
-            // this.anims.fired[i].lastUpdate = performance.now();
-            // if(fired.frame === fired.totalFrames) {
-            //     if(!fired.loop) endAnims.push(fired);
-            //     this.anims.fired[i].frame = 1;
-            // } else {
-            //     this.anims.fired[i].frame++;
-            // }
+            if(fired.animLength && fired.animLength + fired.animStart < performance.now()) {
+                endAnims.push(fired);
+            }
         }
         const endAnimsLength = endAnims.length;
         for(i=0; i<endAnimsLength; i++) {

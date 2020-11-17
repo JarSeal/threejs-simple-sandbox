@@ -40,14 +40,14 @@ const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => 
         spriteXlen,
         spriteYlen,
         startPosU: 0,
-        startPosV: 1 - (2 * spriteYlen),
+        startPosV: 1-(3/32),
         geo: mergedGeo,
         phase: 2,
         frame: 1,
         rectSets: 3,
         totalFrames: 29,
-        lastUpdate: performance.now(),
-        interval: 0,
+        animLength: 500,
+        speed: 45
     };
     plane.geometry.dispose();
     plane2.geometry.dispose();

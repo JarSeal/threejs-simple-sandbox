@@ -106,7 +106,7 @@ class Projectiles {
         this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route);
         let particles = 0;
 
-        const laser = this.VisualEffects.getEffectMesh('projectile_redBlast');
+        const laser = this.VisualEffects.getEffectMesh('projectile_redBlast', name);
         laser.name = name;
         laser.rotation.z = angle;
         laser.position.set(
@@ -118,6 +118,7 @@ class Projectiles {
         this.VisualEffects.startAnim({
             id: name,
             meshName: 'projectile_redBlast',
+            mesh: laser
         });
 
         this.sceneState.particles += particles;
@@ -722,7 +723,8 @@ class Projectiles {
             i = 0;
         
         // Hit blast
-        const blast = this.VisualEffects.getEffectMesh('hitBlast_basic', true),
+        const hitBlastId = 'hit-blast-' + performance.now(),
+            blast = this.VisualEffects.getEffectMesh('hitBlast_basic', hitBlastId),
             randomTwist = Math.random() * 3.1416;
         let randomSize = Math.random() * (1 - 0.25) + 0.25;
         if(blast) {
@@ -736,36 +738,36 @@ class Projectiles {
             );
             scene.add(blast);
             this.VisualEffects.startAnim({
-                id: 'hit-blast-' + performance.now(),
+                id: hitBlastId,
                 clone: true,
                 meshName: 'hitBlast_basic',
-                geo: blast.geometry,
+                mesh: blast,
                 onComplete: () => scene.remove(blast),
             });
         }
 
-        const a = true;
-        if(a) return;
+        // const a = true;
+        // if(a) return;
 
-        // FX Sparks
-        const sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', true);
-        randomSize = Math.random() * (1 - 0.25) + 0.25;
-        if(sparksFx) {
-            sparksFx.rotation.z = randomTwist;
-            sparksFx.scale.set(randomSize, randomSize, randomSize);
-            sparksFx.position.set(
-                posWOffset[0],
-                posWOffset[1],
-                this.shotHeight
-            );
-            scene.add(sparksFx);
-            this.VisualEffects.startAnim({
-                id: 'sparks-fx-' + performance.now(),
-                meshName: 'sparks_wallHit',
-                geo: sparksFx.geometry,
-                onComplete: () => scene.remove(sparksFx),
-            });
-        }
+        // // FX Sparks
+        // const sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', true);
+        // randomSize = Math.random() * (1 - 0.25) + 0.25;
+        // if(sparksFx) {
+        //     sparksFx.rotation.z = randomTwist;
+        //     sparksFx.scale.set(randomSize, randomSize, randomSize);
+        //     sparksFx.position.set(
+        //         posWOffset[0],
+        //         posWOffset[1],
+        //         this.shotHeight
+        //     );
+        //     scene.add(sparksFx);
+        //     this.VisualEffects.startAnim({
+        //         id: 'sparks-fx-' + performance.now(),
+        //         meshName: 'sparks_wallHit',
+        //         geo: sparksFx.geometry,
+        //         onComplete: () => scene.remove(sparksFx),
+        //     });
+        // }
 
         // Particles
         for(i=0; i<floorParticles; i++) {

@@ -55,16 +55,16 @@ const redBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
         spriteXlen,
         spriteYlen,
         startPosU: 0,
-        startPosV: 1,
+        startPosV: 1-(1/32),
         geo: mergedGeo,
         meshName: effectName + '_' + type,
         loop: true,
         phase: 2,
         rectSets: 2,
         frame: 1,
-        totalFrames: 16,
+        totalFrames: 6,
         lastUpdate: performance.now(),
-        interval: 35,
+        speed: 30
     };
     plane.geometry.dispose();
     plane2.geometry.dispose();
