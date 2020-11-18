@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { logger } from '../../util.js';
 
 // Projectile types
 
@@ -8,7 +9,7 @@ const projectileFx = (effectName, type, vfxMaterial, effectMeshes, effectData) =
     case 'redBlast':
         redBlast(effectName, type, vfxMaterial, effectMeshes, effectData);
         break;
-    default: console.error('Game engine error: could not find VFX type ' + type + '.');
+    default: logger.error('Game engine error: could not find VFX type ' + type + '.');
     }
 };
 

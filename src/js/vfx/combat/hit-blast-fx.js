@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { logger } from '../../util.js';
 
 // A hit blast when a projectile hits a wall, a player, or an obstacle
 
@@ -8,7 +9,7 @@ const hitBlastFx = (effectName, type, vfxMaterial, effectMeshes, effectData) => 
     case 'basic':
         basicBlast(effectName, type, vfxMaterial, effectMeshes, effectData);
         break;
-    default: console.error('Game engine error: could not find VFX type ' + type + '.');
+    default: logger.error('Game engine error: could not find VFX type ' + type + '.');
     }
 };
 
@@ -35,6 +36,8 @@ const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => 
     geometries.push(plane3.geometry);
     const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, false);
     const hitBlast = new THREE.Mesh(mergedGeo, vfxMaterial);
+
+    // Attach effectMesh to effectMeshes and create effectData
     effectMeshes[effectName + '_' + type] = hitBlast;
     effectData[effectName + '_' + type] = {
         spriteXlen,
@@ -42,8 +45,6 @@ const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => 
         startPosU: 0,
         startPosV: 1-(3/32),
         geo: mergedGeo,
-        phase: 2,
-        frame: 1,
         rectSets: 3,
         totalFrames: 29,
         animLength: 500,

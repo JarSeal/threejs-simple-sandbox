@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import hitBlastFx from './combat/hit-blast-fx.js';
 import projectileFx from './combat/projectile-fx.js';
 import sparksFx from './combat/sparks-fx.js';
+import { logger } from '../util.js';
 import {
     NodeFrame,
     MathNode,
@@ -36,9 +37,9 @@ class VisualEffects {
         this.effectData = {};
         sceneState.renderCalls.push(this.animate);
 
-        this.frame = new NodeFrame();
-        this.mesh;
-        this.createTestNode(scene);
+        // this.frame = new NodeFrame();
+        // this.mesh;
+        // this.createTestNode(scene);
     }
 
     createHorizontalSpriteSheetNode(hCount, vCount, startU, startV, frames, speed) {
@@ -90,24 +91,7 @@ class VisualEffects {
         return uvFrame;
     }
 
-    createTestNode(scene) {
-        const geo = new THREE.PlaneBufferGeometry(5, 5, 1);
-        this.mesh = new THREE.Mesh(geo);
-        const mtl = new BasicNodeMaterial();
-        const texture = new TextureNode(this.vfxMap);
-        // texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(3/32), 42, 30); // Wall hit
-        texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(1/32), 6, 30); // projectile
-        mtl.color = texture;
-        mtl.side =  THREE.DoubleSide;
-        mtl.alpha = new MathNode(new SwitchNode(mtl.color, 'a'), OperatorNode.ADD);
-        mtl.depthWrite = false;
-        this.mesh.material = mtl;
-        this.mesh.position.set(35, 43, 1);
-        //scene.add(this.mesh);
-    }
-
     createFxMaterial(key) {
-        console.log('DATA', this.effectData[key]);
         const mtl = new BasicNodeMaterial();
         const texture = new TextureNode(this.vfxMap);
         texture.uv = this.createHorizontalSpriteSheetNode(
@@ -153,7 +137,6 @@ class VisualEffects {
             : this.anims.meshCount[meshName]++;
         this.anims.count++;
         this.anims.fired.push(combined);
-        console.log('ANIMS', this.anims);
     }
 
     removeAnim = (id) => {
@@ -200,10 +183,6 @@ class VisualEffects {
             if(end.onComplete) end.onComplete();
             this.removeAnim(end.id);
         }
-
-        // Node material anims
-        // let modulo = Math.floor((this.sceneState.clock.getElapsedTime() * 10) % 16);
-        // console.log(modulo);
     }
 
     cacheEffects() {
@@ -232,9 +211,25 @@ class VisualEffects {
         case 'sparks':
             sparksFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData);
             break;
-        default: console.error('Game engine error: could not create effect with name "' + effectName + '" and type "' + type + '".');
+        default: logger.error('Could not create effect with name "' + effectName + '" and type "' + type + '".');
         }
         this.cacheEffect(effectName + '_' + type);
+    }
+
+    createTestNode(scene) {
+        const geo = new THREE.PlaneBufferGeometry(5, 5, 1);
+        this.mesh = new THREE.Mesh(geo);
+        const mtl = new BasicNodeMaterial();
+        const texture = new TextureNode(this.vfxMap);
+        // texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(3/32), 42, 30); // Wall hit
+        texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(1/32), 6, 30); // projectile
+        mtl.color = texture;
+        mtl.side =  THREE.DoubleSide;
+        mtl.alpha = new MathNode(new SwitchNode(mtl.color, 'a'), OperatorNode.ADD);
+        mtl.depthWrite = false;
+        this.mesh.material = mtl;
+        this.mesh.position.set(35, 43, 1);
+        scene.add(this.mesh);
     }
 }
 

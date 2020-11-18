@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { logger } from '../../util.js';
 
 // All types of sparks
 
@@ -8,7 +9,7 @@ const sparksFx = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
     case 'wallHit':
         wallHitSparks(effectName, type, vfxMaterial, effectMeshes, effectData);
         break;
-    default: console.error('Game engine error: could not find VFX type ' + type + '.');
+    default: logger.error('Could not find VFX type ' + type + '.');
     }
 };
 

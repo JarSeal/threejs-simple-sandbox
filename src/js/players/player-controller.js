@@ -6,6 +6,7 @@ import { astar, Graph } from '../vendor/astar.js';
 import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
 import { calculateAngle } from '../util.js';
 import Projectiles from './projectiles.js';
+import { logger } from '../util.js';
 
 class PlayerController {
     constructor(scene, sceneState, doorAnimationController, SoundController, VisualEffects) {
@@ -117,7 +118,7 @@ class PlayerController {
             },
             () => {},
             (error) => {
-                console.log('An GLTF loading error (loading hero) happened', error);
+                logger.error('An GLTF loading error (loading hero) happened', error);
             }
         );
     }
@@ -193,7 +194,7 @@ class PlayerController {
             this.sceneState.players.hero.newRoute = [dx, dy];
         }
         let endTime = performance.now(); // FOR DEBUGGING PURPOSES ONLY
-        console.log(dx, dy, 'route', (endTime - startTime) + 'ms', resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
+        logger.log(dx, dy, 'route', (endTime - startTime) + 'ms', resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
     }
 
     newMove(player) {
@@ -271,7 +272,6 @@ class PlayerController {
                         player.routeIndex = 0;
                         player.curSpeed = 0;
                         this.doorAnims.checkDoors();
-                        console.log('ended hero movement', player.newRoute);
                         return; // End animation
                     }
                 }

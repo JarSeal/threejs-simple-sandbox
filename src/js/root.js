@@ -55,7 +55,6 @@ class TileMapRoot {
 
     init() {
         this.sceneState.initTime = this.getInitTime();
-        console.log(this.sceneState.initTime);
         const appUiLayer = new AppUiLayer(this.sceneState);
         const soundController = new SoundController();
 
@@ -120,7 +119,7 @@ class TileMapRoot {
         this.sceneState.outlinePass.visibleEdgeColor.set('#000000');
         this.sceneState.outlinePass.hiddenEdgeColor.set('#66ffff');
         this.sceneState.outlinePass.selectedObjects = this.sceneState.outlinePassObjects;
-        console.log(this.sceneState.outlinePass);
+        // console.log(this.sceneState.outlinePass);
         composer.addPass(this.sceneState.outlinePass);
         this.sceneState.effectFXAA = new ShaderPass(FXAAShader);
         this.sceneState.effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);

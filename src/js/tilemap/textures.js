@@ -1,9 +1,10 @@
+import { logger } from '../util.js';
 
 export function getModuleTexture(moduleId, level, skinId, type, part) {
     let textureKey = 'm'+moduleId+'-l'+level+'-s'+skinId+'-'+type+'-'+part,
         texturePath = moduleTextures[textureKey];
     if(!texturePath) {
-        console.error('Texture reference with key '+textureKey+' not found (ENG-ERR-TEXT01-02).');
+        logger.error('Texture reference with key '+textureKey+' not found (ENG-ERR-TEXT01-02).');
         return {
             texturePath: null,
             key: textureKey,
