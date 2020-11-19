@@ -249,10 +249,10 @@ class Consequences {
         }
     }
 
-    doHitConsequence(id, hitter, scene) {
+    doHitConsequence(id, scene, removeAnim) {
         // TODO: Do the damage for the player here...
         this.removeFromHitList(id);
-        this.removeProjectile(id, scene);
+        this.removeProjectile(id, scene, removeAnim);
     }
 
     checkHitTime(id, initTime) {
@@ -276,7 +276,7 @@ class Consequences {
             id = hitListKeys[i];
             hitter = this.checkHitTime(id, initTime);
             if(hitter) {
-                this.doHitConsequence(id, hitter, scene);
+                this.doHitConsequence(id, scene, null);
             }
         }
     }
@@ -285,23 +285,23 @@ class Consequences {
         return this.hitList[id];
     }
 
-    removeProjectile(id, scene) {
+    removeProjectile(id, scene, removeAnim) {
         let i=0,
-            projLength = this.projectiles.length,
-            projIndex,
+            projIndex;
+        const projLength = this.projectiles.length,
             projectiles = this.projectiles;
         for(i=0; i<projLength; i++) {
             if(projectiles[i].projectileId == id) {
                 projIndex = i;
+                break;
             }
         }
         if(projIndex !== undefined) {
             this.projectiles.splice(projIndex, 1);
         }
+        if(removeAnim) removeAnim(id);
         if(scene.remove && scene.getObjectByName) {
-            scene.remove(scene.getObjectByName(id + '-inside'));
-            scene.remove(scene.getObjectByName(id + '-outside'));
-            scene.remove(scene.getObjectByName(id + '-group'));
+            scene.remove(scene.getObjectByName(id));
         }
     }
 

@@ -6,6 +6,7 @@ import { getShip } from '../data/dev-ship.js';
 import { getModule } from './modules/index.js';
 import { TextureMerger } from '../vendor/TextureMerger.js';
 import { getModuleTexture } from './textures.js';
+import { logger } from '../util.js';
 
 class LoadTileMap {
     constructor(scene, renderer, sceneState) {
@@ -34,7 +35,6 @@ class LoadTileMap {
         let totalAmount = this.texturesToLoadPerGeo * this.loaders.modulesLength;
         this.loaders.texturesLoaded++;
         if(totalAmount == this.loaders.texturesLoaded) {
-            console.log('ALL TEXTURES LOADED');
             this.loadMeshes();
         }
     }
@@ -42,7 +42,6 @@ class LoadTileMap {
     meshLoaded() {
         this.loaders.meshesLoaded++;
         if(this.loaders.meshesLoaded == this.loaders.modulesLength) {
-            console.log('All meshes loaded', this.mapTextures);
             this.mergedMaps['map'] = new TextureMerger(this.mapTextures);
             this.positionAndSkinMeshes();
         }
@@ -53,7 +52,7 @@ class LoadTileMap {
             i = 0,
             attrLength = 0;
         if(!object || !object.geometry || !object.geometry.attributes || !object.geometry.attributes.uv) {
-            console.error('Game engine error: modifyObjectUV, object attribute not found', object);
+            logger.error('ModifyObjectUV, object attribute not found', object);
             return;
         }
         uvAttribute = object.geometry.attributes.uv;
@@ -73,7 +72,7 @@ class LoadTileMap {
 
     createShaderMaterial(texture) {
         const uniforms = {
-            texture: { type: 't', value: texture },
+            mapTexture: { type: 't', value: texture },
         };
 
         const vertexShader = `
@@ -85,11 +84,11 @@ class LoadTileMap {
 
         const fragmentShader = `
         varying vec2 vUv;
-        uniform sampler2D texture;
+        uniform sampler2D mapTexture;
         void main() {
             float coordX = vUv.x;
             float coordY = vUv.y;
-            gl_FragColor = texture2D(texture, vec2(coordX, coordY));
+            gl_FragColor = texture2D(mapTexture, vec2(coordX, coordY));
         }`;
 
         return {
@@ -101,8 +100,8 @@ class LoadTileMap {
 
     createShaderMaterial2(texture, texture2) {
         const uniforms = {
-            texture: { type: 't', value: texture },
-            texture2: { type: 't', value: texture2 }
+            mapTexture: { type: 't', value: texture },
+            mapTexture2: { type: 't', value: texture2 }
         };
 
         const vertexShader = `
@@ -129,21 +128,21 @@ class LoadTileMap {
         }`;
 
         const fragmentShader = `
-        uniform sampler2D texture;
-        uniform sampler2D texture2;
+        uniform sampler2D mapTexture;
+        uniform sampler2D mapTexture2;
         varying vec2 vUv;
 
         varying vec2 vN;
         void main() {
             float coordX = vUv.x;
             float coordY = vUv.y;
-            vec4 Ca = texture2D(texture2, vN);
-            vec4 Cb = texture2D( texture, vec2(coordX, coordY) );
+            vec4 Ca = texture2D(mapTexture2, vN);
+            vec4 Cb = texture2D(mapTexture, vec2(coordX, coordY));
             vec3 c = Ca.rgb * Ca.a + Cb.rgb * Cb.a * (1.0 - Ca.a);
             gl_FragColor = vec4(c, 1.0);
 
-            // vec3 Cb = texture2D( texture, vN ).rgb;
-            // gl_FragColor = vec4( Cb, 1. );
+            // vec3 Cb = texture2D(mapTexture, vN).rgb;
+            // gl_FragColor = vec4(Cb, 1.);
         }`;
 
         return {
@@ -252,7 +251,7 @@ class LoadTileMap {
                     },
                     () => {},
                     (error) => {
-                        console.log('Game engine error: A GLTF loading error happened', error);
+                        logger.error('A GLTF loading error happened', error);
                     }
                 );
             } else {
@@ -340,7 +339,7 @@ class LoadTileMap {
                 
             },
             (error) => {
-                console.log('An GLTF loading error happened', error);
+                logger.error('An GLTF loading error happened', error);
             }
         );
 
@@ -393,7 +392,6 @@ class LoadTileMap {
         this.loaders.modules = modulesLoader;
         this.loaders.modulesLength = loaderLength;
         for(loader=0;loader<loaderLength;loader++) {
-            console.log('modulesLoader', modulesLoader);
             this.loadModuleAndTexture(modulesLoader[loader], renderer, scene);
         }
     }

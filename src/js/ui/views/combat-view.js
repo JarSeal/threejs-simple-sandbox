@@ -96,7 +96,7 @@ class CombatView {
                             return;
                         }
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
-                            heroMaterial.color.set("lime");
+                            heroMaterial.color.set('lime');
                             sceneState.ui.viewData[this.index].actionPhase = 0;
                         }
                     },

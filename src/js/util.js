@@ -11,4 +11,13 @@ export const randomTimeNow = (from, to) => {
     return performance.now() + randomInt(from, to);
 };
 
+export const logger = {
+    log: (...args) => {
+        console.log(...args);
+    },
+    error: (...args) => {
+        console.error('********* GAME ENGINE ERROR *********', ...args);
+    }
+};
+
 export default { calculateAngle, randomInt, randomTimeNow };

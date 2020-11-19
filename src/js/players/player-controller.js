@@ -6,14 +6,15 @@ import { astar, Graph } from '../vendor/astar.js';
 import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
 import { calculateAngle } from '../util.js';
 import Projectiles from './projectiles.js';
+import { logger } from '../util.js';
 
 class PlayerController {
-    constructor(scene, sceneState, doorAnimationController, SoundController) {
+    constructor(scene, sceneState, doorAnimationController, SoundController, VisualEffects) {
         this.sceneState = sceneState;
         this.chars = {};
         this.doorAnims = doorAnimationController;
         this.SoundController = SoundController;
-        this.projectiles = new Projectiles(scene, sceneState, SoundController);
+        this.projectiles = new Projectiles(scene, sceneState, SoundController, VisualEffects);
     }
 
     createNewPlayer(scene, renderer, sceneState, type) {
@@ -43,8 +44,10 @@ class PlayerController {
         tempMesh.scale.y = 0.5;
         tempMesh.position.x = tempDudePos[0];
         tempMesh.position.y = tempDudePos[1];
-        tempMesh.position.z = 0.5;
+        tempMesh.position.z = 1;
         scene.add(tempMesh);
+        // Outline postprocessing pass objects addition
+        // sceneState.outlinePassObjects = [tempMesh];
         
         let group = new THREE.Group();
         let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
@@ -106,11 +109,16 @@ class PlayerController {
                 });
                 scene.add(object);
                 sceneState.players.hero.mesh = object;
-                console.log('IMPORT', gltf, 'IDLE', idle);
+                // if(sceneState.outlinePass) {
+                //     sceneState.outlinePass.selectedObjects = sceneState.outlinePass.selectedObjects.concat(object);
+                // } else {
+                //     sceneState.outlinePassObjects = sceneState.outlinePassObjects.concat(object);
+                // }
+                sceneState.outlinePass.selectedObjects = [object.children[0].children[1]];
             },
             () => {},
             (error) => {
-                console.log('An GLTF loading error (loading hero) happened', error);
+                logger.error('An GLTF loading error (loading hero) happened', error);
             }
         );
     }
@@ -186,7 +194,7 @@ class PlayerController {
             this.sceneState.players.hero.newRoute = [dx, dy];
         }
         let endTime = performance.now(); // FOR DEBUGGING PURPOSES ONLY
-        console.log(dx, dy, 'route', (endTime - startTime) + 'ms', resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
+        logger.log(dx, dy, 'route', (endTime - startTime) + 'ms', resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
     }
 
     newMove(player) {
@@ -264,7 +272,6 @@ class PlayerController {
                         player.routeIndex = 0;
                         player.curSpeed = 0;
                         this.doorAnims.checkDoors();
-                        console.log('ended hero movement', player.newRoute);
                         return; // End animation
                     }
                 }

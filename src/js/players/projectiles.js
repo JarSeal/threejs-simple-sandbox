@@ -3,9 +3,20 @@ import { calculateAngle } from '../util';
 import { TimelineMax, Linear, Bounce } from 'gsap-ssr';
 
 class Projectiles {
-    constructor(scene, sceneState, SoundController) {
+    constructor(scene, sceneState, SoundController, VisualEffects) {
         this.scene = scene;
         this.sceneState = sceneState;
+        this.VisualEffects = VisualEffects;
+        this.shotHeight = 1.4;
+        this.vfxMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
+        this.projectileAnims = {
+            count: 0,
+            fired: []
+        };
+        this.laserObjects = {
+            spriteXlen: 128 / 4096,
+            spriteYlen: 64 / 4096,
+        };
         this.projectileGeoInside = new THREE.PlaneBufferGeometry();
         this.projectileGeoOutside = new THREE.PlaneBufferGeometry();
         this.projectileMatInside = new THREE.MeshBasicMaterial({
@@ -18,11 +29,11 @@ class Projectiles {
         });
         let fxSpark = new THREE.TextureLoader().load('/images/sprites/fx-spark.png');
         this.sparkMaterial = new THREE.PointsMaterial({
-            size: 10,
-            sizeAttenuation: false,
+            size: 1,
+            sizeAttenuation: true,
             map: fxSpark,
-            alphaTest: 0.5,
-            transparent: true
+            transparent: true,
+            // premultipliedAlpha: true,
         });
         this.preCountedTurns = {
             fortyFive: 45 * (Math.PI/180),
@@ -31,6 +42,13 @@ class Projectiles {
             hundredEighty: 180 * (Math.PI/180),
         };
         this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
+
+        VisualEffects.createEffect('projectile', 'redBlast');
+        VisualEffects.createEffect('hitBlast', 'basic');
+        VisualEffects.createEffect('sparks', 'wallHit', {
+            speed: 120,
+            animLength: 400
+        });
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
@@ -49,10 +67,10 @@ class Projectiles {
         let speedPerTile = 0.085 * sceneState.timeSpeed, // in seconds
             maxDistance = 20,
             raycaster = new THREE.Raycaster(),
-            startPoint = new THREE.Vector3(from[0], from[1], 1),
+            startPoint = new THREE.Vector3(from[0], from[1], this.shotHeight),
             direction = new THREE.Vector3(),
             hitObject = this.scene.getObjectByName('king-mesh');
-        direction.subVectors(new THREE.Vector3(target[0], target[1], 1), startPoint).normalize();
+        direction.subVectors(new THREE.Vector3(target[0], target[1], this.shotHeight), startPoint).normalize();
         raycaster.set(startPoint, direction, true);
         let intersects = raycaster.intersectObject(hitObject, true);
         let angle = 0,
@@ -72,48 +90,44 @@ class Projectiles {
         let speed = intersects[0].distance * speedPerTile;
         this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route);
         let particles = 0;
-        let meshInside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatInside);
-        meshInside.scale.set(0.35, 0.05, 1);
-        meshInside.name = name + '-inside';
-        let projectileGroup = new THREE.Group();
-        projectileGroup.name = name + '-group';
-        projectileGroup.add(meshInside);
-        particles++;
 
-        let meshOutside = new THREE.Mesh(this.projectileGeoInside, this.projectileMatOutside);
-        meshOutside.scale.set(0.51, 0.21, 1);
-        meshOutside.position.set(0, 0, -0.01);
-        meshOutside.name = name + '-outside';
-        projectileGroup.add(meshOutside);
-        particles++;
-        if(!this.sceneState.settings.useOpacity) {
-            meshOutside.material.opacity = 1;
-            meshOutside.material.color.setHex(0X664646);
-        }
-        projectileGroup.rotation.z = angle + 1.5708;
-        projectileGroup.position.set(from[0], from[1], 1);
-        scene.add(projectileGroup);
-        this.sceneState.particles += particles; // ADD PARTICLE(S)
+        const laser = this.VisualEffects.getEffectMesh('projectile_redBlast', name);
+        laser.name = name;
+        laser.rotation.z = angle;
+        laser.position.set(
+            from[0],
+            from[1],
+            this.shotHeight
+        );
+        scene.add(laser);
+        this.VisualEffects.startAnim({
+            id: name,
+            meshName: 'projectile_redBlast',
+            mesh: laser
+        });
+
+        this.sceneState.particles += particles;
         let tl = new TimelineMax();
         tl.startTime = performance.now();
         this.sounds.play('projectile-002');
         this.sounds.play('whoosh-001');
-        tl.to(projectileGroup.position, speed, {
+        tl.to(laser.position, speed, {
             x: targetPos[0],
             y: targetPos[1],
             ease: Linear.easeNone,
             onUpdate: () => {
                 let hitter = this.sceneState.consequences.checkHitTime(name, this.sceneState.initTime.s);
                 if(hitter) {
-                    this.sceneState.consequences.doHitConsequence(name, hitter, scene);
+                    this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
                     this.sceneState.particles -= particles;
                     this.hitObstacle(hitter.target, scene, name, camera, tileMap, hitter.hitPos, projectileLife);
                     tl.kill();
                     return;
                 }
-                let timeNow = this.sceneState.initTime.s + performance.now() / 1000;
-                if(timeNow > projectileLife.route[projectileLife.route.length - 1].leaveTime + 0.5) {
-                    this.sceneState.consequences.removeProjectile(name, scene);
+                const timeNow = this.sceneState.initTime.s + performance.now() / 1000,
+                    lastTile = projectileLife.route[projectileLife.route.length - 1];
+                if(!lastTile || timeNow > lastTile.leaveTime + 0.5) {
+                    this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
                     this.sceneState.particles -= particles;
                     tl.kill();
                 }
@@ -123,7 +137,7 @@ class Projectiles {
                 if(!projectileLife.noHit) {
                     this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
                 }
-                this.sceneState.consequences.removeProjectile(name, scene);
+                this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
                 // scene.remove(helperLine);
             }
         });
@@ -535,11 +549,11 @@ class Projectiles {
     hitObstacle(type, scene, projectileName, camera, tileMap, targetPos, projectileLife) {
         let pos = [targetPos[0], targetPos[1]],
             posWOffset = [targetPos[0] + projectileLife.xOffset, targetPos[1] + projectileLife.yOffset],
-            minFloorParticles = 3,
-            maxFloorParticles = 36,
+            minFloorParticles = 5,
+            maxFloorParticles = 50,
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
         if(type == 'solid') {
-            this.createWallBurn(projectileLife, posWOffset, scene, camera);
+            // this.createWallBurn(projectileLife, posWOffset, scene, camera);
             this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             this.sounds.play('ricochet-001');
         } else if(type == 'player' || type == 'door') {
@@ -692,8 +706,63 @@ class Projectiles {
             vertices = [],
             targetPositions = [],
             i = 0;
+        
+        // Hit blast
+        const hitBlastId = 'hit-blast-' + performance.now(),
+            blast = this.VisualEffects.getEffectMesh('hitBlast_basic', hitBlastId),
+            randomTwist = Math.random() * 3.1416;
+        let randomSize = Math.random() * (1 - 0.25) + 0.25;
+        if(blast) {
+            blast.rotation.set(randomTwist, randomTwist, randomTwist);
+            blast.name = name;
+            blast.scale.set(randomSize, randomSize, randomSize);
+            blast.position.set(
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            );
+            scene.add(blast);
+            this.VisualEffects.startAnim({
+                id: hitBlastId,
+                meshName: 'hitBlast_basic',
+                mesh: blast,
+                onComplete: () => {
+                    blast.material.dispose();
+                    scene.remove(blast);
+                },
+            });
+        }
+
+        // FX Sparks
+        const sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', true);
+        randomSize = Math.random() * (1 - 0.25) + 0.25;
+        if(sparksFx) {
+            sparksFx.rotation.z = randomTwist;
+            sparksFx.scale.set(randomSize, randomSize, randomSize);
+            sparksFx.position.set(
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            );
+            scene.add(sparksFx);
+            this.VisualEffects.startAnim({
+                id: 'sparks-fx-' + performance.now(),
+                meshName: 'sparks_wallHit',
+                mesh: sparksFx,
+                onComplete: () => {
+                    sparksFx.material.dispose();
+                    scene.remove(sparksFx);
+                },
+            });
+        }
+
+        // Particles
         for(i=0; i<floorParticles; i++) {
-            vertices.push(posWOffset[0], posWOffset[1], 1);
+            vertices.push(
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            );
             targetPositions.push([
                 posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
                 posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
@@ -718,7 +787,7 @@ class Projectiles {
                     positions.needsUpdate = true;
                 }}, '-='+time);
                 if(i === 0) {
-                    let materialValues = {size:10},
+                    let materialValues = {size: 0.2},
                         tl2 = new TimelineMax();
                     tl2.to(materialValues, 1.7, {size: 0.001, onUpdate: () => {
                         sparks.material.size = materialValues.size;
@@ -830,7 +899,11 @@ class Projectiles {
         mesh.position.x = offset[0];
         mesh.position.y = offset[1];
         group.add(mesh);
-        group.position.set(posWOffset[0], posWOffset[1], 1);
+        group.position.set(
+            posWOffset[0],
+            posWOffset[1],
+            this.shotHeight
+        );
         group.rotation.z = projectileLife.turn;
         scene.add(group);
         let tl = new TimelineMax();
