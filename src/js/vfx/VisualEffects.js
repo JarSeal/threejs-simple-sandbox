@@ -37,6 +37,8 @@ class VisualEffects {
         this.effectData = {};
         sceneState.renderCalls.push(this.animate);
 
+        this.effectsFrame = new NodeFrame();
+
         // this.createExampleNode(scene);
     }
 
@@ -133,7 +135,6 @@ class VisualEffects {
         const masterMesh = this.effectMeshes[key];
         const newMesh = masterMesh.clone();
         newMesh.name = id;
-        newMesh.userData['frame'] = new NodeFrame();
         return newMesh;
     }
 
@@ -176,12 +177,11 @@ class VisualEffects {
         if(!count) return;
         let i = 0;
         const endAnims = [];
+        this.effectsFrame.update(delta);
         for(i=0; i<count; i++) {
             const fired = this.anims.fired[i];
             const mesh = fired.mesh;
-            if(mesh.userData.frame) {
-                mesh.userData.frame.update(delta).updateNode(mesh.material);
-            }
+            this.effectsFrame.updateNode(mesh.material);
             if(fired.animLength && fired.animLength + fired.animStart < performance.now()) {
                 endAnims.push(fired);
             }
