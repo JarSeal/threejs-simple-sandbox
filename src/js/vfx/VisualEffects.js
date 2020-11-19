@@ -42,6 +42,88 @@ class VisualEffects {
         // this.createExampleNode(scene);
     }
 
+    createEffectMaterial(hCount, vCount, startU, startV, frames, speed = 60, cols) {
+        const uTime = { value: 0 };
+        const uTotalTime = { value: this._randomFloatInBetween(3.0, 6.0) };
+        const uBurnSize = { value: this._randomIntInBetween(6, 9) / 100 };
+        const uLavaSize = { value: this._randomIntInBetween(3, 6) / 100 };
+        const uniforms = {
+            uTime: uTime,
+            uTotalTime: uTotalTime,
+            uBurnSize: uBurnSize,
+            uLavaSize: uLavaSize,
+        };
+        const vertexShader = `
+        uniform float uTime;
+        uniform float uTotalTime;
+        uniform float uBurnSize;
+        uniform float uLavaSize;
+        varying vec2 vUv;
+        varying float time;
+        varying float totalTime;
+        varying float burnSize;
+        varying float lavaSize;
+        void main() {
+            vUv = uv;
+            time = uTime;
+            totalTime = uTotalTime;
+            burnSize = uBurnSize;
+            lavaSize = uLavaSize;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`;
+
+        const fragmentShader = `
+        // #ifdef GL_ES
+        // precision mediump float;
+        // #endif
+
+        varying vec2 vUv;
+        varying float time;
+        varying float totalTime;
+        varying float burnSize;
+        varying float lavaSize;
+
+        void main() {
+            vec4 black_alpha_color = vec4(0.0, 0.0, 0.0, 0.0);
+            float burn_border_size = 0.1 * (1.0 - time);
+            float burn_radius = burnSize * (1.0 - time);
+            vec4 burn_color = vec4(0.0, 0.0, 0.0, 1.0);
+            if(burn_radius < 0.01) {
+                burn_radius = 0.0;
+            }
+            float lava_radius = lavaSize;
+            vec4 lava_color = vec4(1.0, 0.4941, 0.0, 1.0);
+            if(time > 0.4) {
+                lava_radius = lavaSize * (1.4 - time * 1.5);
+                lava_color.rgb = vec3(lava_color.r * (1.4 - time * 1.5),lava_color.g * (1.4 - time * 1.5),lava_color.b * (1.4 - time * 1.5));
+            }
+            if(lava_radius < 0.01) {
+                lava_radius = 0.0;
+                lava_color = vec4(0.0, 0.0, 0.0, 0.0);
+            }
+            
+            vec2 uv = vUv;
+            uv -= vec2(0.5, 0.5);
+            float dist = sqrt(dot(uv, uv));
+            float burn_t = smoothstep(burn_radius+burn_border_size, burn_radius-burn_border_size, dist);
+            vec4 burnSpot = mix(black_alpha_color, burn_color, burn_t);
+            float lava_t = smoothstep(lava_radius+0.01, lava_radius-0.01, dist);
+            
+            gl_FragColor = mix(burnSpot, lava_color, lava_t);
+            if(gl_FragColor.a < 0.001) {
+                discard;
+            }
+        }
+        `;
+
+        return {
+            uniforms: uniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true
+        };
+    }
+
     createHorizontalSpriteSheetNode(hCount, vCount, startU, startV, frames, speed = 60, cols) {
         const c = cols ? cols : frames;
         const animSpeed = new Vector2Node(speed, speed);
