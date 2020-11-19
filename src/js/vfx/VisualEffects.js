@@ -37,58 +37,80 @@ class VisualEffects {
         this.effectData = {};
         sceneState.renderCalls.push(this.animate);
 
-        // this.frame = new NodeFrame();
-        // this.mesh;
-        // this.createTestNode(scene);
+        // this.createExampleNode(scene);
     }
 
-    createHorizontalSpriteSheetNode(hCount, vCount, startU, startV, frames, speed) {
-        var animSpeed = new Vector2Node(speed, 0); // frame per second
-        var scale = new Vector2Node(1/hCount, 1/vCount); // 32 horizontal and vertical images in sprite-sheet
+    createHorizontalSpriteSheetNode(hCount, vCount, startU, startV, frames, speed = 60, cols, rows) {
+        const c = cols ? cols : frames;
+        const r = rows ? rows : 1;
+        const animSpeed = new Vector2Node(speed, speed); // frames per second
+        const scale = new Vector2Node(1/hCount, 1/vCount); // 32 horizontal and vertical images in sprite-sheet
         // TODO: make the ability to start the sprite from the middle (some kind of offset)
 
-        var uvTimer = new OperatorNode(
+        // NEW VERSION:
+        const uvTimer = new OperatorNode(
             new TimerNode(),
             animSpeed,
             OperatorNode.MUL
         );
-
-        var uvTimerFrameCounter = new MathNode(
+        const frameCounter = new MathNode(
             uvTimer,
             new FloatNode(frames),
             MathNode.MOD
         );
-
-        var uvIntegerTimer = new MathNode(
-            uvTimerFrameCounter,
+        const frameAsInteger = new MathNode(
+            frameCounter,
             MathNode.FLOOR
         );
+        const rowCounter = new OperatorNode(
+            frameAsInteger,
+            new FloatNode(c),
+            OperatorNode.DIV
+        );
+        const rowAsInteger = new MathNode(
+            rowCounter,
+            MathNode.FLOOR
+        );
+        const columnAsInteger = new MathNode(
+            frameAsInteger,
+            new FloatNode(c),
+            MathNode.MOD
+        );
 
-        var uvFrameOffset = new OperatorNode(
-            uvIntegerTimer,
-            new Vector2Node(1/hCount, 1), // TODO: make it change rows, if frame count goes over 32 (if hCount is 32)
+        const rowOffset = new OperatorNode(
+            rowAsInteger,
+            new Vector2Node(0, 1/vCount),
+            OperatorNode.MUL
+        );
+        const columnOffset = new OperatorNode(
+            columnAsInteger,
+            new Vector2Node(1/hCount, 0),
             OperatorNode.MUL
         );
 
-        var offset = new OperatorNode(
-            uvFrameOffset,
+        const offsetWithColumnOffset = new OperatorNode(
+            columnOffset,
             new Vector2Node(startU, startV),
             OperatorNode.ADD
         );
+        const offsetWithBothOffsets = new OperatorNode(
+            offsetWithColumnOffset,
+            rowOffset,
+            OperatorNode.SUB
+        );
 
-        var uvScale = new OperatorNode(
+        const uvScale = new OperatorNode(
             new UVNode(),
             scale,
             OperatorNode.MUL
         );
-
-        var uvFrame = new OperatorNode(
+        const curUvFrame = new OperatorNode(
             uvScale,
-            offset,
+            offsetWithBothOffsets,
             OperatorNode.ADD
         );
 
-        return uvFrame;
+        return curUvFrame;
     }
 
     createFxMaterial(key) {
@@ -100,7 +122,9 @@ class VisualEffects {
             this.effectData[key].startPosU,
             this.effectData[key].startPosV,
             this.effectData[key].totalFrames,
-            this.effectData[key].speed
+            this.effectData[key].speed,
+            this.effectData[key].columns || 0,
+            this.effectData[key].rows || 0
         );
         mtl.color = texture;
         mtl.side =  THREE.DoubleSide;
@@ -200,36 +224,35 @@ class VisualEffects {
         setTimeout(() => this.scene.remove(tempMesh), 1000); // This is currently pretty dirty, but works.
     }
 
-    createEffect = (effectName, type) => {
+    createEffect = (effectName, type, options = {}) => {
         switch(effectName) {
         case 'hitBlast':
-            hitBlastFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData);
+            hitBlastFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData, options);
             break;
         case 'projectile':
-            projectileFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData);
+            projectileFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData, options);
             break;
         case 'sparks':
-            sparksFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData);
+            sparksFx(effectName, type, this.vfxMaterial, this.effectMeshes, this.effectData, options);
             break;
         default: logger.error('Could not create effect with name "' + effectName + '" and type "' + type + '".');
         }
         this.cacheEffect(effectName + '_' + type);
     }
 
-    createTestNode(scene) {
-        const geo = new THREE.PlaneBufferGeometry(5, 5, 1);
-        this.mesh = new THREE.Mesh(geo);
-        const mtl = new BasicNodeMaterial();
-        const texture = new TextureNode(this.vfxMap);
-        // texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(3/32), 42, 30); // Wall hit
-        texture.uv = this.createHorizontalSpriteSheetNode(32, 32, 0, 1-(1/32), 6, 30); // projectile
-        mtl.color = texture;
-        mtl.side =  THREE.DoubleSide;
-        mtl.alpha = new MathNode(new SwitchNode(mtl.color, 'a'), OperatorNode.ADD);
-        mtl.depthWrite = false;
-        this.mesh.material = mtl;
-        this.mesh.position.set(35, 43, 1);
-        scene.add(this.mesh);
+    createExampleNode(scene) {
+        const id = 'some-id';
+        const mesh = this.getEffectMesh('sparks_wallHit', id);
+        mesh.name = id;
+        mesh.scale.set(1, 1, 1);
+        mesh.position.set(35, 43, 1);
+        scene.add(mesh);
+        this.startAnim({
+            id: id,
+            clone: true,
+            meshName: 'sparks_wallHit',
+            mesh: mesh
+        });
     }
 }
 

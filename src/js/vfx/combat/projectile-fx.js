@@ -4,16 +4,16 @@ import { logger } from '../../util.js';
 
 // Projectile types
 
-const projectileFx = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
+const projectileFx = (effectName, type, vfxMaterial, effectMeshes, effectData, options) => {
     switch(type) {
     case 'redBlast':
-        redBlast(effectName, type, vfxMaterial, effectMeshes, effectData);
+        redBlast(effectName, type, vfxMaterial, effectMeshes, effectData, options);
         break;
     default: logger.error('Game engine error: could not find VFX type ' + type + '.');
     }
 };
 
-const redBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
+const redBlast = (effectName, type, vfxMaterial, effectMeshes, effectData, options) => {
     const planeGeo = new THREE.PlaneBufferGeometry(1, 0.8, 1);
     const planeGeo2 = planeGeo.clone();
     const planeGeo3 = planeGeo.clone();
@@ -52,21 +52,17 @@ const redBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
     const mergedGeo = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
     const redBlaster = new THREE.Mesh(mergedGeo, vfxMaterial);
     effectMeshes[effectName + '_' + type] = redBlaster;
-    effectData[effectName + '_' + type] = {
+    effectData[effectName + '_' + type] = Object.assign({}, {
         spriteXlen,
         spriteYlen,
         startPosU: 0,
         startPosV: 1-(1/32),
         geo: mergedGeo,
         meshName: effectName + '_' + type,
-        loop: true,
-        phase: 2,
         rectSets: 2,
-        frame: 1,
-        totalFrames: 6,
-        lastUpdate: performance.now(),
-        speed: 30
-    };
+        totalFrames: 6
+    },
+    options);
     plane.geometry.dispose();
     plane2.geometry.dispose();
     flare.geometry.dispose();

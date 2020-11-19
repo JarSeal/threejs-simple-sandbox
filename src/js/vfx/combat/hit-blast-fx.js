@@ -4,16 +4,16 @@ import { logger } from '../../util.js';
 
 // A hit blast when a projectile hits a wall, a player, or an obstacle
 
-const hitBlastFx = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
+const hitBlastFx = (effectName, type, vfxMaterial, effectMeshes, effectData, options) => {
     switch(type) {
     case 'basic':
-        basicBlast(effectName, type, vfxMaterial, effectMeshes, effectData);
+        basicBlast(effectName, type, vfxMaterial, effectMeshes, effectData, options);
         break;
     default: logger.error('Game engine error: could not find VFX type ' + type + '.');
     }
 };
 
-const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => {
+const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData, options) => {
     const planeGeo = new THREE.PlaneBufferGeometry(2.5, 2.5, 1);
     const planeGeo2 = planeGeo.clone();
     const planeGeo3 = planeGeo.clone();
@@ -39,7 +39,7 @@ const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => 
 
     // Attach effectMesh to effectMeshes and create effectData
     effectMeshes[effectName + '_' + type] = hitBlast;
-    effectData[effectName + '_' + type] = {
+    effectData[effectName + '_' + type] = Object.assign({}, {
         spriteXlen,
         spriteYlen,
         startPosU: 0,
@@ -47,9 +47,9 @@ const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData) => 
         geo: mergedGeo,
         rectSets: 3,
         totalFrames: 29,
-        animLength: 500,
-        speed: 45
-    };
+        animLength: 400
+    },
+    options);
     plane.geometry.dispose();
     plane2.geometry.dispose();
     plane3.geometry.dispose();

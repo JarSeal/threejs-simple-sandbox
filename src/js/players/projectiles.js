@@ -29,15 +29,11 @@ class Projectiles {
         });
         let fxSpark = new THREE.TextureLoader().load('/images/sprites/fx-spark.png');
         this.sparkMaterial = new THREE.PointsMaterial({
-            size: 0.1,
+            size: 1,
             sizeAttenuation: true,
             map: fxSpark,
-            alphaTest: 0.5,
-            // blending: THREE.noBlending,
-            premultipliedAlpha: true,
-            // transparent: true,
-            // depthWrite: false,
-            // depthTest: true,
+            transparent: true,
+            // premultipliedAlpha: true,
         });
         this.preCountedTurns = {
             fortyFive: 45 * (Math.PI/180),
@@ -49,21 +45,10 @@ class Projectiles {
 
         VisualEffects.createEffect('projectile', 'redBlast');
         VisualEffects.createEffect('hitBlast', 'basic');
-        VisualEffects.createEffect('sparks', 'wallHit');
-
-        // setTimeout(() => {
-        //     const laser = this.VisualEffects.getEffectMesh('projectile_redBlast');
-        //     laser.position.set(
-        //         33,
-        //         41, 
-        //         this.shotHeight
-        //     );
-        //     scene.add(laser);
-        //     VisualEffects.startAnim({
-        //         id: "kukka",
-        //         meshName: 'projectile_redBlast',
-        //     });
-        // }, 500);
+        VisualEffects.createEffect('sparks', 'wallHit', {
+            speed: 120,
+            animLength: 400
+        });
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
@@ -564,8 +549,8 @@ class Projectiles {
     hitObstacle(type, scene, projectileName, camera, tileMap, targetPos, projectileLife) {
         let pos = [targetPos[0], targetPos[1]],
             posWOffset = [targetPos[0] + projectileLife.xOffset, targetPos[1] + projectileLife.yOffset],
-            minFloorParticles = 3,
-            maxFloorParticles = 36,
+            minFloorParticles = 5,
+            maxFloorParticles = 50,
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
         if(type == 'solid') {
             // this.createWallBurn(projectileLife, posWOffset, scene, camera);
@@ -739,35 +724,37 @@ class Projectiles {
             scene.add(blast);
             this.VisualEffects.startAnim({
                 id: hitBlastId,
-                clone: true,
                 meshName: 'hitBlast_basic',
                 mesh: blast,
-                onComplete: () => scene.remove(blast),
+                onComplete: () => {
+                    blast.material.dispose();
+                    scene.remove(blast);
+                },
             });
         }
 
-        // const a = true;
-        // if(a) return;
-
-        // // FX Sparks
-        // const sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', true);
-        // randomSize = Math.random() * (1 - 0.25) + 0.25;
-        // if(sparksFx) {
-        //     sparksFx.rotation.z = randomTwist;
-        //     sparksFx.scale.set(randomSize, randomSize, randomSize);
-        //     sparksFx.position.set(
-        //         posWOffset[0],
-        //         posWOffset[1],
-        //         this.shotHeight
-        //     );
-        //     scene.add(sparksFx);
-        //     this.VisualEffects.startAnim({
-        //         id: 'sparks-fx-' + performance.now(),
-        //         meshName: 'sparks_wallHit',
-        //         geo: sparksFx.geometry,
-        //         onComplete: () => scene.remove(sparksFx),
-        //     });
-        // }
+        // FX Sparks
+        const sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', true);
+        randomSize = Math.random() * (1 - 0.25) + 0.25;
+        if(sparksFx) {
+            sparksFx.rotation.z = randomTwist;
+            sparksFx.scale.set(randomSize, randomSize, randomSize);
+            sparksFx.position.set(
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            );
+            scene.add(sparksFx);
+            this.VisualEffects.startAnim({
+                id: 'sparks-fx-' + performance.now(),
+                meshName: 'sparks_wallHit',
+                mesh: sparksFx,
+                onComplete: () => {
+                    sparksFx.material.dispose();
+                    scene.remove(sparksFx);
+                },
+            });
+        }
 
         // Particles
         for(i=0; i<floorParticles; i++) {
@@ -800,7 +787,7 @@ class Projectiles {
                     positions.needsUpdate = true;
                 }}, '-='+time);
                 if(i === 0) {
-                    let materialValues = {size:0.3},
+                    let materialValues = {size: 0.2},
                         tl2 = new TimelineMax();
                     tl2.to(materialValues, 1.7, {size: 0.001, onUpdate: () => {
                         sparks.material.size = materialValues.size;
