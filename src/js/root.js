@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as Stats from './vendor/stats.min.js';
 // import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
@@ -104,6 +105,8 @@ class TileMapRoot {
         composer.setPixelRatio = pixelRatio;
         const renderPass = new RenderPass(scene, camera);
         composer.addPass(renderPass);
+        const bloom = new UnrealBloomPass(new THREE.Vector2( window.innerWidth, window.innerHeight ), 0.5, 0.5, 0.8);
+        composer.addPass(bloom);
         this.sceneState.outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
         // this.sceneState.outlinePass.depthMaterial.skinning = true;
         this.sceneState.outlinePass.prepareMaskMaterial.skinning = true;
