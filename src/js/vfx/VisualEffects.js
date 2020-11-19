@@ -40,14 +40,11 @@ class VisualEffects {
         // this.createExampleNode(scene);
     }
 
-    createHorizontalSpriteSheetNode(hCount, vCount, startU, startV, frames, speed = 60, cols, rows) {
+    createHorizontalSpriteSheetNode(hCount, vCount, startU, startV, frames, speed = 60, cols) {
         const c = cols ? cols : frames;
-        const r = rows ? rows : 1;
-        const animSpeed = new Vector2Node(speed, speed); // frames per second
-        const scale = new Vector2Node(1/hCount, 1/vCount); // 32 horizontal and vertical images in sprite-sheet
-        // TODO: make the ability to start the sprite from the middle (some kind of offset)
+        const animSpeed = new Vector2Node(speed, speed);
+        const scale = new Vector2Node(1/hCount, 1/vCount);
 
-        // NEW VERSION:
         const uvTimer = new OperatorNode(
             new TimerNode(),
             animSpeed,
@@ -123,8 +120,7 @@ class VisualEffects {
             this.effectData[key].startPosV,
             this.effectData[key].totalFrames,
             this.effectData[key].speed,
-            this.effectData[key].columns || 0,
-            this.effectData[key].rows || 0
+            this.effectData[key].columns,
         );
         mtl.color = texture;
         mtl.side =  THREE.DoubleSide;
