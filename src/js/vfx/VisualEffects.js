@@ -130,17 +130,9 @@ class VisualEffects {
     }
 
     getEffectMesh(key, id) {
-        let masterMesh = this.effectMeshes[key];
-        if(!masterMesh) {
-            // Create the mesh
-            const nameAndType = key.split('_');
-            this.createEffect(nameAndType[0], nameAndType[1]);
-            masterMesh = this.effectMeshes[key];
-        }
+        const masterMesh = this.effectMeshes[key];
         const newMesh = masterMesh.clone();
         newMesh.name = id;
-        if(newMesh.material) newMesh.material.dispose();
-        newMesh.material = this.createFxMaterial(key);
         newMesh.userData['frame'] = new NodeFrame();
         return newMesh;
     }
@@ -180,8 +172,6 @@ class VisualEffects {
     }
 
     animate = (delta) => {
-        //this.frame.update(delta).updateNode(this.mesh.material); // temp anim
-
         const count = this.anims.count;
         if(!count) return;
         let i = 0;
@@ -233,6 +223,7 @@ class VisualEffects {
             break;
         default: logger.error('Could not create effect with name "' + effectName + '" and type "' + type + '".');
         }
+        this.effectMeshes[effectName + '_' + type].material = this.createFxMaterial(effectName + '_' + type);
         this.cacheEffect(effectName + '_' + type);
     }
 
