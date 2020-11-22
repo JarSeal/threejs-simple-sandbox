@@ -53,14 +53,17 @@ const redBlast = (effectName, type, vfxMaterial, effectMeshes, effectData, optio
     const redBlaster = new THREE.Mesh(mergedGeo, vfxMaterial);
     effectMeshes[effectName + '_' + type] = redBlaster;
     effectData[effectName + '_' + type] = Object.assign({}, {
-        spriteXlen,
-        spriteYlen,
+        atlasHCount: 32,
+        atlasVCount: 32,
         startPosU: 0,
-        startPosV: 1-(1/32),
+        startPosV: 1/32,
+        loop: true,
         geo: mergedGeo,
-        meshName: effectName + '_' + type,
         rectSets: 2,
-        totalFrames: 6
+        totalFrames: 6,
+        columns: 6,
+        rows: 1,
+        loopLength: 100
     },
     options);
     plane.geometry.dispose();

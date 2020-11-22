@@ -734,7 +734,8 @@ class Projectiles {
         }
 
         // FX Sparks
-        const sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', true);
+        const sparksFxId = 'sparks-fx-' + performance.now(),
+            sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', sparksFxId);
         randomSize = Math.random() * (1 - 0.25) + 0.25;
         if(sparksFx) {
             sparksFx.rotation.z = randomTwist;
@@ -746,7 +747,7 @@ class Projectiles {
             );
             scene.add(sparksFx);
             this.VisualEffects.startAnim({
-                id: 'sparks-fx-' + performance.now(),
+                id: sparksFxId,
                 meshName: 'sparks_wallHit',
                 mesh: sparksFx,
                 onComplete: () => {
