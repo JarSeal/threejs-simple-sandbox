@@ -46,8 +46,6 @@ class PlayerController {
         tempMesh.position.y = tempDudePos[1];
         tempMesh.position.z = 1;
         scene.add(tempMesh);
-        // Outline postprocessing pass objects addition
-        // sceneState.outlinePassObjects = [tempMesh];
         
         let group = new THREE.Group();
         let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
@@ -102,19 +100,12 @@ class PlayerController {
                 object.rotation.z = sceneState.players.hero.dir;
                 object.traverse(o => {
                     if (o.isMesh) {
-                        // o.material.metalness = 0;
-                        // o.material.color.set('red');
                         o.material = new THREE.MeshLambertMaterial({color: 'lime', skinning: true});
                     }
                 });
                 scene.add(object);
                 sceneState.players.hero.mesh = object;
-                // if(sceneState.outlinePass) {
-                //     sceneState.outlinePass.selectedObjects = sceneState.outlinePass.selectedObjects.concat(object);
-                // } else {
-                //     sceneState.outlinePassObjects = sceneState.outlinePassObjects.concat(object);
-                // }
-                sceneState.outlinePass.selectedObjects = [object.children[0].children[1]];
+                sceneState.postProcess.outlinePass.selectedObjects = [object.children[0].children[1]];
             },
             () => {},
             (error) => {

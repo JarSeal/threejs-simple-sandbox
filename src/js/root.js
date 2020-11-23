@@ -43,13 +43,16 @@ class TileMapRoot {
             particles: 0,
             settings: {},
             defaultSettings: {
-                maxSimultaneousParticles: 500,
-                useOpacity: true,
+                useRendererAntialiasing: false,
+                usePostProcessing: true,
+                useFxAntiAliasing: true,
+                useUnrealBloom: false
             },
             localStorage: new LStorage(),
             renderCalls: [],
-            outlinePass: null,
-            outlinePassObjects: [],
+            postProcess: {
+                outlinePassObjects: []
+            },
         };
         this.init();
     }
@@ -61,7 +64,9 @@ class TileMapRoot {
 
         this.getLocalSettingsData();
 
-        const renderer = new THREE.WebGLRenderer({antialias: true});
+        const renderer = new THREE.WebGLRenderer({
+            antialias: this.sceneState.settings.useRendererAntialiasing || false
+        });
         renderer.setClearColor('#000000');
         renderer.setSize(document.documentElement.clientWidth, document.documentElement.clientHeight);
         // renderer.setPixelRatio(window.devicePixelRatio);
@@ -105,28 +110,25 @@ class TileMapRoot {
         composer.setPixelRatio = pixelRatio;
         const renderPass = new RenderPass(scene, camera);
         composer.addPass(renderPass);
-        const bloom = new UnrealBloomPass(new THREE.Vector2( window.innerWidth, window.innerHeight ), 0.5, 0.5, 0.8);
-        composer.addPass(bloom);
-        this.sceneState.outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
-        // this.sceneState.outlinePass.depthMaterial.skinning = true;
-        this.sceneState.outlinePass.prepareMaskMaterial.skinning = true;
-        this.sceneState.outlinePass.prepareMaskMaterial.transparent = true;
-        this.sceneState.outlinePass.prepareMaskMaterial.depthWrite = false;
-        this.sceneState.outlinePass.prepareMaskMaterial.depthTest = true;
-        // this.sceneState.outlinePass.overlayMaterial.blending = THREE.SubtractiveBlending;
-        this.sceneState.outlinePass.overlayMaterial.blending = THREE.NormalBlending;
-        this.sceneState.outlinePass.edgeThickness = 0.1;
-        this.sceneState.outlinePass.edgeStrength = 3;
-        this.sceneState.outlinePass.edgeGlow = 0;
-        this.sceneState.outlinePass.setSize(window.innerWidth, window.innerHeight);
-        this.sceneState.outlinePass.visibleEdgeColor.set('#000000');
-        this.sceneState.outlinePass.hiddenEdgeColor.set('#66ffff');
-        this.sceneState.outlinePass.selectedObjects = this.sceneState.outlinePassObjects;
-        // console.log(this.sceneState.outlinePass);
-        composer.addPass(this.sceneState.outlinePass);
-        this.sceneState.effectFXAA = new ShaderPass(FXAAShader);
-        this.sceneState.effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
-        composer.addPass(this.sceneState.effectFXAA);
+        this.sceneState.postProcess.unrealBloom = new UnrealBloomPass(new THREE.Vector2( window.innerWidth, window.innerHeight ), 0.5, 0.5, 0.8);
+        composer.addPass(this.sceneState.postProcess.unrealBloom);
+        this.sceneState.postProcess.outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.skinning = true;
+        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.transparent = true;
+        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.depthWrite = false;
+        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.depthTest = true;
+        this.sceneState.postProcess.outlinePass.overlayMaterial.blending = THREE.NormalBlending;
+        this.sceneState.postProcess.outlinePass.edgeThickness = 0.1;
+        this.sceneState.postProcess.outlinePass.edgeStrength = 3;
+        this.sceneState.postProcess.outlinePass.edgeGlow = 0;
+        this.sceneState.postProcess.outlinePass.setSize(window.innerWidth, window.innerHeight);
+        this.sceneState.postProcess.outlinePass.visibleEdgeColor.set('#000000');
+        this.sceneState.postProcess.outlinePass.hiddenEdgeColor.set('#66ffff');
+        this.sceneState.postProcess.outlinePass.selectedObjects = this.sceneState.postProcess.outlinePassObjects;
+        composer.addPass(this.sceneState.postProcess.outlinePass);
+        this.sceneState.postProcess.effectFXAA = new ShaderPass(FXAAShader);
+        this.sceneState.postProcess.effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+        composer.addPass(this.sceneState.postProcess.effectFXAA);
         // Postprocessing [END]
         
         let renderCallerI = 0,
@@ -142,9 +144,13 @@ class TileMapRoot {
             for(renderCallerI=0; renderCallerI<renderCalls.length; renderCallerI++) {
                 renderCalls[renderCallerI](delta);
             }
-            composer.render();
-            //renderer.render(scene, camera);
+            if(this.sceneState.settings.usePostProcessing) {
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
             //effect.render(scene, camera);
+            if(this.sceneState.updateSettingsNextRender) this.updateRenderSettings(renderer);
             stats.update(); // Debug statistics
         };
 
@@ -159,6 +165,7 @@ class TileMapRoot {
         });
 
         render();
+        this.updateRenderSettings(renderer);
     }
 
     setShaderTime() {
@@ -193,6 +200,17 @@ class TileMapRoot {
             // else leave as is (string)
             this.sceneState.settings[key] = lsValue;
         }
+    }
+
+    updateRenderSettings(renderer) {
+        renderer.antialias = this.sceneState.settings.useRendererAntialiasing || false;
+        if(this.sceneState.postProcess.effectFXAA) {
+            this.sceneState.postProcess.effectFXAA.enabled = this.sceneState.settings.useFxAntiAliasing || false;
+        }
+        if(this.sceneState.postProcess.unrealBloom) {
+            this.sceneState.postProcess.unrealBloom.enabled = this.sceneState.settings.useUnrealBloom || false;
+        }
+        this.sceneState.updateSettingsNextRender = false;
     }
 }
 

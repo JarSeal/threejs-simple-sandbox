@@ -182,7 +182,7 @@ class CombatView {
                         this.listParentElem.appendChild(this.listUlElem);
                         appElem.appendChild(this.listParentElem);
                     },
-                    toggleSettings: (e, settingsTemplate, settingsUI, resetSettings, toggleSettings) => {
+                    toggleSettings: (e, settingsTemplate, settingsUI, resetSettings, toggleSettings, toggleLogList) => {
                         e.stopPropagation();
                         if(this.settingsOpen === undefined) this.settingsOpen = true;
                         this.settingsOpen = !this.settingsOpen;
@@ -194,6 +194,7 @@ class CombatView {
                         } else {
                             document.getElementById('settings-modal').classList.add('settings-modal--open');
                         }
+                        if(toggleLogList) toggleLogList(e);
                     },
                     resetSettings: () => {
                         let defaults = this.sceneState.defaultSettings;
@@ -207,7 +208,7 @@ class CombatView {
                         let appElem = document.getElementById('mainApp'),
                             settingsButton = document.createElement('div');
                         settingsButton.setAttribute('id', 'settings-button');
-                        settingsButton.onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings, this.toggleSettings);};
+                        settingsButton.onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings, this.toggleSettings, this.toggleLogList);};
                         this.listParentElem.appendChild(settingsButton);
                         appElem.appendChild(this.listParentElem);
                         appElem.insertAdjacentHTML('afterbegin',
@@ -221,8 +222,10 @@ class CombatView {
                     settingsTemplate: (settingsUI, resetSettings, toggleSettings) => {
                         let modalContent = document.getElementById('settings-modal-content');
                         let removeTemplate = () => {
-                            settingsUI.maxParticles.removeListeners();
-                            settingsUI.useOpacity.removeListeners();
+                            // settingsUI.maxParticles.removeListeners();
+                            settingsUI.useRendererAntialiasing.removeListeners();
+                            settingsUI.useFxAntiAliasing.removeListeners();
+                            settingsUI.useUnrealBloom.removeListeners();
                             settingsUI = {};
                             modalContent.innerHTML = '';
                         };
@@ -231,26 +234,47 @@ class CombatView {
                             removeTemplate();
                         } else {
                             // Add template
-                            settingsUI.maxParticles = new DropDown(this.sceneState, 'maxSimultaneousParticles', 'int', [
-                                {title: '20', value: 20},
-                                {title: '50', value: 50},
-                                {title: '200', value: 200},
-                                {title: '500', value: 500},
-                                {title: '1000', value: 1000},
-                            ]);
-                            settingsUI.useOpacity = new OnOff(this.sceneState, 'useOpacity');
+                            // settingsUI.maxParticles = new DropDown(this.sceneState, 'maxSimultaneousParticles', 'int', [
+                            //     {title: '20', value: 20},
+                            //     {title: '50', value: 50},
+                            //     {title: '200', value: 200},
+                            //     {title: '500', value: 500},
+                            //     {title: '1000', value: 1000},
+                            // ], true);
+                            settingsUI.useRendererAntialiasing = new OnOff(this.sceneState, 'useRendererAntialiasing', true);
+                            settingsUI.usePostProcessing = new OnOff(this.sceneState, 'usePostProcessing');
+                            settingsUI.useFxAntiAliasing = new OnOff(this.sceneState, 'useFxAntiAliasing', true);
+                            settingsUI.useUnrealBloom = new OnOff(this.sceneState, 'useUnrealBloom', true);
                             modalContent.insertAdjacentHTML('afterbegin',
                                 '<ul class="settings-list">'+
+                                    // '<li class="sl-item">'+
+                                    //     '<h3>Max particles:</h3>'+
+                                    //     '<div class="sl-setting">'+
+                                    //         settingsUI.maxParticles.render() +
+                                    //     '</div>'+
+                                    // '</li>'+
                                     '<li class="sl-item">'+
-                                        '<h3>Max particles:</h3>'+
+                                        '<h3>Use renderer antialiasing (reload required):</h3>'+
                                         '<div class="sl-setting">'+
-                                            settingsUI.maxParticles.render() +
+                                            settingsUI.useRendererAntialiasing.render() +
                                         '</div>'+
                                     '</li>'+
                                     '<li class="sl-item">'+
-                                        '<h3>Use transparency:</h3>'+
+                                        '<h3>Use post processing:</h3>'+
                                         '<div class="sl-setting">'+
-                                            settingsUI.useOpacity.render() +
+                                            settingsUI.usePostProcessing.render() +
+                                        '</div>'+
+                                    '</li>'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Use post processing antialiasing (post processing must be turned on):</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.useFxAntiAliasing.render() +
+                                        '</div>'+
+                                    '</li>'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Use post processing bloom (post processing must be turned on):</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.useUnrealBloom.render() +
                                         '</div>'+
                                     '</li>'+
 
@@ -263,8 +287,11 @@ class CombatView {
                                     '</li>'+
                                 '</ul>'
                             );
-                            settingsUI.maxParticles.addListeners();
-                            settingsUI.useOpacity.addListeners();
+                            // settingsUI.maxParticles.addListeners();
+                            settingsUI.useRendererAntialiasing.addListeners();
+                            settingsUI.usePostProcessing.addListeners();
+                            settingsUI.useFxAntiAliasing.addListeners();
+                            settingsUI.useUnrealBloom.addListeners();
                             
                             document.getElementById('reset-to-default').addEventListener('click', (e) => {
                                 resetSettings(e);
