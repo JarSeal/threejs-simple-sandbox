@@ -19,6 +19,13 @@ class CombatView {
                     radius: 50,
                     resize: function() {
                         this.pos = [this.size, document.getElementById('uiCanvas').height - this.size];
+                        this.resizeWSceneState();
+                    },
+                    resizeWSceneState: () => {
+                        const settingsModal = document.getElementById('settings-modal');
+                        if(settingsModal) {
+                            settingsModal.style.height = this.sceneState.getScreenResolution().y + 'px';
+                        }
                     },
                     keepUpdatingWhenPressed: true,
                     firstClick: null,
@@ -171,7 +178,7 @@ class CombatView {
                         }
                     },
                     createLogList: function() {
-                        let appElem = document.getElementById('mainApp'),
+                        const appElem = document.getElementById('mainApp'),
                             toggleButton = document.createElement('div');
                         toggleButton.setAttribute('id', 'log-list__toggle');
                         toggleButton.onclick = this.toggleLogList;
@@ -184,6 +191,7 @@ class CombatView {
                     },
                     toggleSettings: (e, settingsTemplate, settingsUI, resetSettings, toggleSettings, toggleLogList) => {
                         e.stopPropagation();
+                        document.getElementById('settings-modal').style.height = this.sceneState.getScreenResolution().y + 'px';
                         if(this.settingsOpen === undefined) this.settingsOpen = true;
                         this.settingsOpen = !this.settingsOpen;
                         if(settingsTemplate !== undefined) {
@@ -214,7 +222,9 @@ class CombatView {
                         appElem.insertAdjacentHTML('afterbegin',
                             '<div id="settings-modal">'+
                                 '<button id="settings-modal-close"></button>'+
-                                '<div class="modal-content" id="settings-modal-content"></div>'+
+                                '<div class="settings-modal-scroller">'+
+                                    '<div class="modal-content" id="settings-modal-content"></div>'+
+                                '</div>'+
                             '</div>'
                         );
                         document.getElementById('settings-modal-close').onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings);};
@@ -254,7 +264,7 @@ class CombatView {
                                     //     '</div>'+
                                     // '</li>'+
                                     '<li class="sl-item">'+
-                                        '<h3>Use renderer antialiasing (reload required):</h3>'+
+                                        '<h3>Use renderer antialiasing (post processing must be turned off to have any effect, will reload app):</h3>'+
                                         '<div class="sl-setting">'+
                                             settingsUI.useRendererAntialiasing.render() +
                                         '</div>'+
@@ -298,6 +308,7 @@ class CombatView {
                                 removeTemplate();
                                 toggleSettings(e);
                                 this.templateCreated = false;
+                                this.sceneState.updateSettingsNextRender = true;
                             });
                         }
                         this.templateCreated = !this.templateCreated;
