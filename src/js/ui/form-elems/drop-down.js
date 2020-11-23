@@ -1,11 +1,12 @@
 
 class DropDown {
-    constructor(sceneState, key, typeOfValue, values) {
+    constructor(sceneState, key, typeOfValue, values, updateSettings) {
         this.sceneState = sceneState;
         this.dropDownOpen = false;
         this.key = key;
         this.typeOfValue = typeOfValue;
         this.values = values;
+        this.updateSettings = updateSettings;
         this.outsideClick = (e) => {
             if(e.target && e.target.className && e.target.className != 'drop-down-choice' && e.target.className != 'drop-down__selected') {
                 let dropDownElem = document.getElementById(this.getId());
@@ -34,6 +35,9 @@ class DropDown {
                 document.body.addEventListener('click', this.outsideClick, true);
             }
             this.dropDownOpen = !this.dropDownOpen;
+            if(this.updateSettings) {
+                this.sceneState.updateSettingsNextRender = true;
+            }
         };
     }
 

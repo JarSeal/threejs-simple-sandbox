@@ -1,9 +1,10 @@
 
 class OnOff {
-    constructor(sceneState, key) {
+    constructor(sceneState, key, updateSettings) {
         this.sceneState = sceneState;
         this.key = key;
         this.isOn = sceneState.settings[this.key];
+        this.updateSettings = updateSettings;
         this.switch = () => {
             let curElem = document.getElementById(this.getId());
             if(this.isOn) {
@@ -14,6 +15,9 @@ class OnOff {
             this.isOn = !this.isOn;
             this.sceneState.settings[this.key] = this.isOn;
             this.sceneState.localStorage.setItem(this.key, this.isOn);
+            if(this.updateSettings) {
+                this.sceneState.updateSettingsNextRender = true;
+            }
         };
     }
 

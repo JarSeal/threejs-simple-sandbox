@@ -3,31 +3,12 @@ import hitBlastFx from './combat/hit-blast-fx.js';
 import projectileFx from './combat/projectile-fx.js';
 import sparksFx from './combat/sparks-fx.js';
 import { logger } from '../util.js';
-import {
-    NodeFrame,
-    MathNode,
-    OperatorNode,
-    TextureNode,
-    Vector2Node,
-    TimerNode,
-    SwitchNode,
-    UVNode,
-    BasicNodeMaterial,
-    FloatNode
-} from 'three/examples/jsm/nodes/Nodes.js';
 
 class VisualEffects {
     constructor(scene, sceneState) {
         this.scene = scene;
         this.sceneState = sceneState;
         this.vfxMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
-        this.vfxMaterial = new THREE.MeshBasicMaterial({
-            map: this.vfxMap,
-            side: THREE.DoubleSide,
-            transparent: true,
-            depthWrite: false,
-            depthTest: true,
-        });
         this.anims = {
             count: 0,
             fired: [],
@@ -37,96 +18,137 @@ class VisualEffects {
         this.effectData = {};
         sceneState.renderCalls.push(this.animate);
 
-        this.effectsFrame = new NodeFrame();
-
+        // this.createEffect('sparks', 'wallHit');
+        // this.createEffect('projectile', 'redBlast');
+        // this.createEffect('hitBlast', 'basic');
         // this.createExampleNode(scene);
     }
 
-    createHorizontalSpriteSheetNode(hCount, vCount, startU, startV, frames, speed = 60, cols) {
-        const c = cols ? cols : frames;
-        const animSpeed = new Vector2Node(speed, speed);
-        const scale = new Vector2Node(1/hCount, 1/vCount);
+    createEffectMaterial(hCount, vCount, startU, startV, frames, loopLength, speed = 60, cols) {
+        const columns = cols ? cols : frames;
+        const uniforms = {
+            uTime: { value: 0 },
+            uStartTime: { value: 0 },
+            mapTexture: { type: 't', value: this.vfxMap },
+            xScale: { value: 1/hCount },
+            yScale: { value: 1/vCount },
+            xStart: { value: startU },
+            yStart: { value: startV },
+            totalFrames: { value: frames },
+            columns: { value: columns },
+            frameRate: { value: speed },
+            loopLength: { value: loopLength }
+        };
+        const vertexShader = `
+        uniform float uTime;
+        uniform float uStartTime;
+        uniform float xScale;
+        uniform float yScale;
+        uniform float xStart;
+        uniform float yStart;
+        uniform float totalFrames;
+        uniform float columns;
+        uniform float frameRate;
+        uniform float loopLength;
+        varying vec2 vUv;
+        varying float _uTime;
+        varying float _uStartTime;
+        varying float _xScale;
+        varying float _yScale;
+        varying float _xStart;
+        varying float _yStart;
+        varying float _totalFrames;
+        varying float _columns;
+        varying float _frameRate;
+        varying float _loopLength;
+        void main() {
+            vUv = uv;
+            _uTime = uTime;
+            _uStartTime = uStartTime;
+            _xScale = xScale;
+            _yScale = yScale;
+            _xStart = xStart;
+            _yStart = yStart;
+            _totalFrames = totalFrames;
+            _columns = columns;
+            _frameRate = frameRate;
+            _loopLength = loopLength;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`;
 
-        const uvTimer = new OperatorNode(
-            new TimerNode(),
-            animSpeed,
-            OperatorNode.MUL
-        );
-        const frameCounter = new MathNode(
-            uvTimer,
-            new FloatNode(frames),
-            MathNode.MOD
-        );
-        const frameAsInteger = new MathNode(
-            frameCounter,
-            MathNode.FLOOR
-        );
-        const rowCounter = new OperatorNode(
-            frameAsInteger,
-            new FloatNode(c),
-            OperatorNode.DIV
-        );
-        const rowAsInteger = new MathNode(
-            rowCounter,
-            MathNode.FLOOR
-        );
-        const columnAsInteger = new MathNode(
-            frameAsInteger,
-            new FloatNode(c),
-            MathNode.MOD
-        );
+        const fragmentShader = `
+        uniform sampler2D mapTexture;
+        varying vec2 vUv;
+        varying float _uTime;
+        varying float _uStartTime;
+        varying float _xScale;
+        varying float _yScale;
+        varying float _xStart;
+        varying float _yStart;
+        varying float _totalFrames;
+        varying float _columns;
+        varying float _frameRate;
+        varying float _loopLength;
 
-        const rowOffset = new OperatorNode(
-            rowAsInteger,
-            new Vector2Node(0, 1/vCount),
-            OperatorNode.MUL
-        );
-        const columnOffset = new OperatorNode(
-            columnAsInteger,
-            new Vector2Node(1/hCount, 0),
-            OperatorNode.MUL
-        );
+        void main() {
+            // get total elapsed time
+            float elapsedTime = _uTime - _uStartTime;
 
-        const offsetWithColumnOffset = new OperatorNode(
-            columnOffset,
-            new Vector2Node(startU, startV),
-            OperatorNode.ADD
-        );
-        const offsetWithBothOffsets = new OperatorNode(
-            offsetWithColumnOffset,
-            rowOffset,
-            OperatorNode.SUB
-        );
+            // get local elapsed time
+            float localElapsedTime = mod(elapsedTime, _loopLength);
 
-        const uvScale = new OperatorNode(
-            new UVNode(),
-            scale,
-            OperatorNode.MUL
-        );
-        const curUvFrame = new OperatorNode(
-            uvScale,
-            offsetWithBothOffsets,
-            OperatorNode.ADD
-        );
+            // get one frame's length in ms
+            float frameLength = _loopLength / _totalFrames;
 
-        return curUvFrame;
+            // // get current frame number as a whole number (float)
+            float frameNumber = floor(localElapsedTime / frameLength);
+
+            // get current row number as a whole number (float)
+            float rowNumber = floor(frameNumber / _columns);
+
+            // get current column number as whole number (float)
+            float columnNumber = floor(mod(frameNumber, _columns));
+
+            // get row offset (vertical offset)
+            vec2 rowOffset = rowNumber * vec2(0, _yScale);
+
+            // get column offset (horisontal offset)
+            vec2 colOffset = columnNumber * vec2(_xScale, 0) + vec2(vUv.x * _xScale + _xStart,  1. - vUv.y * _yScale - _yStart);
+
+            // get both offsets
+            vec2 bothOffsets = colOffset - rowOffset;
+
+            vec4 texMex = texture2D(mapTexture, bothOffsets);
+            gl_FragColor = vec4(texMex);
+
+            // vec4 background = vec4(1., 0., 0., 0.5);
+            // vec3 blendering = texMex.rgb * texMex.a + background.rgb * background.a * (1.0 - texMex.a);
+            // gl_FragColor = vec4(blendering, 1.0);
+        }`;
+
+        return {
+            uniforms: uniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true,
+            side: THREE.DoubleSide
+        };
     }
 
     createFxMaterial(key) {
-        const mtl = new BasicNodeMaterial();
-        const texture = new TextureNode(this.vfxMap);
-        texture.uv = this.createHorizontalSpriteSheetNode(
-            32,                                  // hCount
-            32,                                  // vCount
-            this.effectData[key].startPosU,
-            this.effectData[key].startPosV,
-            this.effectData[key].totalFrames,
-            this.effectData[key].speed,
-            this.effectData[key].columns,
+        const mtl = new THREE.ShaderMaterial(
+            this.createEffectMaterial(
+                this.effectData[key].atlasHCount,
+                this.effectData[key].atlasVCount,
+                this.effectData[key].startPosU,
+                this.effectData[key].startPosV,
+                this.effectData[key].totalFrames,
+                this.effectData[key].loopLength,
+                this.effectData[key].speed,
+                this.effectData[key].columns,
+            )
         );
-        mtl.color = texture;
         mtl.side =  THREE.DoubleSide;
-        mtl.alpha = new MathNode(new SwitchNode(mtl.color, 'a'), OperatorNode.ADD);
         mtl.depthWrite = false;
         return mtl;
     }
@@ -134,16 +156,17 @@ class VisualEffects {
     getEffectMesh(key, id) {
         const masterMesh = this.effectMeshes[key];
         const newMesh = masterMesh.clone();
+        newMesh.material = this.createFxMaterial(key);
         newMesh.name = id;
         return newMesh;
     }
 
     startAnim(data) {
         const meshName = data.meshName;
+        data.mesh.material.uniforms.uStartTime.value = performance.now();
         const combined = Object.assign(
             {},
             this.effectData[meshName],
-            { animStart: performance.now() },
             data);
         !this.anims.meshCount[meshName]
             ? this.anims.meshCount[meshName] = 1
@@ -172,17 +195,16 @@ class VisualEffects {
         }
     }
 
-    animate = (delta) => {
+    animate = () => {
         const count = this.anims.count;
         if(!count) return;
         let i = 0;
         const endAnims = [];
-        this.effectsFrame.update(delta);
         for(i=0; i<count; i++) {
             const fired = this.anims.fired[i];
             const mesh = fired.mesh;
-            this.effectsFrame.updateNode(mesh.material);
-            if(fired.animLength && fired.animLength + fired.animStart < performance.now()) {
+            mesh.material.uniforms.uTime.value = performance.now();
+            if(!fired.loop && fired.loopLength + mesh.material.uniforms.uStartTime.value < performance.now()) {
                 endAnims.push(fired);
             }
         }
@@ -223,22 +245,22 @@ class VisualEffects {
             break;
         default: logger.error('Could not create effect with name "' + effectName + '" and type "' + type + '".');
         }
-        this.effectMeshes[effectName + '_' + type].material = this.createFxMaterial(effectName + '_' + type);
         this.cacheEffect(effectName + '_' + type);
     }
 
     createExampleNode(scene) {
         const id = 'some-id';
-        const mesh = this.getEffectMesh('sparks_wallHit', id);
+        const mesh = this.getEffectMesh('hitBlast_basic', id);
         mesh.name = id;
         mesh.scale.set(1, 1, 1);
-        mesh.position.set(35, 43, 1);
+        mesh.position.set(35, 43, 1.5);
         scene.add(mesh);
         this.startAnim({
             id: id,
             clone: true,
-            meshName: 'sparks_wallHit',
-            mesh: mesh
+            meshName: 'hitBlast_basic',
+            mesh: mesh,
+            loop: true
         });
     }
 }

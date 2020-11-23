@@ -19,6 +19,13 @@ class CombatView {
                     radius: 50,
                     resize: function() {
                         this.pos = [this.size, document.getElementById('uiCanvas').height - this.size];
+                        this.resizeWSceneState();
+                    },
+                    resizeWSceneState: () => {
+                        const settingsModal = document.getElementById('settings-modal');
+                        if(settingsModal) {
+                            settingsModal.style.height = this.sceneState.getScreenResolution().y + 'px';
+                        }
                     },
                     keepUpdatingWhenPressed: true,
                     firstClick: null,
@@ -171,7 +178,7 @@ class CombatView {
                         }
                     },
                     createLogList: function() {
-                        let appElem = document.getElementById('mainApp'),
+                        const appElem = document.getElementById('mainApp'),
                             toggleButton = document.createElement('div');
                         toggleButton.setAttribute('id', 'log-list__toggle');
                         toggleButton.onclick = this.toggleLogList;
@@ -182,8 +189,9 @@ class CombatView {
                         this.listParentElem.appendChild(this.listUlElem);
                         appElem.appendChild(this.listParentElem);
                     },
-                    toggleSettings: (e, settingsTemplate, settingsUI, resetSettings, toggleSettings) => {
+                    toggleSettings: (e, settingsTemplate, settingsUI, resetSettings, toggleSettings, toggleLogList) => {
                         e.stopPropagation();
+                        document.getElementById('settings-modal').style.height = this.sceneState.getScreenResolution().y + 'px';
                         if(this.settingsOpen === undefined) this.settingsOpen = true;
                         this.settingsOpen = !this.settingsOpen;
                         if(settingsTemplate !== undefined) {
@@ -194,11 +202,14 @@ class CombatView {
                         } else {
                             document.getElementById('settings-modal').classList.add('settings-modal--open');
                         }
+                        if(toggleLogList) toggleLogList(e);
                     },
                     resetSettings: () => {
-                        let defaults = this.sceneState.defaultSettings;
+                        const defaults = this.sceneState.defaultSettings;
+                        console.log('DEFAULTs', defaults);
                         this.sceneState.settings = Object.assign({}, defaults);
                         for (var key in defaults) {
+                            console.log('KEY', key);
                             this.sceneState.localStorage.removeItem(key);
                         }
                     },
@@ -207,13 +218,15 @@ class CombatView {
                         let appElem = document.getElementById('mainApp'),
                             settingsButton = document.createElement('div');
                         settingsButton.setAttribute('id', 'settings-button');
-                        settingsButton.onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings, this.toggleSettings);};
+                        settingsButton.onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings, this.toggleSettings, this.toggleLogList);};
                         this.listParentElem.appendChild(settingsButton);
                         appElem.appendChild(this.listParentElem);
                         appElem.insertAdjacentHTML('afterbegin',
                             '<div id="settings-modal">'+
                                 '<button id="settings-modal-close"></button>'+
-                                '<div class="modal-content" id="settings-modal-content"></div>'+
+                                '<div class="settings-modal-scroller">'+
+                                    '<div class="modal-content" id="settings-modal-content"></div>'+
+                                '</div>'+
                             '</div>'
                         );
                         document.getElementById('settings-modal-close').onclick = (e) => {this.toggleSettings(e, this.settingsTemplate, this.settingsUI, this.resetSettings);};
@@ -221,8 +234,10 @@ class CombatView {
                     settingsTemplate: (settingsUI, resetSettings, toggleSettings) => {
                         let modalContent = document.getElementById('settings-modal-content');
                         let removeTemplate = () => {
-                            settingsUI.maxParticles.removeListeners();
-                            settingsUI.useOpacity.removeListeners();
+                            // settingsUI.maxParticles.removeListeners();
+                            settingsUI.useRendererAntialiasing.removeListeners();
+                            settingsUI.useFxAntiAliasing.removeListeners();
+                            settingsUI.useUnrealBloom.removeListeners();
                             settingsUI = {};
                             modalContent.innerHTML = '';
                         };
@@ -231,26 +246,47 @@ class CombatView {
                             removeTemplate();
                         } else {
                             // Add template
-                            settingsUI.maxParticles = new DropDown(this.sceneState, 'maxSimultaneousParticles', 'int', [
-                                {title: '20', value: 20},
-                                {title: '50', value: 50},
-                                {title: '200', value: 200},
-                                {title: '500', value: 500},
-                                {title: '1000', value: 1000},
-                            ]);
-                            settingsUI.useOpacity = new OnOff(this.sceneState, 'useOpacity');
+                            // settingsUI.maxParticles = new DropDown(this.sceneState, 'maxSimultaneousParticles', 'int', [
+                            //     {title: '20', value: 20},
+                            //     {title: '50', value: 50},
+                            //     {title: '200', value: 200},
+                            //     {title: '500', value: 500},
+                            //     {title: '1000', value: 1000},
+                            // ], true);
+                            settingsUI.useRendererAntialiasing = new OnOff(this.sceneState, 'useRendererAntialiasing', true);
+                            settingsUI.usePostProcessing = new OnOff(this.sceneState, 'usePostProcessing');
+                            settingsUI.useFxAntiAliasing = new OnOff(this.sceneState, 'useFxAntiAliasing', true);
+                            settingsUI.useUnrealBloom = new OnOff(this.sceneState, 'useUnrealBloom', true);
                             modalContent.insertAdjacentHTML('afterbegin',
                                 '<ul class="settings-list">'+
+                                    // '<li class="sl-item">'+
+                                    //     '<h3>Max particles:</h3>'+
+                                    //     '<div class="sl-setting">'+
+                                    //         settingsUI.maxParticles.render() +
+                                    //     '</div>'+
+                                    // '</li>'+
                                     '<li class="sl-item">'+
-                                        '<h3>Max particles:</h3>'+
+                                        '<h3>Use renderer antialiasing (post processing must be turned off to have any effect, will reload app):</h3>'+
                                         '<div class="sl-setting">'+
-                                            settingsUI.maxParticles.render() +
+                                            settingsUI.useRendererAntialiasing.render() +
                                         '</div>'+
                                     '</li>'+
                                     '<li class="sl-item">'+
-                                        '<h3>Use transparency:</h3>'+
+                                        '<h3>Use post processing:</h3>'+
                                         '<div class="sl-setting">'+
-                                            settingsUI.useOpacity.render() +
+                                            settingsUI.usePostProcessing.render() +
+                                        '</div>'+
+                                    '</li>'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Use post processing antialiasing (post processing must be turned on):</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.useFxAntiAliasing.render() +
+                                        '</div>'+
+                                    '</li>'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Use post processing bloom (post processing must be turned on):</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.useUnrealBloom.render() +
                                         '</div>'+
                                     '</li>'+
 
@@ -263,14 +299,20 @@ class CombatView {
                                     '</li>'+
                                 '</ul>'
                             );
-                            settingsUI.maxParticles.addListeners();
-                            settingsUI.useOpacity.addListeners();
+                            // settingsUI.maxParticles.addListeners();
+                            settingsUI.useRendererAntialiasing.addListeners();
+                            settingsUI.usePostProcessing.addListeners();
+                            settingsUI.useFxAntiAliasing.addListeners();
+                            settingsUI.useUnrealBloom.addListeners();
                             
                             document.getElementById('reset-to-default').addEventListener('click', (e) => {
                                 resetSettings(e);
                                 removeTemplate();
                                 toggleSettings(e);
                                 this.templateCreated = false;
+                                setTimeout(() => {
+                                    // this.sceneState.updateSettingsNextRender = true;
+                                });
                             });
                         }
                         this.templateCreated = !this.templateCreated;

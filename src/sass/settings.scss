@@ -2,7 +2,7 @@
     display: block;
     width: 36px;
     height: 36px;
-    background: #999;
+    background: #333;
     cursor: pointer;
     position: absolute;
     top: 14px;
@@ -12,7 +12,7 @@
 
 #settings-modal {
     display: block;
-    transform: translate3d(0,0,0);
+    transform: translate3d(0, 0, 0);
     width: 100vw;
     height: 100vh;
     z-index: 200;
@@ -20,8 +20,8 @@
     bottom: 100%;
     transition: bottom 0.3s ease-in-out;
     left: 0;
-    background-color: #fff;
-    overflow: auto;
+    background-color: rgba(255, 255, 255, 0.5);
+    overflow: hidden;
 }
 .settings-modal {
     &--open {
@@ -29,28 +29,36 @@
     }
 }
 
+.settings-modal-scroller {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+}
+
 #settings-modal-close {
     display: block;
     width: 50px;
     height: 50px;
     position: absolute;
-    top: 30px;
-    right: 30px;
-    background-color: transparent;
+    top: 0;
+    right: 15px;
+    background-color: #333;
+    border-radius: 50%;
     border: none;
     cursor: pointer;
     outline: none;
+    transform: scale3d(0.8, 0.8, 1);
     transition: transform 0.2s ease-in-out;
     &:before,
     &:after {
         display: block;
         content: "";
-        width: 100%;
+        width: 80%;
         height: 5px;
         border-radius: 2px;
-        background-color: #999;
+        background-color: #fff;
         position: absolute;
-        left: 0;
+        left: 5px;
         top: 22px;
         transition: background-color 0.2s ease-in-out;
     }
@@ -61,14 +69,14 @@
         outline: none;
         &:before,
         &:after {
-            background-color: #666;
+            background-color: #000;
         }
     }
     &:hover,
     &:active {
-        background-color: transparent;
         outline: none;
-        transform: scale3d(0.8, 0.8, 1) rotate(90deg);
+        background-color: #fff;
+        transform: rotate(90deg);
     }
 }
 
@@ -116,7 +124,7 @@
     display: inline-block;
     width: auto;
     padding: 7px 12px;
-    background-color: #999;
+    background-color: #333;
     border: none;
     color: #fff;
     font-size: 15px;

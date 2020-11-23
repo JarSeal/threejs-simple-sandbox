@@ -40,14 +40,16 @@ const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData, opt
     // Attach effectMesh to effectMeshes and create effectData
     effectMeshes[effectName + '_' + type] = hitBlast;
     effectData[effectName + '_' + type] = Object.assign({}, {
-        spriteXlen,
-        spriteYlen,
+        atlasHCount: 32,
+        atlasVCount: 32,
         startPosU: 0,
-        startPosV: 1-(3/32),
+        startPosV: 2/32,
         geo: mergedGeo,
         rectSets: 3,
         totalFrames: 29,
-        animLength: 400
+        columns: 29,
+        rows: 1,
+        loopLength: 450
     },
     options);
     plane.geometry.dispose();
