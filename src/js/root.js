@@ -239,17 +239,21 @@ class TileMapRoot {
 
     getLocalSettingsData() {
         // Get settings data from local storage
-        let defaults = this.sceneState.defaultSettings;
+        const defaults = this.sceneState.defaultSettings;
         for (var key in defaults) {
             let lsValue = this.sceneState.localStorage.getItem(key, defaults[key]),
                 curVal = defaults[key];
-            if(typeof curVal === 'number') {
-                lsValue = parseInt(lsValue);
-            } else if(typeof curVal === 'boolean') {
-                lsValue = lsValue === 'false' ? false : true;
+            if(lsValue) {
+                if(typeof curVal === 'number') {
+                    lsValue = parseInt(lsValue);
+                } else if(typeof curVal === 'boolean') {
+                    lsValue = lsValue === 'false' ? false : true;
+                }
+                // else leave as is (string)
+                this.sceneState.settings[key] = lsValue;
+            } else {
+                this.sceneState.settings[key] = curVal;
             }
-            // else leave as is (string)
-            this.sceneState.settings[key] = lsValue;
         }
     }
 

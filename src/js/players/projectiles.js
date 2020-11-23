@@ -701,11 +701,11 @@ class Projectiles {
     }
 
     createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife) {
-        // let geometry = new THREE.BufferGeometry(),
-        //     sparks = new THREE.Points(geometry, this.sparkMaterial.clone()),
-        //     vertices = [],
-        //     targetPositions = [],
-        //     i = 0;
+        let geometry = new THREE.BufferGeometry(),
+            sparks = new THREE.Points(geometry, this.sparkMaterial.clone()),
+            vertices = [],
+            targetPositions = [],
+            i = 0;
         
         // Hit blast
         const hitBlastId = 'hit-blast-' + performance.now(),
@@ -757,53 +757,53 @@ class Projectiles {
             });
         }
 
-        // // Particles
-        // for(i=0; i<floorParticles; i++) {
-        //     vertices.push(
-        //         posWOffset[0],
-        //         posWOffset[1],
-        //         this.shotHeight
-        //     );
-        //     targetPositions.push([
-        //         posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
-        //         posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
-        //         0.1
-        //     ]);
-        // }
-        // geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        // scene.add(sparks);
-        // for(i=0; i<floorParticles; i++) {
-        //     (function(i, particles, sparks, targetPositions, scene, time) {
-        //         let tl = new TimelineMax();
-        //         let positions = sparks.geometry.attributes.position,
-        //             x = positions.getX(i),
-        //             y = positions.getY(i),
-        //             z = positions.getZ(i),
-        //             progressXY = {x: x, y: y},
-        //             progressZ = {z: z};
-        //         tl.to(progressXY, time, {x: targetPositions[i][0], y: targetPositions[i][1], onUpdate: () => {
-        //             positions.setXY(i, progressXY.x, progressXY.y);
-        //         }}).to(progressZ, time, {z: targetPositions[i][2], ease: Bounce.easeOut, onUpdate: () => {
-        //             positions.setZ(i, progressZ.z);
-        //             positions.needsUpdate = true;
-        //         }}, '-='+time);
-        //         if(i === 0) {
-        //             let materialValues = {size: 0.2},
-        //                 tl2 = new TimelineMax();
-        //             tl2.to(materialValues, 1.7, {size: 0.001, onUpdate: () => {
-        //                 sparks.material.size = materialValues.size;
-        //                 sparks.material.needsUpdate = true;
-        //             }});
-        //         }
-        //         if(i+1 == particles) {
-        //             setTimeout(() => {
-        //                 sparks.geometry.dispose();
-        //                 sparks.material.dispose();
-        //                 scene.remove(sparks);
-        //             }, 2200);
-        //         }
-        //     })(i, floorParticles, sparks, targetPositions, scene, this._randomFloatInBetween(0.5, 1.7));
-        // }
+        // Particles
+        for(i=0; i<floorParticles; i++) {
+            vertices.push(
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            );
+            targetPositions.push([
+                posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
+                posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
+                0.1
+            ]);
+        }
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        scene.add(sparks);
+        for(i=0; i<floorParticles; i++) {
+            (function(i, particles, sparks, targetPositions, scene, time) {
+                let tl = new TimelineMax();
+                let positions = sparks.geometry.attributes.position,
+                    x = positions.getX(i),
+                    y = positions.getY(i),
+                    z = positions.getZ(i),
+                    progressXY = {x: x, y: y},
+                    progressZ = {z: z};
+                tl.to(progressXY, time, {x: targetPositions[i][0], y: targetPositions[i][1], onUpdate: () => {
+                    positions.setXY(i, progressXY.x, progressXY.y);
+                }}).to(progressZ, time, {z: targetPositions[i][2], ease: Bounce.easeOut, onUpdate: () => {
+                    positions.setZ(i, progressZ.z);
+                    positions.needsUpdate = true;
+                }}, '-='+time);
+                if(i === 0) {
+                    let materialValues = {size: 0.2},
+                        tl2 = new TimelineMax();
+                    tl2.to(materialValues, 1.7, {size: 0.001, onUpdate: () => {
+                        sparks.material.size = materialValues.size;
+                        sparks.material.needsUpdate = true;
+                    }});
+                }
+                if(i+1 == particles) {
+                    setTimeout(() => {
+                        sparks.geometry.dispose();
+                        sparks.material.dispose();
+                        scene.remove(sparks);
+                    }, 2200);
+                }
+            })(i, floorParticles, sparks, targetPositions, scene, this._randomFloatInBetween(0.5, 1.7));
+        }
     }
 
     wallBurnMaterial(uniforms) {

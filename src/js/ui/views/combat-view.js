@@ -205,9 +205,11 @@ class CombatView {
                         if(toggleLogList) toggleLogList(e);
                     },
                     resetSettings: () => {
-                        let defaults = this.sceneState.defaultSettings;
+                        const defaults = this.sceneState.defaultSettings;
+                        console.log('DEFAULTs', defaults);
                         this.sceneState.settings = Object.assign({}, defaults);
                         for (var key in defaults) {
+                            console.log('KEY', key);
                             this.sceneState.localStorage.removeItem(key);
                         }
                     },
@@ -308,7 +310,9 @@ class CombatView {
                                 removeTemplate();
                                 toggleSettings(e);
                                 this.templateCreated = false;
-                                this.sceneState.updateSettingsNextRender = true;
+                                setTimeout(() => {
+                                    // this.sceneState.updateSettingsNextRender = true;
+                                });
                             });
                         }
                         this.templateCreated = !this.templateCreated;
