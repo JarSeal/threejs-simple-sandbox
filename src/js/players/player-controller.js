@@ -38,7 +38,7 @@ class PlayerController {
         let tempDudePos = [33, 43];
         sceneState.consequences.addPlayer({id:'testPLAYER',pos:[tempDudePos[0], tempDudePos[1],0]}); // TEMP PLAYER
         let tempGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
-        let tempMaterial = new THREE.MeshLambertMaterial({color: 0xffEE44});
+        let tempMaterial = new THREE.MeshLambertMaterial({color: 0x333333});
         let tempMesh = new THREE.Mesh(tempGeometry, tempMaterial);
         tempMesh.scale.x = 0.5;
         tempMesh.scale.y = 0.5;
@@ -100,7 +100,12 @@ class PlayerController {
                 object.rotation.z = sceneState.players.hero.dir;
                 object.traverse(o => {
                     if (o.isMesh) {
-                        o.material = new THREE.MeshLambertMaterial({color: 'lime', skinning: true});
+                        o.material = new THREE.MeshLambertMaterial({
+                            color: 'lime',
+                            skinning: true
+                        });
+                        // o.material = this.createCharacterMaterial();
+                        this.sceneState.outlineEffectObjs.push(o);
                     }
                 });
                 scene.add(object);
@@ -112,6 +117,45 @@ class PlayerController {
                 logger.error('An GLTF loading error (loading hero) happened', error);
             }
         );
+    }
+
+    createCharacterMaterial() {
+        return new THREE.MeshBasicMaterial({color: 'lime', skinning: true});
+        const uniforms = {
+            linewidth:  { type: 'f', value: 0.3 },
+        };
+        const vertexShader = `
+        uniform float linewidth;
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            // gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            vec4 displacement = vec4( normalize( normalMatrix * normal ) * linewidth, 0.0 ) + mvPosition;
+            gl_Position = projectionMatrix * displacement;
+        }`;
+        const fragmentShader = `
+        varying vec2 vUv;
+        void main() {
+            // float t = 0.1;
+            // float threshold = 0.5;
+            // float width = 10.0;
+            // float isEdge = clamp(width - abs(threshold - t) / fwidth(t), 0.0, 1.0);
+            gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+            // float luminance = dot(gl_FragColor, vec4(0.2126, 0.7152, 0.0722, 0.5));
+            // float gradient = fwidth(luminance);
+            // if(gradient > 0.5) {
+            //     gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+            // } else {
+            //     gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            // }
+        }`;
+
+        return new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader
+        });
     }
 
     getStartingPosition(sceneState, type) {

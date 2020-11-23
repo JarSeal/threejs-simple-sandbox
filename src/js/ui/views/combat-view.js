@@ -76,7 +76,7 @@ class CombatView {
                         });
                         if(this.id == sceneState.ui.curId && sceneState.ui.curState == 'startClick') {
                             if(sceneState.ui.viewData[this.index].actionPhase === 0) {
-                                heroMaterial.color.setHex(0xffffff);
+                                if(heroMaterial.color) heroMaterial.color.setHex(0xffffff);
                                 sceneState.ui.viewData[this.index].actionPhase = 1;
                             }
                             if(sceneState.ui.curSecondaryTarget) {
@@ -103,7 +103,7 @@ class CombatView {
                             return;
                         }
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
-                            heroMaterial.color.set('lime');
+                            if(heroMaterial.color) heroMaterial.color.set('lime');
                             sceneState.ui.viewData[this.index].actionPhase = 0;
                         }
                     },

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as Stats from './vendor/stats.min.js';
-// import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
+import { OutlineEffect } from './vendor/OutlineEffect.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
@@ -54,6 +54,7 @@ class TileMapRoot {
             postProcess: {
                 outlinePassObjects: []
             },
+            outlineEffectObjs: [],
             getScreenResolution: this.getScreenResolution
         };
         this.init();
@@ -80,7 +81,10 @@ class TileMapRoot {
         const sceneController = new Scene(renderer, this.sceneState, appUiLayer, soundController);
         const scene = sceneController.loadScene(this.sceneState.ui.view);
 
-        // const effect = new OutlineEffect(renderer, {defaultThickness: 0.0045});
+        const effect = new OutlineEffect(renderer, {
+            objects: this.sceneState.outlineEffectObjs,
+            defaultThickness: 0.0055
+        });
         
         const geometry = new THREE.BoxGeometry(1,1,1);
         const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
@@ -166,7 +170,8 @@ class TileMapRoot {
             } else {
                 renderer.render(scene, camera);
             }
-            //effect.render(scene, camera);
+            effect.objects = this.sceneState.outlineEffectObjs;
+            effect.render(scene, camera);
             if(this.sceneState.updateSettingsNextRender) this.updateRenderSettings();
             stats.update(); // Debug statistics
         };
