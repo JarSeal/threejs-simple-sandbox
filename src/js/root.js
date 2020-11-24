@@ -45,9 +45,12 @@ class TileMapRoot {
             settings: {},
             defaultSettings: {
                 useRendererAntialiasing: false,
+                rendererPixelRatio: 1,
                 usePostProcessing: true,
                 useFxAntiAliasing: true,
-                useUnrealBloom: false
+                useUnrealBloom: false,
+                useDebugStats: true,
+                debugStatsMode: 0
             },
             localStorage: new LStorage(),
             renderCalls: [],
@@ -72,19 +75,19 @@ class TileMapRoot {
             antialias: this.sceneState.rendererAntialiasing
         });
         renderer.setClearColor('#000000');
-        renderer.setSize(document.documentElement.clientWidth, document.documentElement.clientHeight);
-        // renderer.setPixelRatio(window.devicePixelRatio);
-        // renderer.gammaFactor = 2.2;
-        // renderer.gammaOutput = true;
+        const screenSize = this.getScreenResolution();
+        renderer.setSize(screenSize.x, screenSize.y);
+        renderer.domElement.id = 'main-stage';
         document.body.appendChild(renderer.domElement);
 
         const sceneController = new Scene(renderer, this.sceneState, appUiLayer, soundController);
         const scene = sceneController.loadScene(this.sceneState.ui.view);
 
-        const effect = new OutlineEffect(renderer, {
+        const outlineEffect = new OutlineEffect(renderer, {
             objects: this.sceneState.outlineEffectObjs,
-            defaultThickness: 0.0055
+            defaultThickness: 0.0045
         });
+        outlineEffect.objects = this.sceneState.outlineEffectObjs;
         
         const geometry = new THREE.BoxGeometry(1,1,1);
         const material = new THREE.MeshLambertMaterial({color: 0xF7F7F7});
@@ -99,22 +102,21 @@ class TileMapRoot {
         }
 
         // Debug statisctics [START]
-        let stats;
-        function createStats() {
-            let stats = new Stats();
-            stats.setMode(0);
-            return stats;
+        const createStats = () => {
+            const s = new Stats();
+            s.setMode(this.sceneState.settings.debugStatsMode);
+            return s;
         }
-        stats = createStats();
+        const stats = createStats();
+
+        stats.domElement.id = 'debug-stats-wrapper';
         document.body.appendChild(stats.domElement);
         // Debug statisctics [END]
 
         const camera = sceneController.getCamera();
 
         // Postprocessing [START]
-        const pixelRatio = window.devicePixelRatio || 1;
         const composer = new EffectComposer(renderer);
-        composer.setPixelRatio = pixelRatio;
         const renderPass = new RenderPass(scene, camera);
         composer.addPass(renderPass);
         this.sceneState.postProcess.unrealBloom = new UnrealBloomPass(
@@ -129,19 +131,19 @@ class TileMapRoot {
                 this.sceneState.getScreenResolution().y
             ), scene, camera);
         this.sceneState.postProcess.outlinePass.prepareMaskMaterial.skinning = true;
-        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.transparent = true;
+        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.transparent = false;
         this.sceneState.postProcess.outlinePass.prepareMaskMaterial.depthWrite = false;
         this.sceneState.postProcess.outlinePass.prepareMaskMaterial.depthTest = true;
         this.sceneState.postProcess.outlinePass.overlayMaterial.blending = THREE.NormalBlending;
-        this.sceneState.postProcess.outlinePass.edgeThickness = 0.1;
-        this.sceneState.postProcess.outlinePass.edgeStrength = 3;
+        this.sceneState.postProcess.outlinePass.edgeThickness = 0.5 * this.sceneState.settings.rendererPixelRatio;
+        this.sceneState.postProcess.outlinePass.edgeStrength = 3 * this.sceneState.settings.rendererPixelRatio;
         this.sceneState.postProcess.outlinePass.edgeGlow = 0;
         this.sceneState.postProcess.outlinePass.setSize(
             this.sceneState.getScreenResolution().x,
             this.sceneState.getScreenResolution().y
         );
         this.sceneState.postProcess.outlinePass.visibleEdgeColor.set('#000000');
-        this.sceneState.postProcess.outlinePass.hiddenEdgeColor.set('#66ffff');
+        this.sceneState.postProcess.outlinePass.hiddenEdgeColor.set('#000000');
         this.sceneState.postProcess.outlinePass.selectedObjects = this.sceneState.postProcess.outlinePassObjects;
         composer.addPass(this.sceneState.postProcess.outlinePass);
         this.sceneState.postProcess.effectFXAA = new ShaderPass(FXAAShader);
@@ -154,7 +156,8 @@ class TileMapRoot {
         
         let renderCallerI = 0,
             renderCalls = this.sceneState.renderCalls,
-            delta;
+            delta,
+            settings = this.sceneState.settings;
         const render = () => {
             requestAnimationFrame(render);
             delta = this.sceneState.clock.getDelta();
@@ -165,15 +168,14 @@ class TileMapRoot {
             for(renderCallerI=0; renderCallerI<renderCalls.length; renderCallerI++) {
                 renderCalls[renderCallerI](delta);
             }
-            if(this.sceneState.settings.usePostProcessing) {
+            if(settings.usePostProcessing) {
                 composer.render();
             } else {
-                renderer.render(scene, camera);
+                outlineEffect.render(scene, camera);
+                // renderer.render(scene, camera);
             }
-            effect.objects = this.sceneState.outlineEffectObjs;
-            effect.render(scene, camera);
-            if(this.sceneState.updateSettingsNextRender) this.updateRenderSettings();
-            stats.update(); // Debug statistics
+            if(this.sceneState.updateSettingsNextRender) this.updateRenderSettings(renderer, composer, stats);
+            if(settings.useDebugStats) stats.update(); // Debug statistics
         };
 
         document.getElementsByTagName('body')[0].style.width = this.sceneState.getScreenResolution().x + 'px';
@@ -188,7 +190,7 @@ class TileMapRoot {
         });
 
         render();
-        this.updateRenderSettings(renderer);
+        this.updateRenderSettings(renderer, composer, stats);
     }
 
     setShaderTime() {
@@ -219,8 +221,6 @@ class TileMapRoot {
     resizePostProcessors(renderer, composer) {
         const width = this.sceneState.getScreenResolution().x,
             height = this.sceneState.getScreenResolution().y;
-        renderer.setSize(width, height);
-        composer.setSize(width, height);
         if(this.sceneState.postProcess.unrealBloom) {
             this.sceneState.postProcess.unrealBloom.resolution = new THREE.Vector2(width, height);
             this.sceneState.postProcess.unrealBloom.setSize(
@@ -240,6 +240,10 @@ class TileMapRoot {
                 1 / height
             );
         }
+        renderer.setSize(width, height);
+        composer.setSize(width, height);
+        renderer.setPixelRatio(this.sceneState.settings.rendererPixelRatio);
+        composer.setPixelRatio(this.sceneState.settings.rendererPixelRatio);
     }
 
     getLocalSettingsData() {
@@ -250,7 +254,7 @@ class TileMapRoot {
                 curVal = defaults[key];
             if(lsValue) {
                 if(typeof curVal === 'number') {
-                    lsValue = parseInt(lsValue);
+                    lsValue = parseFloat(lsValue);
                 } else if(typeof curVal === 'boolean') {
                     lsValue = lsValue === 'false' ? false : true;
                 }
@@ -262,21 +266,33 @@ class TileMapRoot {
         }
     }
 
-    updateRenderSettings() {
+    updateRenderSettings(renderer, composer, stats) {
+        const settings = this.sceneState.settings;
         if(this.sceneState.postProcess.effectFXAA) {
-            this.sceneState.postProcess.effectFXAA.enabled = this.sceneState.settings.useFxAntiAliasing || false;
+            this.sceneState.postProcess.effectFXAA.enabled = settings.useFxAntiAliasing || false;
         }
         if(this.sceneState.postProcess.unrealBloom) {
-            this.sceneState.postProcess.unrealBloom.enabled = this.sceneState.settings.useUnrealBloom || false;
+            this.sceneState.postProcess.unrealBloom.enabled = settings.useUnrealBloom || false;
         }
-        if(this.sceneState.rendererAntialiasing !== this.sceneState.settings.useRendererAntialiasing) {
-            if(this.sceneState.settings.useRendererAntialiasing) {
+        if(this.sceneState.rendererAntialiasing !== settings.useRendererAntialiasing) {
+            if(settings.useRendererAntialiasing) {
                 this.sceneState.localStorage.setItem('usePostProcessing', false);
             }
             setTimeout(() => {
                 location.reload();
             }, 300);
         }
+
+        renderer.setPixelRatio(settings.rendererPixelRatio);
+        composer.setPixelRatio(settings.rendererPixelRatio);
+        if(this.sceneState.postProcess.outlinePass) {
+            this.sceneState.postProcess.outlinePass.edgeThickness = 0.5 * settings.rendererPixelRatio;
+            this.sceneState.postProcess.outlinePass.edgeStrength = 3 * settings.rendererPixelRatio;
+        }
+        
+        document.getElementById('debug-stats-wrapper').style.display = settings.useDebugStats ? 'block' : 'none';
+        stats.setMode(settings.debugStatsMode);
+
         this.sceneState.updateSettingsNextRender = false;
     }
 }

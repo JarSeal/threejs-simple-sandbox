@@ -790,7 +790,7 @@ class Projectiles {
                 if(i === 0) {
                     let materialValues = {size: 0.2},
                         tl2 = new TimelineMax();
-                    tl2.to(materialValues, 1.7, {size: 0.001, onUpdate: () => {
+                    tl2.to(materialValues, 1.7, {size: 0.0001, onUpdate: () => {
                         sparks.material.size = materialValues.size;
                         sparks.material.needsUpdate = true;
                     }});
@@ -800,7 +800,7 @@ class Projectiles {
                         sparks.geometry.dispose();
                         sparks.material.dispose();
                         scene.remove(sparks);
-                    }, 2200);
+                    }, 1700);
                 }
             })(i, floorParticles, sparks, targetPositions, scene, this._randomFloatInBetween(0.5, 1.7));
         }

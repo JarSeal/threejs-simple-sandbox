@@ -206,7 +206,6 @@ class CombatView {
                     },
                     resetSettings: () => {
                         const defaults = this.sceneState.defaultSettings;
-                        console.log('DEFAULTs', defaults);
                         this.sceneState.settings = Object.assign({}, defaults);
                         for (var key in defaults) {
                             console.log('KEY', key);
@@ -238,6 +237,9 @@ class CombatView {
                             settingsUI.useRendererAntialiasing.removeListeners();
                             settingsUI.useFxAntiAliasing.removeListeners();
                             settingsUI.useUnrealBloom.removeListeners();
+                            settingsUI.rendererPixelRatio.removeListeners();
+                            settingsUI.useDebugStats.removeListeners();
+                            settingsUI.debugStatsMode.removeListeners();
                             settingsUI = {};
                             modalContent.innerHTML = '';
                         };
@@ -246,25 +248,29 @@ class CombatView {
                             removeTemplate();
                         } else {
                             // Add template
-                            // settingsUI.maxParticles = new DropDown(this.sceneState, 'maxSimultaneousParticles', 'int', [
-                            //     {title: '20', value: 20},
-                            //     {title: '50', value: 50},
-                            //     {title: '200', value: 200},
-                            //     {title: '500', value: 500},
-                            //     {title: '1000', value: 1000},
-                            // ], true);
                             settingsUI.useRendererAntialiasing = new OnOff(this.sceneState, 'useRendererAntialiasing', true);
                             settingsUI.usePostProcessing = new OnOff(this.sceneState, 'usePostProcessing');
                             settingsUI.useFxAntiAliasing = new OnOff(this.sceneState, 'useFxAntiAliasing', true);
                             settingsUI.useUnrealBloom = new OnOff(this.sceneState, 'useUnrealBloom', true);
+                            settingsUI.rendererPixelRatio = new DropDown(this.sceneState, 'rendererPixelRatio', 'float', [
+                                {title: '1', value: 1},
+                                {title: '1.5', value: 1.5},
+                                {title: '2', value: 2},
+                                {title: '2.5', value: 2.5},
+                                {title: '3', value: 3},
+                                {title: '3.5', value: 3.5},
+                                {title: '4', value: 4},
+                                {title: '4.5', value: 4.5},
+                                {title: '5', value: 5},
+                            ], true);
+                            settingsUI.useDebugStats = new OnOff(this.sceneState, 'useDebugStats', true);
+                            settingsUI.debugStatsMode = new DropDown(this.sceneState, 'debugStatsMode', 'int', [
+                                {title: 'FPS', value: 0},
+                                {title: 'MSPF', value: 1},
+                                {title: 'Memory usage', value: 2},
+                            ], true);
                             modalContent.insertAdjacentHTML('afterbegin',
                                 '<ul class="settings-list">'+
-                                    // '<li class="sl-item">'+
-                                    //     '<h3>Max particles:</h3>'+
-                                    //     '<div class="sl-setting">'+
-                                    //         settingsUI.maxParticles.render() +
-                                    //     '</div>'+
-                                    // '</li>'+
                                     '<li class="sl-item">'+
                                         '<h3>Use renderer antialiasing (post processing must be turned off to have any effect, will reload app):</h3>'+
                                         '<div class="sl-setting">'+
@@ -272,7 +278,7 @@ class CombatView {
                                         '</div>'+
                                     '</li>'+
                                     '<li class="sl-item">'+
-                                        '<h3>Use post processing:</h3>'+
+                                        '<h3>Use post processing (if on, turn off renderer antialiasing):</h3>'+
                                         '<div class="sl-setting">'+
                                             settingsUI.usePostProcessing.render() +
                                         '</div>'+
@@ -289,6 +295,25 @@ class CombatView {
                                             settingsUI.useUnrealBloom.render() +
                                         '</div>'+
                                     '</li>'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Renderer / composer pixel ratio (current device pixel ratio: ' +
+                                        (window.devicePixelRatio || 'unknown') + '):</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.rendererPixelRatio.render() +
+                                        '</div>'+
+                                    '</li>'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Show performance statistics:</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.useDebugStats.render() +
+                                        '</div>'+
+                                    '</li>'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Performance statistics default mode (hint: click on stats to change mode):</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.debugStatsMode.render() +
+                                        '</div>'+
+                                    '</li>'+
 
                                     '<li class="sl-item sl-item--empty"></li>'+
                                     '<li class="sl-item">'+
@@ -299,11 +324,13 @@ class CombatView {
                                     '</li>'+
                                 '</ul>'
                             );
-                            // settingsUI.maxParticles.addListeners();
                             settingsUI.useRendererAntialiasing.addListeners();
                             settingsUI.usePostProcessing.addListeners();
                             settingsUI.useFxAntiAliasing.addListeners();
                             settingsUI.useUnrealBloom.addListeners();
+                            settingsUI.rendererPixelRatio.addListeners();
+                            settingsUI.useDebugStats.addListeners();
+                            settingsUI.debugStatsMode.addListeners();
                             
                             document.getElementById('reset-to-default').addEventListener('click', (e) => {
                                 resetSettings(e);

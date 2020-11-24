@@ -48,6 +48,7 @@
     }
     &--open {
         border-radius: 4px 4px 0 0;
+        z-index: 100;
         .drop-down__ul {
             opacity: 1;
             li {
