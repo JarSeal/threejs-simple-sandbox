@@ -45,9 +45,9 @@ class TileMapRoot {
             settings: {},
             defaultSettings: {
                 useRendererAntialiasing: false,
-                rendererPixelRatio: 1,
-                usePostProcessing: true,
-                useFxAntiAliasing: true,
+                rendererPixelRatio: window.devicePixelRatio || 1,
+                usePostProcessing: false,
+                useFxAntiAliasing: false,
                 useUnrealBloom: false,
                 useDebugStats: true,
                 debugStatsMode: 0

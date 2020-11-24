@@ -208,7 +208,6 @@ class CombatView {
                         const defaults = this.sceneState.defaultSettings;
                         this.sceneState.settings = Object.assign({}, defaults);
                         for (var key in defaults) {
-                            console.log('KEY', key);
                             this.sceneState.localStorage.removeItem(key);
                         }
                     },
@@ -262,6 +261,7 @@ class CombatView {
                                 {title: '4', value: 4},
                                 {title: '4.5', value: 4.5},
                                 {title: '5', value: 5},
+                                {title: 'device val', value: window.devicePixelRatio || 1},
                             ], true);
                             settingsUI.useDebugStats = new OnOff(this.sceneState, 'useDebugStats', true);
                             settingsUI.debugStatsMode = new DropDown(this.sceneState, 'debugStatsMode', 'int', [
@@ -337,9 +337,7 @@ class CombatView {
                                 removeTemplate();
                                 toggleSettings(e);
                                 this.templateCreated = false;
-                                setTimeout(() => {
-                                    // this.sceneState.updateSettingsNextRender = true;
-                                });
+                                this.sceneState.updateSettingsNextRender = true;
                             });
                         }
                         this.templateCreated = !this.templateCreated;
