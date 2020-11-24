@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { calculateAngle } from '../util';
 import { TimelineMax, Linear, Bounce } from 'gsap-ssr';
+import SoundController from '../sound-controller';
 
 class Projectiles {
     constructor(scene, sceneState, SoundController, VisualEffects) {
@@ -42,6 +43,7 @@ class Projectiles {
             hundredEighty: 180 * (Math.PI/180),
         };
         this.sounds = SoundController.loadSoundsSprite('projectile', {volume: 0.1});
+        this.Sound = SoundController;
 
         VisualEffects.createEffect('projectile', 'redBlast');
         VisualEffects.createEffect('hitBlast', 'basic');
@@ -109,8 +111,10 @@ class Projectiles {
         this.sceneState.particles += particles;
         let tl = new TimelineMax();
         tl.startTime = performance.now();
-        this.sounds.play('projectile-002');
-        this.sounds.play('whoosh-001');
+        this.Sound.playFx(this.sounds, [
+            'projectile-002',
+            'whoosh-001'
+        ]);
         tl.to(laser.position, speed, {
             x: targetPos[0],
             y: targetPos[1],
@@ -555,13 +559,13 @@ class Projectiles {
         if(type == 'solid') {
             // this.createWallBurn(projectileLife, posWOffset, scene, camera);
             this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
-            this.sounds.play('ricochet-001');
+            this.Sound.playFx(this.sounds, 'ricochet-001');
         } else if(type == 'player' || type == 'door') {
             this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             if(type == 'door') {
-                this.sounds.play('ricochet-001');
+                this.Sound.playFx(this.sounds, 'ricochet-001');
             } else {
-                this.sounds.play('zap-001');
+                this.Sound.playFx(this.sounds, 'zap-001');
             }
         }
     }

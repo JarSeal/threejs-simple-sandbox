@@ -232,7 +232,7 @@ class CombatView {
                     settingsTemplate: (settingsUI, resetSettings, toggleSettings) => {
                         let modalContent = document.getElementById('settings-modal-content');
                         let removeTemplate = () => {
-                            // settingsUI.maxParticles.removeListeners();
+                            settingsUI.soundFxOn.removeListeners();
                             settingsUI.useRendererAntialiasing.removeListeners();
                             settingsUI.useFxAntiAliasing.removeListeners();
                             settingsUI.useUnrealBloom.removeListeners();
@@ -247,6 +247,7 @@ class CombatView {
                             removeTemplate();
                         } else {
                             // Add template
+                            settingsUI.soundFxOn = new OnOff(this.sceneState, 'soundFxOn', true);
                             settingsUI.useRendererAntialiasing = new OnOff(this.sceneState, 'useRendererAntialiasing', true);
                             settingsUI.usePostProcessing = new OnOff(this.sceneState, 'usePostProcessing');
                             settingsUI.useFxAntiAliasing = new OnOff(this.sceneState, 'useFxAntiAliasing', true);
@@ -271,6 +272,12 @@ class CombatView {
                             ], true);
                             modalContent.insertAdjacentHTML('afterbegin',
                                 '<ul class="settings-list">'+
+                                    '<li class="sl-item">'+
+                                        '<h3>Sound FX on:</h3>'+
+                                        '<div class="sl-setting">'+
+                                            settingsUI.soundFxOn.render() +
+                                        '</div>'+
+                                    '</li>'+
                                     '<li class="sl-item">'+
                                         '<h3>Use renderer antialiasing (post processing must be turned off to have any effect, will reload app):</h3>'+
                                         '<div class="sl-setting">'+
@@ -324,6 +331,7 @@ class CombatView {
                                     '</li>'+
                                 '</ul>'
                             );
+                            settingsUI.soundFxOn.addListeners();
                             settingsUI.useRendererAntialiasing.addListeners();
                             settingsUI.usePostProcessing.addListeners();
                             settingsUI.useFxAntiAliasing.addListeners();

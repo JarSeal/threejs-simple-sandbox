@@ -44,6 +44,7 @@ class TileMapRoot {
             rendererAntialiasing: null,
             settings: {},
             defaultSettings: {
+                soundFxOn: true,
                 useRendererAntialiasing: false,
                 rendererPixelRatio: window.devicePixelRatio || 1,
                 usePostProcessing: false,
@@ -66,9 +67,8 @@ class TileMapRoot {
     init() {
         this.sceneState.initTime = this.getInitTime();
         const appUiLayer = new AppUiLayer(this.sceneState);
-        const soundController = new SoundController();
-
         this.getLocalSettingsData();
+        const soundController = new SoundController(this.sceneState);
 
         this.sceneState.rendererAntialiasing = this.sceneState.settings.useRendererAntialiasing || false;
         const renderer = new THREE.WebGLRenderer({

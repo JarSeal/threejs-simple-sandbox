@@ -4,7 +4,7 @@ class DoorAnimationController {
     constructor(scene, sceneState, SoundController) {
         this.scene = scene;
         this.sceneState = sceneState;
-        this.SoundController = SoundController;
+        this.Sound = SoundController;
         this.sounds = SoundController.loadSoundsSprite('door', {volume: 0.1});
     }
 
@@ -71,7 +71,7 @@ class DoorAnimationController {
             doors[doorID].params['animating'] = true;
             doors[doorID].params['animatingDirOpen'] = true;
             doors[doorID].params.open = true;
-            this.sounds.play('door-slide-001');
+            this.Sound.playFx(this.sounds, 'door-slide-001');
             if(orientation == 'odd') {
                 doorOne.userData.tl.to(doorOne.position, duration, {
                     y: doorOne.userData.pos[1] - door.openOffset,
@@ -111,7 +111,7 @@ class DoorAnimationController {
             doors[doorID].params['animating'] = true;
             doors[doorID].params['animatingDirOpen'] = false;
             doors[doorID].params.open = false;
-            this.sounds.play('door-slide-001');
+            this.Sound.playFx(this.sounds, 'door-slide-001');
             if(orientation == 'odd') {
                 doorOne.userData.tl.to(doorOne.position, duration, {
                     y: doorOne.userData.pos[1] - door.closedOffset,
@@ -119,7 +119,7 @@ class DoorAnimationController {
                     onComplete: () => {
                         doorOne.userData.tl = undefined;
                         doors[doorID].params['animating'] = false;
-                        this.sounds.play('door-closes-001');
+                        this.Sound.playFx(this.sounds, 'door-closes-001');
                     }
                 });
                 doorTwo.userData.tl.to(doorTwo.position, duration, {
@@ -128,7 +128,7 @@ class DoorAnimationController {
                     onComplete: () => {
                         doorTwo.userData.tl = undefined;
                         doors[doorID].params['animating'] = false;
-                        this.sounds.play('door-closes-001');
+                        // this.Sound.playFx(this.sounds, 'door-closes-001');
                     }
                 });
             } else {
@@ -138,7 +138,7 @@ class DoorAnimationController {
                     onComplete: () => {
                         doorOne.userData.tl = undefined;
                         doors[doorID].params['animating'] = false;
-                        this.sounds.play('door-closes-001');
+                        this.Sound.playFx(this.sounds, 'door-closes-001');
                     }
                 });
                 doorTwo.userData.tl.to(doorTwo.position, duration, {
@@ -147,7 +147,7 @@ class DoorAnimationController {
                     onComplete: () => {
                         doorTwo.userData.tl = undefined;
                         doors[doorID].params['animating'] = false;
-                        this.sounds.play('door-closes-001');
+                        // this.Sound.playFx(this.sounds, 'door-closes-001');
                     }
                 });
             }
