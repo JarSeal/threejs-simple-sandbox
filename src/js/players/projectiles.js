@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { calculateAngle } from '../util';
 import { TimelineMax, Linear, Bounce } from 'gsap-ssr';
-import SoundController from '../sound-controller';
 
 class Projectiles {
     constructor(scene, sceneState, SoundController, VisualEffects) {
@@ -28,13 +27,12 @@ class Projectiles {
             transparent: true,
             opacity: 0.2,
         });
-        let fxSpark = new THREE.TextureLoader().load('/images/sprites/fx-spark.png');
+        this.fxSpark = new THREE.TextureLoader().load('/images/sprites/fx-spark.png');
         this.sparkMaterial = new THREE.PointsMaterial({
             size: 1,
             sizeAttenuation: true,
-            map: fxSpark,
+            map: this.fxSpark,
             transparent: true,
-            // premultipliedAlpha: true,
         });
         this.preCountedTurns = {
             fortyFive: 45 * (Math.PI/180),
@@ -47,10 +45,7 @@ class Projectiles {
 
         VisualEffects.createEffect('projectile', 'redBlast');
         VisualEffects.createEffect('hitBlast', 'basic');
-        VisualEffects.createEffect('sparks', 'wallHit', {
-            speed: 120,
-            animLength: 400
-        });
+        VisualEffects.createEffect('sparks', 'wallHit');
     }
 
     shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
@@ -808,6 +803,76 @@ class Projectiles {
                 }
             })(i, floorParticles, sparks, targetPositions, scene, this._randomFloatInBetween(0.5, 1.7));
         }
+
+        this.createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife);
+    }
+
+    createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife) {
+        const particleCount = 1;
+        const geometry = new THREE.BufferGeometry(),
+            sparks = new THREE.Points(geometry, this.customParticlesMaterial()),
+            vertices = [],
+            sizes = [],
+            targetPositions = [];
+        let i = 0;
+        sparks.material.uniforms.color.value = new THREE.Color(0xff0000);
+        for(i=0; i<particleCount; i++) {
+            vertices.push(
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            );
+            sizes.push(1);
+            targetPositions.push([
+                posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
+                posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
+                0.1
+            ]);
+        }
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+        scene.add(sparks);
+    }
+
+    customParticlesMaterial() {
+        const uniforms = {
+            color: { value: new THREE.Color(0xffffff) },
+            pointTexture: { value: this.fxSpark }
+        };
+        const vertexShader = `
+            attribute float size;
+            attribute vec3 customColor;
+            varying vec3 vColor;
+
+            float rand(vec2 co){
+                return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+            }
+
+            void main() {
+                vColor = customColor;
+                vec3 newPos = position + rand(vec2(1.01, 1.03));
+                vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
+                gl_PointSize = size * (300.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+        const fragmentShader = `
+            uniform vec3 color;
+            uniform sampler2D pointTexture;
+            varying vec3 vColor;
+
+            void main() {
+                gl_FragColor = vec4(vec3(1.0, 0.0, 0.0) * color, 1.0);
+                gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
+                if(gl_FragColor.a < ALPHATEST) discard;
+            }
+        `;
+        return new THREE.ShaderMaterial({
+            uniforms,
+            vertexShader,
+            fragmentShader,
+            alphaTest: 0.9
+        });
     }
 
     wallBurnMaterial(uniforms) {

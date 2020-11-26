@@ -181,12 +181,16 @@ class TileMapRoot {
         document.getElementsByTagName('body')[0].style.width = this.sceneState.getScreenResolution().x + 'px';
         document.getElementsByTagName('body')[0].style.height = this.sceneState.getScreenResolution().x + 'px';
 
+        let resizeTimer;
         window.addEventListener('resize', () => {
-            sceneController.resize();
-            appUiLayer.resize();
-            this.resizePostProcessors(renderer, composer);
-            document.getElementsByTagName('body')[0].style.width = this.sceneState.getScreenResolution().x + 'px';
-            document.getElementsByTagName('body')[0].style.height = this.sceneState.getScreenResolution().y + 'px';
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                sceneController.resize();
+                appUiLayer.resize();
+                this.resizePostProcessors(renderer, composer);
+                document.getElementsByTagName('body')[0].style.width = this.sceneState.getScreenResolution().x + 'px';
+                document.getElementsByTagName('body')[0].style.height = this.sceneState.getScreenResolution().y + 'px';
+            }, 500);
         });
 
         render();
