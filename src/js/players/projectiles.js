@@ -808,7 +808,7 @@ class Projectiles {
     }
 
     createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife) {
-        const particleCount = 1;
+        const particleCount = 3;
         const geometry = new THREE.BufferGeometry(),
             sparks = new THREE.Points(geometry, this.customParticlesMaterial()),
             vertices = [],
@@ -822,26 +822,29 @@ class Projectiles {
                 posWOffset[1],
                 this.shotHeight
             );
-            sizes.push(1);
-            targetPositions.push([
+            sizes.push(0.2);
+            targetPositions.push(
                 posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
                 posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
-                0.1
-            ]);
+                this.shotHeight
+            );
         }
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('tposition', new THREE.Float32BufferAttribute(targetPositions, 3));
         geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+        // F0BA3C
         scene.add(sparks);
     }
 
     customParticlesMaterial() {
         const uniforms = {
-            color: { value: new THREE.Color(0xffffff) },
+            color: { value: new THREE.Color(0xf0ba3c) },
             pointTexture: { value: this.fxSpark }
         };
         const vertexShader = `
             attribute float size;
-            attribute vec3 customColor;
+            attribute vec3 tposition;
+            attribute vec3 cuscolor;
             varying vec3 vColor;
 
             float rand(vec2 co){
@@ -849,8 +852,8 @@ class Projectiles {
             }
 
             void main() {
-                vColor = customColor;
-                vec3 newPos = position + rand(vec2(1.01, 1.03));
+                vColor = cuscolor;
+                vec3 newPos = tposition;
                 vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
                 gl_PointSize = size * (300.0 / -mvPosition.z);
                 gl_Position = projectionMatrix * mvPosition;
@@ -862,16 +865,16 @@ class Projectiles {
             varying vec3 vColor;
 
             void main() {
-                gl_FragColor = vec4(vec3(1.0, 0.0, 0.0) * color, 1.0);
+                gl_FragColor = vec4(vec3(1.0, 1.0, 0.5), 1.0);
                 gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
-                if(gl_FragColor.a < ALPHATEST) discard;
             }
         `;
         return new THREE.ShaderMaterial({
             uniforms,
             vertexShader,
             fragmentShader,
-            alphaTest: 0.9
+            depthWrite: false,
+            transparent: true
         });
     }
 
