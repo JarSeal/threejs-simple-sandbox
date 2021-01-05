@@ -9,7 +9,7 @@ const sparksFx = (effectName, type, vfxMaterial, effectMeshes, effectData, optio
     case 'wallHit':
         wallHitSparks(effectName, type, vfxMaterial, effectMeshes, effectData, options);
         break;
-    default: logger.error('Could not find VFX type ' + type + '.');
+    default: logger.error('Could not find VFX type ' + type + ' (' + effectName + ').');
     }
 };
 
@@ -19,8 +19,6 @@ const wallHitSparks = (effectName, type, vfxMaterial, effectMeshes, effectData, 
     const planeGeo3 = planeGeo.clone();
     const planeGeo4 = planeGeo.clone();
     const geometries = [];
-    const spriteXlen = 128 / 4096;
-    const spriteYlen = 128 / 4096;
     const plane = new THREE.Mesh(planeGeo, vfxMaterial);
     plane.rotation.x = -1.5708;
     plane.rotation.y = 1.5708;

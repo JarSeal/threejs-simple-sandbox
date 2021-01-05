@@ -808,52 +808,100 @@ class Projectiles {
     }
 
     createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife) {
-        const particleCount = 3;
+        const particleCount = 3,
+            minAnimLength = 0.7,
+            maxAnimLength = 1.6;
         const geometry = new THREE.BufferGeometry(),
             sparks = new THREE.Points(geometry, this.customParticlesMaterial()),
             vertices = [],
             sizes = [],
-            targetPositions = [];
+            targetPositions = [],
+            animLengths = [];
         let i = 0;
-        sparks.material.uniforms.color.value = new THREE.Color(0xff0000);
         for(i=0; i<particleCount; i++) {
             vertices.push(
                 posWOffset[0],
                 posWOffset[1],
                 this.shotHeight
             );
-            sizes.push(0.2);
+            sizes.push(0.2 * this.sceneState.settings.rendererPixelRatio);
             targetPositions.push(
                 posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
                 posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
                 this.shotHeight
             );
+            animLengths.push(this._randomFloatInBetween(minAnimLength, maxAnimLength));
         }
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setAttribute('tposition', new THREE.Float32BufferAttribute(targetPositions, 3));
         geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+        geometry.setAttribute('tPosition', new THREE.Float32BufferAttribute(targetPositions, 3));
+        geometry.setAttribute('animLength', new THREE.Float32BufferAttribute(animLengths, 1));
         // F0BA3C
+
+        // Start particles animation
+        const now = performance.now(),
+            particlesId = 'sparks-particles-' + now;
+        sparks.material.name = particlesId;
+        sparks.material.uniforms.color.value = new THREE.Color(0xff0000);
+        sparks.material.uniforms.uStartTime.value = now;
+        this.sceneState.shadersToUpdate.push(sparks.material);
         scene.add(sparks);
+        setTimeout(() => {
+            this.sceneState.shadersToUpdate = this.sceneState.shadersToUpdate.filter(s => s.name !== particlesId);
+            sparks.geometry.dispose();
+            sparks.material.dispose();
+            scene.remove(sparks);
+        }, maxAnimLength * 1000 + 200);
     }
 
     customParticlesMaterial() {
         const uniforms = {
             color: { value: new THREE.Color(0xf0ba3c) },
-            pointTexture: { value: this.fxSpark }
+            pointTexture: { value: this.fxSpark },
+            deltaTime: { value: 0 },
+            uTime: { value: 0 },
+            uStartTime: { value: 0 },
         };
         const vertexShader = `
+            #ifndef PI
+            #define PI 3.141592653589793
+            #endif
+
+            uniform float uTime;
+            uniform float uStartTime;
             attribute float size;
-            attribute vec3 tposition;
-            attribute vec3 cuscolor;
+            attribute vec3 tPosition;
+            attribute float animLength;
             varying vec3 vColor;
 
             float rand(vec2 co){
                 return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
             }
 
+            float bounceOut(float t) {
+                const float a = 4.0 / 11.0;
+                const float b = 8.0 / 11.0;
+                const float c = 9.0 / 10.0;
+              
+                const float ca = 4356.0 / 361.0;
+                const float cb = 35442.0 / 1805.0;
+                const float cc = 16061.0 / 1805.0;
+              
+                float t2 = t * t;
+              
+                return t < a
+                  ? 7.5625 * t2
+                  : t < b
+                    ? 9.075 * t2 - 9.9 * t + 3.4
+                    : t < c
+                      ? ca * t2 - cb * t + cc
+                      : 10.8 * t * t - 20.52 * t + 10.72;
+            }
+
             void main() {
-                vColor = cuscolor;
-                vec3 newPos = tposition;
+                float timer = (uTime - uStartTime) / animLength;
+
+                vec3 newPos = tPosition;
                 vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
                 gl_PointSize = size * (300.0 / -mvPosition.z);
                 gl_Position = projectionMatrix * mvPosition;

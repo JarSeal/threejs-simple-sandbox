@@ -121,41 +121,41 @@ class PlayerController {
 
     createCharacterMaterial() {
         return new THREE.MeshBasicMaterial({color: 'lime', skinning: true});
-        const uniforms = {
-            linewidth:  { type: 'f', value: 0.3 },
-        };
-        const vertexShader = `
-        uniform float linewidth;
-        varying vec2 vUv;
-        void main() {
-            vUv = uv;
-            // gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            vec4 displacement = vec4( normalize( normalMatrix * normal ) * linewidth, 0.0 ) + mvPosition;
-            gl_Position = projectionMatrix * displacement;
-        }`;
-        const fragmentShader = `
-        varying vec2 vUv;
-        void main() {
-            // float t = 0.1;
-            // float threshold = 0.5;
-            // float width = 10.0;
-            // float isEdge = clamp(width - abs(threshold - t) / fwidth(t), 0.0, 1.0);
-            gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-            // float luminance = dot(gl_FragColor, vec4(0.2126, 0.7152, 0.0722, 0.5));
-            // float gradient = fwidth(luminance);
-            // if(gradient > 0.5) {
-            //     gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-            // } else {
-            //     gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-            // }
-        }`;
+        // const uniforms = {
+        //     linewidth:  { type: 'f', value: 0.3 },
+        // };
+        // const vertexShader = `
+        // uniform float linewidth;
+        // varying vec2 vUv;
+        // void main() {
+        //     vUv = uv;
+        //     // gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        //     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        //     vec4 displacement = vec4( normalize( normalMatrix * normal ) * linewidth, 0.0 ) + mvPosition;
+        //     gl_Position = projectionMatrix * displacement;
+        // }`;
+        // const fragmentShader = `
+        // varying vec2 vUv;
+        // void main() {
+        //     // float t = 0.1;
+        //     // float threshold = 0.5;
+        //     // float width = 10.0;
+        //     // float isEdge = clamp(width - abs(threshold - t) / fwidth(t), 0.0, 1.0);
+        //     gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+        //     // float luminance = dot(gl_FragColor, vec4(0.2126, 0.7152, 0.0722, 0.5));
+        //     // float gradient = fwidth(luminance);
+        //     // if(gradient > 0.5) {
+        //     //     gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+        //     // } else {
+        //     //     gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        //     // }
+        // }`;
 
-        return new THREE.ShaderMaterial({
-            uniforms: uniforms,
-            vertexShader: vertexShader,
-            fragmentShader: fragmentShader
-        });
+        // return new THREE.ShaderMaterial({
+        //     uniforms: uniforms,
+        //     vertexShader: vertexShader,
+        //     fragmentShader: fragmentShader
+        // });
     }
 
     getStartingPosition(sceneState, type) {

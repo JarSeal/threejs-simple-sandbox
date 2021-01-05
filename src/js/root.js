@@ -59,7 +59,8 @@ class TileMapRoot {
                 outlinePassObjects: []
             },
             outlineEffectObjs: [],
-            getScreenResolution: this.getScreenResolution
+            getScreenResolution: this.getScreenResolution,
+            shadersToUpdate: [],
         };
         this.init();
     }
@@ -106,7 +107,7 @@ class TileMapRoot {
             const s = new Stats();
             s.setMode(this.sceneState.settings.debugStatsMode);
             return s;
-        }
+        };
         const stats = createStats();
 
         stats.domElement.id = 'debug-stats-wrapper';
@@ -163,7 +164,7 @@ class TileMapRoot {
             delta = this.sceneState.clock.getDelta();
             sceneController.doLoops();
             appUiLayer.renderUi();
-            this.setShaderTime();
+            this.setShaderTime(delta);
             if(this.sceneState.mixer) this.sceneState.mixer.update(delta);
             for(renderCallerI=0; renderCallerI<renderCalls.length; renderCallerI++) {
                 renderCalls[renderCallerI](delta);
@@ -197,10 +198,14 @@ class TileMapRoot {
         this.updateRenderSettings(renderer, composer, stats);
     }
 
-    setShaderTime() {
-        let elapsedMilliseconds = Date.now() - this.sceneState.initTime.ms;
-        let elapsedSeconds = elapsedMilliseconds / 1000.0;
-        this.sceneState.uniforms['uTime'] = { value: 60.0 * elapsedSeconds };
+    setShaderTime(delta) {
+        let i = 0;
+        const shadersLength = this.sceneState.shadersToUpdate.length,
+            now = performance.now();
+        for(i=0; i<shadersLength; i++) {
+            this.sceneState.shadersToUpdate[i].uniforms.deltaTime.value = delta;
+            this.sceneState.shadersToUpdate[i].uniforms.uTime.value = now;
+        }
     }
 
     getInitTime() {
@@ -219,7 +224,7 @@ class TileMapRoot {
         return {
             x: Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0),
             y: Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
-        }
+        };
     }
 
     resizePostProcessors(renderer, composer) {

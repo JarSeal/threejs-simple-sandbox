@@ -9,7 +9,7 @@ const hitBlastFx = (effectName, type, vfxMaterial, effectMeshes, effectData, opt
     case 'basic':
         basicBlast(effectName, type, vfxMaterial, effectMeshes, effectData, options);
         break;
-    default: logger.error('Game engine error: could not find VFX type ' + type + '.');
+    default: logger.error('Could not find VFX type ' + type + ' (' + effectName + ').');
     }
 };
 
@@ -18,8 +18,6 @@ const basicBlast = (effectName, type, vfxMaterial, effectMeshes, effectData, opt
     const planeGeo2 = planeGeo.clone();
     const planeGeo3 = planeGeo.clone();
     const geometries = [];
-    const spriteXlen = 128 / 4096;
-    const spriteYlen = 128 / 4096;
     const plane = new THREE.Mesh(planeGeo, vfxMaterial);
     const plane2 = new THREE.Mesh(planeGeo2, vfxMaterial);
     plane2.rotation.x = 1.5708;
