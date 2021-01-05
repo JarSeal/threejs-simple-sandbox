@@ -810,9 +810,9 @@ class Projectiles {
     createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife) {
         const particleCount = 50,
             minAnimLength = 0.5,
-            maxAnimLength = 1.7,
-            minSize = 0.16,
-            maxSize = 0.2;
+            maxAnimLength = 1.4,
+            minSize = 0.12,
+            maxSize = 0.14;
         const geometry = new THREE.BufferGeometry(),
             sparks = new THREE.Points(geometry, this.customParticlesMaterial()),
             vertices = [],
