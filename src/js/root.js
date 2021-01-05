@@ -203,8 +203,8 @@ class TileMapRoot {
         const shadersLength = this.sceneState.shadersToUpdate.length,
             now = performance.now();
         for(i=0; i<shadersLength; i++) {
-            this.sceneState.shadersToUpdate[i].uniforms.deltaTime.value = delta;
-            this.sceneState.shadersToUpdate[i].uniforms.uTime.value = now;
+            this.sceneState.shadersToUpdate[i].material.uniforms.deltaTime.value = delta;
+            this.sceneState.shadersToUpdate[i].material.uniforms.uTime.value = now;
         }
     }
 
