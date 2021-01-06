@@ -20,7 +20,6 @@ var fxTypes = function(request) {
 };
 
 var calculateSparkParticles = function(fx, request) {
-    console.log('CALCULATE', fx);
     var i = 0,
         particleCount = _randomIntInBetween(fx.minParticles, fx.maxParticles),
         vertices = [],
