@@ -721,7 +721,6 @@ class Projectiles {
             projectileLifeSpecial: projectileLife.special,
             rendererPixelRatio: this.sceneState.settings.rendererPixelRatio,
         }).onmessage = (e) => {
-            console.log('Message received from worker', e.data);
             const particleData = e.data.sparksParticlesFx;
             this.initSparkParticles(
                 scene,
