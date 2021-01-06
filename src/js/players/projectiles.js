@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { calculateAngle } from '../util';
-import { TimelineMax, Linear, Bounce } from 'gsap-ssr';
+import { TimelineMax, Linear } from 'gsap-ssr';
 
 class Projectiles {
     constructor(scene, sceneState, SoundController, VisualEffects) {
@@ -551,12 +551,10 @@ class Projectiles {
             minFloorParticles = 5,
             maxFloorParticles = 50,
             floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
+        this.hitFx(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
         if(type == 'solid') {
-            // this.createWallBurn(projectileLife, posWOffset, scene, camera);
-            this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             this.Sound.playFx(this.sounds, 'ricochet-001');
         } else if(type == 'player' || type == 'door') {
-            this.createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
             if(type == 'door') {
                 this.Sound.playFx(this.sounds, 'ricochet-001');
             } else {
@@ -699,13 +697,43 @@ class Projectiles {
         }
     }
 
-    createSparkParticles(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife) {
-        let geometry = new THREE.BufferGeometry(),
-            sparks = new THREE.Points(geometry, this.sparkMaterial.clone()),
-            vertices = [],
-            targetPositions = [],
-            i = 0;
-        
+    hitFx(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife) {
+        // Send a request to a web worker (via VisualEffects class) for hit calculations
+        this.VisualEffects.calculate({
+            fxList: [
+                {
+                    name: 'sparksParticlesFx',
+                    minParticles: 12,
+                    maxParticles: 50,
+                    minAnimLength: 0.5,
+                    maxAnimLength: 1.4,
+                    minSize: 0.12,
+                    maxSize: 0.14,
+                },
+            ],
+            hitPos: [
+                posWOffset[0],
+                posWOffset[1],
+                this.shotHeight
+            ],
+            tileMap,
+            projectileLifeDir: projectileLife.dir,
+            projectileLifeSpecial: projectileLife.special,
+            rendererPixelRatio: this.sceneState.settings.rendererPixelRatio,
+        }).onmessage = (e) => {
+            console.log('Message received from worker', e.data);
+            const particleData = e.data.sparksParticlesFx;
+            this.initSparkParticles(
+                scene,
+                particleData.vertices,
+                particleData.sizes,
+                particleData.targetPositions,
+                particleData.animLengths,
+                particleData.colors,
+                particleData.maxAnimLength
+            );
+        };
+
         // Hit blast
         const hitBlastId = 'hit-blast-' + performance.now(),
             blast = this.VisualEffects.getEffectMesh('hitBlast_basic', hitBlastId),
@@ -713,7 +741,7 @@ class Projectiles {
         let randomSize = Math.random() * (1 - 0.25) + 0.25;
         if(blast) {
             blast.rotation.set(randomTwist, randomTwist, randomTwist);
-            blast.name = name;
+            blast.name = hitBlastId;
             blast.scale.set(randomSize, randomSize, randomSize);
             blast.position.set(
                 posWOffset[0],
@@ -732,83 +760,37 @@ class Projectiles {
             });
         }
 
-        // FX Sparks
-        const sparksFxId = 'sparks-fx-' + performance.now(),
-            sparksFx = this.VisualEffects.getEffectMesh('sparks_wallHit', sparksFxId);
-        randomSize = Math.random() * (1 - 0.25) + 0.25;
-        if(sparksFx) {
-            sparksFx.rotation.z = randomTwist;
-            sparksFx.scale.set(randomSize, randomSize, randomSize);
-            sparksFx.position.set(
-                posWOffset[0],
-                posWOffset[1],
-                this.shotHeight
-            );
-            scene.add(sparksFx);
-            this.VisualEffects.startAnim({
-                id: sparksFxId,
-                meshName: 'sparks_wallHit',
-                mesh: sparksFx,
-                onComplete: () => {
-                    sparksFx.material.dispose();
-                    scene.remove(sparksFx);
-                },
-            });
-        }
-
         // Particles
-        // for(i=0; i<floorParticles; i++) {
-        //     vertices.push(
-        //         posWOffset[0],
-        //         posWOffset[1],
-        //         this.shotHeight
-        //     );
-        //     targetPositions.push([
-        //         posWOffset[0] + this.random2dAmount(projectileLife.dir, 'x', tileMap, pos, projectileLife.special),
-        //         posWOffset[1] + this.random2dAmount(projectileLife.dir, 'y', tileMap, pos, projectileLife.special),
-        //         0.1
-        //     ]);
-        // }
-        // geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        // scene.add(sparks);
-        // for(i=0; i<floorParticles; i++) {
-        //     (function(i, particles, sparks, targetPositions, scene, time) {
-        //         let tl = new TimelineMax();
-        //         let positions = sparks.geometry.attributes.position,
-        //             x = positions.getX(i),
-        //             y = positions.getY(i),
-        //             z = positions.getZ(i),
-        //             progressXY = {x: x, y: y},
-        //             progressZ = {z: z};
-        //         tl.to(progressXY, time, {x: targetPositions[i][0], y: targetPositions[i][1], onUpdate: () => {
-        //             positions.setXY(i, progressXY.x, progressXY.y);
-        //         }}).to(progressZ, time, {z: targetPositions[i][2], ease: Bounce.easeOut, onUpdate: () => {
-        //             positions.setZ(i, progressZ.z);
-        //             positions.needsUpdate = true;
-        //         }}, '-='+time);
-        //         if(i === 0) {
-        //             let materialValues = {size: 0.2},
-        //                 tl2 = new TimelineMax();
-        //             tl2.to(materialValues, 1.7, {size: 0.0001, onUpdate: () => {
-        //                 sparks.material.size = materialValues.size;
-        //                 sparks.material.needsUpdate = true;
-        //             }});
-        //         }
-        //         if(i+1 == particles) {
-        //             setTimeout(() => {
-        //                 sparks.geometry.dispose();
-        //                 sparks.material.dispose();
-        //                 scene.remove(sparks);
-        //             }, 1700);
-        //         }
-        //     })(i, floorParticles, sparks, targetPositions, scene, this._randomFloatInBetween(0.5, 1.7));
-        // }
+        //this.createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife);
+    }
 
-        this.createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife);
+    initSparkParticles(scene, vertices, sizes, targetPositions, animLengths, colors, maxAnimLength) {
+        // Create particles
+        const geometry = new THREE.BufferGeometry(),
+            sparks = new THREE.Points(geometry, this.customParticlesMaterial());
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+        geometry.setAttribute('tPosition', new THREE.Float32BufferAttribute(targetPositions, 3));
+        geometry.setAttribute('animLength', new THREE.Float32BufferAttribute(animLengths, 1));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        // Start particles animation and add it to the scene
+        const now = performance.now(),
+            particlesId = 'sparks-particles-' + now;
+        sparks.material.name = particlesId;
+        sparks.material.uniforms.uStartTime.value = now;
+        this.sceneState.shadersToUpdate.push(sparks);
+        scene.add(sparks);
+        // End particles animation and remove from scene
+        setTimeout(() => {
+            this.sceneState.shadersToUpdate = this.sceneState.shadersToUpdate.filter(s => s.name !== particlesId);
+            sparks.geometry.dispose();
+            sparks.material.dispose();
+            scene.remove(sparks);
+        }, maxAnimLength + 200);
     }
 
     createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife) {
-        const particleCount = 50,
+        const particleCount = this._randomIntInBetween(12, 50),
             minAnimLength = 0.5,
             maxAnimLength = 1.4,
             minSize = 0.12,
@@ -869,10 +851,6 @@ class Projectiles {
             uStartTime: { value: 0 },
         };
         const vertexShader = `
-            #ifndef PI
-            #define PI 3.141592653589793
-            #endif
-
             uniform float uTime;
             uniform float uStartTime;
             attribute float size;
@@ -883,13 +861,13 @@ class Projectiles {
             varying float vTimerClamp;
 
             float bounceOut(float t) {
-                const float a = 0.3636363636363636;
-                const float b = 8.0 / 11.0;
-                const float c = 9.0 / 10.0;
+                const float a = 0.3636363636363636; // 4.0 / 11.0
+                const float b = 0.7272727272727273; // 8.0 / 11.0
+                const float c = 0.9; // 9.0 / 10.0
               
-                const float ca = 4356.0 / 361.0;
-                const float cb = 35442.0 / 1805.0;
-                const float cc = 16061.0 / 1805.0;
+                const float ca = 12.06648199445983; // 4356.0 / 361.0
+                const float cb = 19.63545706371191; // 35442.0 / 1805.0
+                const float cc = 8.898060941828255; // 16061.0 / 1805.0
               
                 float t2 = t * t;
               
@@ -928,7 +906,7 @@ class Projectiles {
 
             void main() {
                 vec3 newColor = vec3(vColor.r, vColor.g * (vColor.g - vTimerClamp + 0.8), vColor.b * (vColor.b - vTimerClamp + 0.5));
-                gl_FragColor = vec4(newColor, 1.0);
+                gl_FragColor = vec4(newColor, 1.5 - vTimerClamp);
                 gl_FragColor = gl_FragColor * texture2D(pointTexture, gl_PointCoord);
             }
         `;

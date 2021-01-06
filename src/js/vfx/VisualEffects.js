@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import hitBlastFx from './combat/hit-blast-fx.js';
 import projectileFx from './combat/projectile-fx.js';
 import sparksFx from './combat/sparks-fx.js';
+// import particleSparksFx from './combat/particle-sparks-fx.js';
 import { logger } from '../util.js';
 
 class VisualEffects {
@@ -17,6 +18,8 @@ class VisualEffects {
         this.effectMeshes = {};
         this.effectData = {};
         sceneState.renderCalls.push(this.animate);
+
+        this.fxWorker = new Worker('/webworkers/workerFx.js');
 
         // this.createEffect('sparks', 'wallHit');
         // this.createEffect('projectile', 'redBlast');
@@ -262,6 +265,11 @@ class VisualEffects {
             mesh: mesh,
             loop: true
         });
+    }
+
+    calculate(request) {
+        this.fxWorker.postMessage(request);
+        return this.fxWorker;
     }
 }
 

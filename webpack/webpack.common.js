@@ -71,7 +71,7 @@ module.exports = {
       patterns: [
         {from:'src/images',to:'images'},
         {from:'src/sounds',to:'sounds'},
-        {from:'src/js/vendor',to:'js'},
+        {from:'src/webworkers',to:'webworkers'},
       ],
     }),
     new MiniCssExtractPlugin({
