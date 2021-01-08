@@ -7,6 +7,8 @@ class Consequences {
         this.projectiles = []; // [{shooterId:'someId', projectileId:'someId', route:[{pos:[25,25], enterTime:154..., leaveTime:155...}]}]
         this.doors = {}; // {'doorID':'playerId':{enterTime:154..., leaveTime:155...}}
         this.initTime = 0;
+
+        this.worker = new Worker('/webworkers/workerConsequences.js');
     }
 
     addMapAndInitTime(currentMap, initTime) {
@@ -24,67 +26,36 @@ class Consequences {
     }
 
     getAllCurrentPlayerPositions() {
-        const playerKeys = Object.keys(this.players);
-        let now = this.initTime + performance.now() / 1000,
-            playerKeysLength = playerKeys.length,
-            p = 0,
-            playerPositions = [];
-        for(p=0; p<playerKeysLength; p++) {
-            let curRoute = this.players[playerKeys[p]],
-                curRouteLength = curRoute.length,
-                r = 0;
-            for(r=0; r<curRouteLength; r++) {
-                if(curRoute[curRouteLength-1].enterTime < now) {
-                    playerPositions.push(curRoute[curRouteLength-1].posInt);
-                    break;
-                }
-                if(curRoute[r].enterTime < now && curRoute[r].leaveTime > now) {
-                    playerPositions.push(curRoute[r].posInt);
-                    break;
-                }
+        // REMOVE THIS
+        this.worker.postMessage({
+            task: 'getAllCurrentPlayerPositions',
+            data: {
+                players: this.players,
+                initTime: this.initTime,
+                microTime: performance.now()
             }
-        }
-        return playerPositions;
+        });
+        return this.worker;
     }
 
     movePlayer(playerId, route) {
-        let routeLength = route.length,
-            i = 0,
-            curTile;
-        this.players[playerId] = [];
-        this.doDoorTimesCleaning(playerId);
-        for(i=0; i<routeLength; i++) {
-            this.players[playerId].push({
-                pos: [route[i].x, route[i].y],
-                posInt: [route[i].xInt, route[i].yInt],
-                enterTime: route[i].enterTime,
-                leaveTime: route[i].leaveTime ? route[i].leaveTime : 0,
-            });
-            // Check if there are any door triggers on the route and set opening and closing times for doors
-            curTile = this.tileMap[route[i].xInt][route[i].yInt];
-            if(curTile.doorParams && curTile.doorParams.length) {
-                let doorParams = curTile.doorParams,
-                    doorParamsLength = doorParams.length,
-                    d = 0,
-                    delay = 0.15,
-                    doorID;
-                for(d=0; d<doorParamsLength; d++) {
-                    if(doorParams[d].locked) continue;
-                    doorID = doorParams[d].doorID;
-                    let leaveTime = routeLength == i + 1 ? 0 : route[i].leaveTime + delay,
-                        timesLastIndex = this.doors[doorID][playerId].times.length - 1;
-                    if(timesLastIndex >= 0 && this.doors[doorID][playerId].times[timesLastIndex].closing + delay === route[i].enterTime) {
-                        this.doors[doorID][playerId].times[timesLastIndex].closing = leaveTime;
-                    } else {
-                        this.doors[doorID][playerId].times.push({
-                            opening: route[i].enterTime + delay,
-                            closing: leaveTime,
-                        });
-                    }
-                }
+        this.worker.postMessage({
+            task: 'movePlayer',
+            data: {
+                playerId: playerId,
+                playerRoute: route,
+                doors: this.doors,
+                players: this.players,
+                tileMap: this.tileMap,
+                initTime: this.initTime,
+                microTime: performance.now()
             }
-        }
-        this.createHitList();
+        });
+        this.worker.onmessage = (e) => {
+            this.players = e.data.players;
+            this.doors = e.data.doors;
+            this.createHitList();
+        };
     }
 
     addDoor(door) {
@@ -97,42 +68,22 @@ class Consequences {
         }
     }
 
+    checkDoors(sceneState) {
+        this.worker.postMessage({
+            task: 'checkDoors',
+            data: {
+                doors: this.doors,
+                players: this.players,
+                tileMap: sceneState.shipMap[sceneState.floor],
+                initTime: this.initTime,
+                microTime: performance.now()
+            }
+        });
+        return this.worker;
+    }
+
     getDoors() {
         return this.doors;
-    }
-
-    doDoorTimesCleaning(playerId) {
-        const doorKeys = Object.keys(this.doors);
-        let doorKeysLength = doorKeys.length,
-            d = 0;
-        for(d=0; d<doorKeysLength; d++) {
-            this.doors[doorKeys[d]][playerId] = {
-                times: [],
-            };
-        }
-    }
-
-    getTriggeredDoors(playerId, timeNow) {
-        const doorKeys = Object.keys(this.doors);
-        let doorKeysLength = doorKeys.length,
-            d = 0,
-            affectedDoors = [];
-        for(d=0; d<doorKeysLength; d++) {
-            let door = this.doors[doorKeys[d]].params,
-                playerData = this.doors[doorKeys[d]][playerId];
-            if(playerData && playerData.times && playerData.times.length) {
-                let times = playerData.times,
-                    timesLength = times.length,
-                    t = 0;
-                for(t=0; t<timesLength; t++) {
-                    if((times[t].opening > timeNow && times[t].closing < timeNow) || times[t].closing === 0) {
-                        affectedDoors.push(door);
-                        break;
-                    }
-                }
-            }
-        }
-        return affectedDoors;
     }
 
     addProjectile(shooterId, projectileId, route) {
@@ -141,112 +92,19 @@ class Consequences {
     }
     
     createHitList(index) {
-        if(index === undefined) {
-            let pr = 0,
-                projLength = this.projectiles.length;
-            // Go through all projectiles
-            for(pr=0; pr<projLength; pr++) {
-                this.addToHitList(this.projectiles[pr]);
+        this.worker.postMessage({
+            task: 'createHitList',
+            data: {
+                index: index,
+                doors: this.doors,
+                players: this.players,
+                projectiles: this.projectiles,
+                tileMap: this.tileMap,
             }
-        } else {
-            // Add only one (the latest) projectile's hits to hitList
-            this.addToHitList(index);
-        }
-    }
-
-    addToHitList(index) {
-        // Go through the projectiles route and add a possible hit to the hitlist
-        if(!this.projectiles || index === undefined || !this.projectiles[index]) return;
-        const playerKeys = Object.keys(this.players);
-        let projectile = this.projectiles[index],
-            r = 0,
-            routeLength = projectile.route.length,
-            pl = 0,
-            playersLength = playerKeys.length,
-            plR = 0,
-            plRLength,
-            hitFound = false;
-        for(r=1; r<routeLength; r++) { // Skip the first tile
-            let prEnterTime = projectile.route[r].enterTime,
-                prLeaveTime = projectile.route[r].leaveTime,
-                prPos = projectile.route[r].pos,
-                curTile = this.tileMap[prPos[0]][prPos[1]],
-                curTileDoor = { open: false };
-            // Check if players are on the way of the projectile's route
-            for(pl=0; pl<playersLength; pl++) {
-                plRLength = this.players[playerKeys[pl]].length;
-                for(plR=0; plR<plRLength; plR++) {
-                    let plEnterTime = this.players[playerKeys[pl]][plR].enterTime,
-                        plLeaveTime = this.players[playerKeys[pl]][plR].leaveTime,
-                        plPos = this.players[playerKeys[pl]][plR].pos;
-                    if((plPos[0] === prPos[0] && plPos[1] === prPos[1]) &&
-                        (plLeaveTime === 0 || (prEnterTime < plLeaveTime && prEnterTime > plEnterTime) ||
-                        (plEnterTime < prLeaveTime && plEnterTime > prEnterTime)) &&
-                        projectile.shooterId != playerKeys[pl]) {
-                        // Add player hit to hitList
-                        this.hitList[projectile.projectileId] = {
-                            type: 'projectile',
-                            shooterId: projectile.shooterId,
-                            projectileId: projectile.projectileId,
-                            time: prEnterTime,
-                            target: 'player',
-                            targetId: playerKeys[pl],
-                            pos: prPos,
-                            hitPos: projectile.route[r].posExact,
-                            dir: projectile.route[r].dir,
-                        };
-                        hitFound = true;
-                        break;
-                    }
-                    if(hitFound) break;
-                }
-                if(!hitFound && curTile.type == 3) {
-                    let doorParams = this.tileMap[prPos[0]][prPos[1]].doorParams,
-                        doorParamsLength = doorParams.length,
-                        d = 0,
-                        curParams;
-                    for(d=0; d<doorParamsLength; d++) {
-                        if(doorParams[d].isCurDoorTile) {
-                            curParams = doorParams[d];
-                            break;
-                        }
-                    }
-                    let doorID = curParams.doorID,
-                        curDoorTimes = this.doors[doorID][playerKeys[pl]] ? this.doors[doorID][playerKeys[pl]].times : [],
-                        curDoorTimesLength = curDoorTimes.length,
-                        dt = 0;
-                    curTileDoor.params = curParams;
-                    for(dt=0; dt<curDoorTimesLength; dt++) {
-                        if((prEnterTime > curDoorTimes[dt].opening && prEnterTime < curDoorTimes[dt].closing) ||
-                           (prLeaveTime > curDoorTimes[dt].opening && prLeaveTime < curDoorTimes[dt].closing) ||
-                           (prEnterTime > curDoorTimes[dt].opening && curDoorTimes[dt].closing === 0)) {
-                            curTileDoor.open = true;
-                            break;
-                        }
-                    }
-                }
-                if(hitFound) break;
-            }
-            if(!hitFound && curTile.type == 3) {
-                if(!curTileDoor.open) {
-                    // Add door hit to hitList
-                    this.hitList[projectile.projectileId] = {
-                        type: 'projectile',
-                        shooterId: projectile.shooterId,
-                        projectileId: projectile.projectileId,
-                        time: prEnterTime,
-                        target: 'door',
-                        targetId: curTileDoor.params.doorID,
-                        pos: prPos,
-                        hitPos: projectile.route[r].posExact,
-                        dir: projectile.route[r].dir,
-                    };
-                    hitFound = true;
-                    break;
-                }
-            }
-            if(hitFound) break;
-        }
+        });
+        this.worker.onmessage = (e) => {
+            this.hitList = Object.assign({}, this.hitList, e.data);
+        };
     }
 
     doHitConsequence(id, scene, removeAnim) {
@@ -255,10 +113,10 @@ class Consequences {
         this.removeProjectile(id, scene, removeAnim);
     }
 
-    checkHitTime(id, initTime) {
+    checkHitTime(id) {
         let curTime, hitter;
         if(!this.hitList[id]) return false;
-        curTime = initTime + performance.now() / 1000;
+        curTime = this.initTime + performance.now() / 1000;
         hitter = this.hitList[id];
         if(hitter.time < curTime) {
             return hitter;
@@ -266,19 +124,39 @@ class Consequences {
         return false;
     }
 
-    checkAllHitTimes(initTime, scene) {
-        const hitListKeys = Object.keys(this.hitList);
-        let hitter,
-            hitListLength = hitListKeys.length,
-            i = 0,
-            id;
-        for(i=0; i<hitListLength; i++) {
-            id = hitListKeys[i];
-            hitter = this.checkHitTime(id, initTime);
-            if(hitter) {
-                this.doHitConsequence(id, scene, null);
+    checkHitTime2(id) {
+        this.worker.postMessage({
+            task: 'checkHitTime',
+            data: {
+                pid: id,
+                id: id,
+                hitList: this.hitList,
+                initTime: this.initTime,
+                microTime: performance.now()
             }
-        }
+        });
+        return this.worker;
+    }
+
+    checkAllHitTimes(scene) {
+        this.worker.postMessage({
+            task: 'checkHitTime',
+            data: {
+                hitList: this.hitList,
+                initTime: this.initTime,
+                microTime: performance.now()
+            }
+        });
+        this.worker.onmessage = (e) => {
+            if(e.data.length) {
+                const list = e.data,
+                    listLength = e.data.length;
+                let i = 0;
+                for(i=0; i<listLength; i++) {
+                    this.doHitConsequence(list[i], scene, null);
+                }
+            }
+        };
     }
 
     checkIfAliveOnHitList(id) {
@@ -286,6 +164,7 @@ class Consequences {
     }
 
     removeProjectile(id, scene, removeAnim) {
+        // DO IN WORKER (partially)
         let i=0,
             projIndex;
         const projLength = this.projectiles.length,
@@ -306,6 +185,7 @@ class Consequences {
     }
 
     removeFromHitList(id) {
+        // DO IN WORKER (MAYBE)
         delete this.hitList[id];
     }
     

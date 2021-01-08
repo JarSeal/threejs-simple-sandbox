@@ -115,7 +115,7 @@ class Projectiles {
             y: targetPos[1],
             ease: Linear.easeNone,
             onUpdate: () => {
-                let hitter = this.sceneState.consequences.checkHitTime(name, this.sceneState.initTime.s);
+                const hitter = this.sceneState.consequences.checkHitTime(name);
                 if(hitter) {
                     this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
                     this.sceneState.particles -= particles;
@@ -758,9 +758,6 @@ class Projectiles {
                 },
             });
         }
-
-        // Particles
-        //this.createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife);
     }
 
     initSparkParticles(scene, vertices, sizes, targetPositions, animLengths, colors, maxAnimLength) {

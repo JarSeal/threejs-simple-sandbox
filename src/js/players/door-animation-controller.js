@@ -9,54 +9,26 @@ class DoorAnimationController {
     }
 
     checkDoors() {
-        let playerPositions = this.sceneState.consequences.getAllCurrentPlayerPositions(),
-            playerPositionsLength = playerPositions.length,
-            p = 0,
-            tileMap = this.sceneState.shipMap[this.sceneState.floor],
-            openDoors = [],
-            doors = this.sceneState.consequences.getDoors();
-        for(p=0; p<playerPositionsLength; p++) {
-            let curTile = tileMap[playerPositions[p][0]][playerPositions[p][1]];
-            if(curTile.doorParams && curTile.doorParams.length) {
-                let params = curTile.doorParams,
-                    paramsLength = params.length,
-                    d = 0;
-                for(d=0; d<paramsLength; d++) {
-                    if(!openDoors.includes(params[d].doorID) && !doors[params[d].doorID].params.locked) {
-                        openDoors.push(params[d].doorID);
-                    }
-                }
+        this.sceneState.consequences.checkDoors(this.sceneState).onmessage = (e) => {
+            const anims = e.data,
+                animsLength = anims.length;
+            let i = 0;
+            for(i=0; i<animsLength; i++) {
+                const a = anims[i];
+                this.animateDoor(a.door, a.dirTo);
             }
-        }
-        if(openDoors.length) {
-            let openDoorsLength = openDoors.length,
-                o = 0;
-            for(o=0; o<openDoorsLength; o++) {
-                let params = doors[openDoors[o]].params;
-                if(!params.open || (params.animating && !params.animatingDirOpen)) {
-                    this.animateDoor(params, doors, 'open');
-                }
-            }
-        }
-        const doorKeys = Object.keys(doors);
-        let doorKeysLength = doorKeys.length,
-            d = 0;
-        for(d=0; d<doorKeysLength; d++) {
-            let door = doors[doorKeys[d]].params;
-            if(!openDoors.includes(door.doorID) && (door.open || (door.animating && door.animatingDirOpen))) {
-                this.animateDoor(door, doors, 'closed');
-            }
-        }
+        };
     }
 
-    animateDoor(door, doors, dirTo) {
+    animateDoor(door, dirTo) {
         let doorID = door.doorID,
             doorGroup = this.scene.getObjectByName(doorID).children,
             duration = 0.3,
             doorOne = doorGroup[0],
             doorTwo = doorGroup[1],
             orientationSplit = doorOne.name.split('--'),
-            orientation = orientationSplit[orientationSplit.length-1];
+            orientation = orientationSplit[orientationSplit.length-1],
+            doors = this.sceneState.consequences.getDoors();
         if(doorOne.userData.tl) {
             doorOne.userData.tl.kill();
             doorOne.userData.tl = undefined;
