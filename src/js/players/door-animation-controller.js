@@ -12,10 +12,7 @@ class DoorAnimationController {
         this.sceneState.consequences.checkDoors(pid).onmessage = (e) => {
             const anims = e.data,
                 animsLength = anims.length;
-            if(anims.pid !== pid) {
-                console.log('SOME ELSE PID');
-                return;
-            }
+            if(anims.pid !== pid) return;
             let i = 0;
             for(i=0; i<animsLength; i++) {
                 const a = anims[i];

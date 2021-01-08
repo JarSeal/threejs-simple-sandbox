@@ -26,7 +26,6 @@ class Consequences {
     }
 
     movePlayer(playerId, route) {
-        console.log('MOVING PLAYER');
         this.worker.postMessage({
             task: 'movePlayer',
             data: {
@@ -59,7 +58,6 @@ class Consequences {
     }
 
     checkDoors(pid) {
-        console.log('player route length', this.players['devPlayer001'].length);
         this.worker.postMessage({
             task: 'checkDoors',
             data: {

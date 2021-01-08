@@ -5,6 +5,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
+import { SMAAPass } from 'three/examples//jsm/postprocessing/SMAAPass.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import Scene from './scene.js';
@@ -48,7 +49,9 @@ class TileMapRoot {
                 useRendererAntialiasing: false,
                 rendererPixelRatio: window.devicePixelRatio || 1,
                 usePostProcessing: false,
-                useFxAntiAliasing: false,
+                //useFxAntiAliasing: false,
+                useSmaa: true,
+                useOutline: false,
                 useUnrealBloom: false,
                 useDebugStats: true,
                 debugStatsMode: 0
@@ -147,12 +150,15 @@ class TileMapRoot {
         this.sceneState.postProcess.outlinePass.hiddenEdgeColor.set('#000000');
         this.sceneState.postProcess.outlinePass.selectedObjects = this.sceneState.postProcess.outlinePassObjects;
         composer.addPass(this.sceneState.postProcess.outlinePass);
-        this.sceneState.postProcess.effectFXAA = new ShaderPass(FXAAShader);
-        this.sceneState.postProcess.effectFXAA.uniforms['resolution'].value.set(
-            1 / this.sceneState.getScreenResolution().x,
-            1 / this.sceneState.getScreenResolution().y
-        );
-        composer.addPass(this.sceneState.postProcess.effectFXAA);
+        this.sceneState.postProcess.smaa = new SMAAPass(window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio());
+        composer.addPass(this.sceneState.postProcess.smaa);
+        // this.sceneState.postProcess.effectFXAA = new ShaderPass(FXAAShader);
+        // this.sceneState.postProcess.effectFXAA.uniforms['resolution'].value.set(
+        //     1 / this.sceneState.getScreenResolution().x,
+        //     1 / this.sceneState.getScreenResolution().y
+        // );
+        // composer.addPass(this.sceneState.postProcess.effectFXAA);
+
         // Postprocessing [END]
         
         let renderCallerI = 0,
@@ -172,8 +178,8 @@ class TileMapRoot {
             if(settings.usePostProcessing) {
                 composer.render();
             } else {
-                outlineEffect.render(scene, camera);
-                // renderer.render(scene, camera);
+                // outlineEffect.render(scene, camera);
+                renderer.render(scene, camera);
             }
             if(this.sceneState.updateSettingsNextRender) this.updateRenderSettings(renderer, composer, stats);
             if(settings.useDebugStats) stats.update(); // Debug statistics
@@ -243,12 +249,12 @@ class TileMapRoot {
                 height
             );
         }
-        if(this.sceneState.postProcess.effectFXAA) {
-            this.sceneState.postProcess.effectFXAA.uniforms['resolution'].value.set(
-                1 / width,
-                1 / height
-            );
-        }
+        // if(this.sceneState.postProcess.effectFXAA) {
+        //     this.sceneState.postProcess.effectFXAA.uniforms['resolution'].value.set(
+        //         1 / width,
+        //         1 / height
+        //     );
+        // }
         renderer.setSize(width, height);
         composer.setSize(width, height);
         renderer.setPixelRatio(this.sceneState.settings.rendererPixelRatio);
@@ -277,8 +283,14 @@ class TileMapRoot {
 
     updateRenderSettings(renderer, composer, stats) {
         const settings = this.sceneState.settings;
-        if(this.sceneState.postProcess.effectFXAA) {
-            this.sceneState.postProcess.effectFXAA.enabled = settings.useFxAntiAliasing || false;
+        // if(this.sceneState.postProcess.effectFXAA) {
+        //     this.sceneState.postProcess.effectFXAA.enabled = settings.useFxAntiAliasing || false;
+        // }
+        if(this.sceneState.postProcess.smaa) {
+            this.sceneState.postProcess.smaa.enabled = settings.useSmaa || false;
+        }
+        if(this.sceneState.postProcess.outlinePass) {
+            this.sceneState.postProcess.outlinePass.enabled = settings.useOutline || false;
         }
         if(this.sceneState.postProcess.unrealBloom) {
             this.sceneState.postProcess.unrealBloom.enabled = settings.useUnrealBloom || false;
