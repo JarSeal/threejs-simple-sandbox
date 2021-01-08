@@ -234,7 +234,6 @@ class CombatView {
                         let removeTemplate = () => {
                             settingsUI.soundFxOn.removeListeners();
                             settingsUI.useRendererAntialiasing.removeListeners();
-                            // settingsUI.useFxAntiAliasing.removeListeners();
                             settingsUI.useSmaa.removeListeners();
                             settingsUI.useOutline.removeListeners();
                             settingsUI.useUnrealBloom.removeListeners();
@@ -252,7 +251,6 @@ class CombatView {
                             settingsUI.soundFxOn = new OnOff(this.sceneState, 'soundFxOn', true);
                             settingsUI.useRendererAntialiasing = new OnOff(this.sceneState, 'useRendererAntialiasing', true);
                             settingsUI.usePostProcessing = new OnOff(this.sceneState, 'usePostProcessing');
-                            // settingsUI.useFxAntiAliasing = new OnOff(this.sceneState, 'useFxAntiAliasing', true);
                             settingsUI.useSmaa = new OnOff(this.sceneState, 'useSmaa', true);
                             settingsUI.useOutline = new OnOff(this.sceneState, 'useOutline', true);
                             settingsUI.useUnrealBloom = new OnOff(this.sceneState, 'useUnrealBloom', true);
@@ -294,12 +292,6 @@ class CombatView {
                                             settingsUI.usePostProcessing.render() +
                                         '</div>'+
                                     '</li>'+
-                                    // '<li class="sl-item">'+
-                                    //     '<h3>Use post processing antialiasing (post processing must be turned on):</h3>'+
-                                    //     '<div class="sl-setting">'+
-                                    //         settingsUI.useFxAntiAliasing.render() +
-                                    //     '</div>'+
-                                    // '</li>'+
                                     '<li class="sl-item">'+
                                         '<h3>Use post processing SMAA antialiasing (post processing must be turned on):</h3>'+
                                         '<div class="sl-setting">'+
@@ -350,7 +342,6 @@ class CombatView {
                             settingsUI.soundFxOn.addListeners();
                             settingsUI.useRendererAntialiasing.addListeners();
                             settingsUI.usePostProcessing.addListeners();
-                            // settingsUI.useFxAntiAliasing.addListeners();
                             settingsUI.useSmaa.addListeners();
                             settingsUI.useOutline.addListeners();
                             settingsUI.useUnrealBloom.addListeners();

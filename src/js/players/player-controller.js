@@ -105,7 +105,6 @@ class PlayerController {
                             skinning: true
                         });
                         // o.material = this.createCharacterMaterial();
-                        this.sceneState.outlineEffectObjs.push(o);
                     }
                 });
                 scene.add(object);
