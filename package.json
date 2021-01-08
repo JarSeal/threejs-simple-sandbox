@@ -9,7 +9,9 @@
         "lint": "eslint .",
         "copy-draco": "cd src/js/vendor && rm -rf draco && mkdir draco && cp ../../../node_modules/three/examples/js/libs/draco/*.* draco && cd ../../..",
         "deploy:set-php": "yarn build:front && cd build && echo '<?php header(\"Location: index.html\") ?>' > index.php && cd ..",
+        "deploynpm:set-php": "npm run build:front && cd build && echo '<?php header(\"Location: index.html\") ?>' > index.php && cd ..",
         "deploy": "yarn deploy:set-php && cd build && git init && heroku git:remote -a $appName && git add . && git commit -m \"Deploy\" && git push -f heroku master",
+        "deploynpm": "npm run deploynpm:set-php && cd build && git init && heroku git:remote -a $appName && git add . && git commit -m \"Deploy\" && git push -f heroku master",
         "howToDeploy": "echo \"To run deploy, provide the appName env variable like this: appName=somename yarn deploy\""
     },
     "repository": "https://github.com/JarSeal/threejs-simple-sandbox",

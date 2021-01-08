@@ -38,7 +38,7 @@ class PlayerController {
         let tempDudePos = [33, 43];
         sceneState.consequences.addPlayer({id:'testPLAYER',pos:[tempDudePos[0], tempDudePos[1],0]}); // TEMP PLAYER
         let tempGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
-        let tempMaterial = new THREE.MeshLambertMaterial({color: 0xffEE44});
+        let tempMaterial = new THREE.MeshLambertMaterial({color: 0x333333});
         let tempMesh = new THREE.Mesh(tempGeometry, tempMaterial);
         tempMesh.scale.x = 0.5;
         tempMesh.scale.y = 0.5;
@@ -100,18 +100,60 @@ class PlayerController {
                 object.rotation.z = sceneState.players.hero.dir;
                 object.traverse(o => {
                     if (o.isMesh) {
-                        o.material = new THREE.MeshLambertMaterial({color: 'lime', skinning: true});
+                        o.material = new THREE.MeshLambertMaterial({
+                            color: 'lime',
+                            skinning: true
+                        });
+                        // o.material = this.createCharacterMaterial();
                     }
                 });
                 scene.add(object);
                 sceneState.players.hero.mesh = object;
-                sceneState.postProcess.outlinePass.selectedObjects = [object.children[0].children[1]];
             },
             () => {},
             (error) => {
                 logger.error('An GLTF loading error (loading hero) happened', error);
             }
         );
+    }
+
+    createCharacterMaterial() {
+        return new THREE.MeshBasicMaterial({color: 'lime', skinning: true});
+        // const uniforms = {
+        //     linewidth:  { type: 'f', value: 0.3 },
+        // };
+        // const vertexShader = `
+        // uniform float linewidth;
+        // varying vec2 vUv;
+        // void main() {
+        //     vUv = uv;
+        //     // gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        //     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        //     vec4 displacement = vec4( normalize( normalMatrix * normal ) * linewidth, 0.0 ) + mvPosition;
+        //     gl_Position = projectionMatrix * displacement;
+        // }`;
+        // const fragmentShader = `
+        // varying vec2 vUv;
+        // void main() {
+        //     // float t = 0.1;
+        //     // float threshold = 0.5;
+        //     // float width = 10.0;
+        //     // float isEdge = clamp(width - abs(threshold - t) / fwidth(t), 0.0, 1.0);
+        //     gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+        //     // float luminance = dot(gl_FragColor, vec4(0.2126, 0.7152, 0.0722, 0.5));
+        //     // float gradient = fwidth(luminance);
+        //     // if(gradient > 0.5) {
+        //     //     gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+        //     // } else {
+        //     //     gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        //     // }
+        // }`;
+
+        // return new THREE.ShaderMaterial({
+        //     uniforms: uniforms,
+        //     vertexShader: vertexShader,
+        //     fragmentShader: fragmentShader
+        // });
     }
 
     getStartingPosition(sceneState, type) {
@@ -147,15 +189,15 @@ class PlayerController {
     }
 
     animateMovement(player) {
-        let routeLength = player.route.length;
+        const routeLength = player.route.length;
         if(player.moving && routeLength && !player.animatingPos) {
             this.newMove(player);
         }
     }
 
     calculateRoute(player, dx, dy) {
-        let startTime = performance.now(); // Debugging (counting the time to create route)
-        let newGraph = new Graph(
+        const startTime = performance.now(); // Debugging (counting the time to create route)
+        const newGraph = new Graph(
             this.sceneState.astar[this.sceneState.floor],
             { diagonal: true }
         );
@@ -175,16 +217,18 @@ class PlayerController {
             );
             resultRoute.unshift({x:playerPos[0],y:playerPos[1]});
             resultRoute = this.predictAndDividePositions(resultRoute, this.sceneState.players.hero);
-            this.sceneState.players.hero.route = resultRoute;
-            this.sceneState.players.hero.routeIndex = 0;
-            this.sceneState.players.hero.animatingPos = false;
-            this.sceneState.players.hero.moving = true;
-            this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute);
+            this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute).onmessage = (e) => {
+                this.sceneState.consequences.movePlayerCallBack(e.data);
+                this.sceneState.players.hero.route = resultRoute;
+                this.sceneState.players.hero.routeIndex = 0;
+                this.sceneState.players.hero.animatingPos = false;
+                this.sceneState.players.hero.moving = true;
+            };
         } else if(this.sceneState.players.hero.moving) {
             // Route change during movement:
             this.sceneState.players.hero.newRoute = [dx, dy];
         }
-        let endTime = performance.now(); // FOR DEBUGGING PURPOSES ONLY
+        const endTime = performance.now(); // FOR DEBUGGING PURPOSES ONLY
         logger.log(dx, dy, 'route', (endTime - startTime) + 'ms', resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
     }
 
@@ -222,7 +266,7 @@ class PlayerController {
         } else {
             routeIndex == routeLength - 1 ? ease = Sine.easeOut : ease = Power0.easeNone;
         }
-        let realPosition = this.getRealPosition(player.route, routeIndex);
+        const realPosition = this.getRealPosition(player.route, routeIndex);
         if(routeIndex !== realPosition.routeIndex) {
             routeIndex = realPosition.routeIndex;
             player.routeIndex = realPosition.routeIndex;
@@ -230,7 +274,8 @@ class PlayerController {
             player.mesh.position.x = realPosition.pos[0];
             player.mesh.position.y = realPosition.pos[1];
         }
-        this.doorAnims.checkDoors();
+        const checkDoorsPid = 'doorCheck-' + player.id + '-' + performance.now();
+        this.doorAnims.checkDoors(checkDoorsPid);
         tl.to(player.mesh.position, route[routeIndex].duration, {
             x: route[routeIndex].x,
             y: route[routeIndex].y,
@@ -252,7 +297,6 @@ class PlayerController {
                     player.route = [];
                     player.routeIndex = 0;
                     player.curSpeed = 0;
-                    this.doorAnims.checkDoors();
                     this.calculateRoute('hero', dx, dy);
                 } else {
                     player.routeIndex++;
@@ -262,11 +306,12 @@ class PlayerController {
                         player.route = [];
                         player.routeIndex = 0;
                         player.curSpeed = 0;
-                        this.doorAnims.checkDoors();
+                        const checkDoorsPid = 'doorCheck-' + player.id + '-' + performance.now();
+                        this.doorAnims.checkDoors(checkDoorsPid);
                         return; // End animation
                     }
+                    this.newMove(player);
                 }
-                this.newMove(player);
             },
         });
     }

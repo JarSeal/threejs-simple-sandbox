@@ -55,7 +55,7 @@ class CombatScene {
         this.playerController.setPositions();
         this.tileMapController.moduleAnims(this.scene);
         if(this.lastConsequenceCheck + this.lastCheckInterval < performance.now()) {
-            this.sceneState.consequences.checkAllHitTimes(this.sceneState.initTime.s, this.scene);
+            this.sceneState.consequences.checkAllHitTimes(this.scene);
             this.lastConsequenceCheck = performance.now();
         }
     }

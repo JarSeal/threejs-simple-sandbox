@@ -21,11 +21,13 @@ class DropDown {
             if(this.dropDownOpen) {
                 if(e.target && e.target.className && e.target.className != 'drop-down__selected') {
                     if(this.typeOfValue == 'int') {
-                        value = parseInt(e.target.outerText);
+                        value = parseInt(e.target.getAttribute('value'));
+                    } else if(this.typeOfValue == 'float') {
+                        value = parseFloat(e.target.getAttribute('value'));
                     } else {
-                        value = e.target.outerText;
+                        value = e.target.getAttribute('value');
                     }
-                    dropDownElem.firstElementChild.innerHTML = value;
+                    dropDownElem.firstElementChild.innerHTML = e.target.outerText;
                     this.sceneState.settings[this.key] = value;
                     this.sceneState.localStorage.setItem(this.key, value);
                 }
@@ -47,7 +49,9 @@ class DropDown {
 
     render() {
         let dropDown = '<div class="drop-down" id="'+this.getId()+'">'+
-            '<div class="drop-down__selected">'+this.sceneState.settings[this.key]+'</div>'+
+            '<div class="drop-down__selected">'+
+                this.values.filter(v => v.value.toString() === this.sceneState.settings[this.key].toString())[0].title
+            +'</div>'+
             '<ul class="drop-down__ul">';
         for(let i=0; i<this.values.length; i++) {
             dropDown += '<li class="drop-down-choice" value="'+this.values[i].value+'">'+this.values[i].title+'</li>';

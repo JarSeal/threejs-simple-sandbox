@@ -9,7 +9,7 @@ const projectileFx = (effectName, type, vfxMaterial, effectMeshes, effectData, o
     case 'redBlast':
         redBlast(effectName, type, vfxMaterial, effectMeshes, effectData, options);
         break;
-    default: logger.error('Game engine error: could not find VFX type ' + type + '.');
+    default: logger.error('Could not find VFX type ' + type + ' (' + effectName + ').');
     }
 };
 
