@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import * as Stats from './vendor/stats.min.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { SMAAPass } from 'three/examples//jsm/postprocessing/SMAAPass.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -46,18 +45,14 @@ class TileMapRoot {
                 useRendererAntialiasing: false,
                 rendererPixelRatio: window.devicePixelRatio || 1,
                 usePostProcessing: false,
-                //useFxAntiAliasing: false,
                 useSmaa: true,
-                useOutline: false,
                 useUnrealBloom: false,
                 useDebugStats: true,
                 debugStatsMode: 0
             },
             localStorage: new LStorage(),
             renderCalls: [],
-            postProcess: {
-                outlinePassObjects: []
-            },
+            postProcess: {},
             getScreenResolution: this.getScreenResolution,
             shadersToUpdate: [],
         };
@@ -119,29 +114,12 @@ class TileMapRoot {
                 this.sceneState.getScreenResolution().y
             ), 0.5, 0.5, 0.8);
         composer.addPass(this.sceneState.postProcess.unrealBloom);
-        this.sceneState.postProcess.outlinePass = new OutlinePass(
-            new THREE.Vector2(
-                this.sceneState.getScreenResolution().x,
-                this.sceneState.getScreenResolution().y
-            ), scene, camera);
-        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.skinning = true;
-        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.transparent = false;
-        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.depthWrite = false;
-        this.sceneState.postProcess.outlinePass.prepareMaskMaterial.depthTest = true;
-        this.sceneState.postProcess.outlinePass.overlayMaterial.blending = THREE.NormalBlending;
-        this.sceneState.postProcess.outlinePass.edgeThickness = 0.5 * this.sceneState.settings.rendererPixelRatio;
-        this.sceneState.postProcess.outlinePass.edgeStrength = 3 * this.sceneState.settings.rendererPixelRatio;
-        this.sceneState.postProcess.outlinePass.edgeGlow = 0;
-        this.sceneState.postProcess.outlinePass.setSize(
-            this.sceneState.getScreenResolution().x,
-            this.sceneState.getScreenResolution().y
+        this.sceneState.postProcess.smaa = new SMAAPass(
+            window.innerWidth * this.sceneState.settings.rendererPixelRatio,
+            window.innerHeight * this.sceneState.settings.rendererPixelRatio
         );
-        this.sceneState.postProcess.outlinePass.visibleEdgeColor.set('#000000');
-        this.sceneState.postProcess.outlinePass.hiddenEdgeColor.set('#000000');
-        this.sceneState.postProcess.outlinePass.selectedObjects = this.sceneState.postProcess.outlinePassObjects;
-        composer.addPass(this.sceneState.postProcess.outlinePass);
-        this.sceneState.postProcess.smaa = new SMAAPass(window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio());
         composer.addPass(this.sceneState.postProcess.smaa);
+        console.log(this.sceneState.postProcess.smaa);
         // Postprocessing [END]
         
         let renderCallerI = 0,
@@ -225,13 +203,12 @@ class TileMapRoot {
                 height
             );
         }
-        if(this.sceneState.postProcess.outlinePass) {
-            this.sceneState.postProcess.outlinePass.setSize(
-                width,
-                height
+        if(this.sceneState.postProcess.smaa) {
+            this.sceneState.postProcess.smaa.setSize(
+                width * this.sceneState.settings.rendererPixelRatio,
+                height * this.sceneState.settings.rendererPixelRatio
             );
         }
-        // TODO: SMAAPass needs to be resized
         renderer.setSize(width, height);
         composer.setSize(width, height);
         renderer.setPixelRatio(this.sceneState.settings.rendererPixelRatio);
@@ -263,9 +240,6 @@ class TileMapRoot {
         if(this.sceneState.postProcess.smaa) {
             this.sceneState.postProcess.smaa.enabled = settings.useSmaa || false;
         }
-        if(this.sceneState.postProcess.outlinePass) {
-            this.sceneState.postProcess.outlinePass.enabled = settings.useOutline || false;
-        }
         if(this.sceneState.postProcess.unrealBloom) {
             this.sceneState.postProcess.unrealBloom.enabled = settings.useUnrealBloom || false;
         }
@@ -280,10 +254,6 @@ class TileMapRoot {
 
         renderer.setPixelRatio(settings.rendererPixelRatio);
         composer.setPixelRatio(settings.rendererPixelRatio);
-        if(this.sceneState.postProcess.outlinePass) {
-            this.sceneState.postProcess.outlinePass.edgeThickness = 0.5 * settings.rendererPixelRatio;
-            this.sceneState.postProcess.outlinePass.edgeStrength = 3 * settings.rendererPixelRatio;
-        }
         
         document.getElementById('debug-stats-wrapper').style.display = settings.useDebugStats ? 'block' : 'none';
         stats.setMode(settings.debugStatsMode);

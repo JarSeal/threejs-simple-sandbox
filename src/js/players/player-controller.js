@@ -109,7 +109,6 @@ class PlayerController {
                 });
                 scene.add(object);
                 sceneState.players.hero.mesh = object;
-                sceneState.postProcess.outlinePass.selectedObjects = [object.children[0].children[1]];
             },
             () => {},
             (error) => {
