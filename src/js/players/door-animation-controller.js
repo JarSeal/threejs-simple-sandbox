@@ -8,10 +8,14 @@ class DoorAnimationController {
         this.sounds = SoundController.loadSoundsSprite('door', {volume: 0.1});
     }
 
-    checkDoors() {
-        this.sceneState.consequences.checkDoors(this.sceneState).onmessage = (e) => {
+    checkDoors(pid) {
+        this.sceneState.consequences.checkDoors(pid).onmessage = (e) => {
             const anims = e.data,
                 animsLength = anims.length;
+            if(anims.pid !== pid) {
+                console.log('SOME ELSE PID');
+                return;
+            }
             let i = 0;
             for(i=0; i<animsLength; i++) {
                 const a = anims[i];

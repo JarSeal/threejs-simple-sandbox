@@ -25,20 +25,8 @@ class Consequences {
         }];
     }
 
-    getAllCurrentPlayerPositions() {
-        // REMOVE THIS
-        this.worker.postMessage({
-            task: 'getAllCurrentPlayerPositions',
-            data: {
-                players: this.players,
-                initTime: this.initTime,
-                microTime: performance.now()
-            }
-        });
-        return this.worker;
-    }
-
     movePlayer(playerId, route) {
+        console.log('MOVING PLAYER');
         this.worker.postMessage({
             task: 'movePlayer',
             data: {
@@ -51,11 +39,13 @@ class Consequences {
                 microTime: performance.now()
             }
         });
-        this.worker.onmessage = (e) => {
-            this.players = e.data.players;
-            this.doors = e.data.doors;
-            this.createHitList();
-        };
+        return this.worker;
+    }
+
+    movePlayerCallBack(data) {
+        this.players = data.players;
+        this.doors = data.doors;
+        this.createHitList();
     }
 
     addDoor(door) {
@@ -68,13 +58,15 @@ class Consequences {
         }
     }
 
-    checkDoors(sceneState) {
+    checkDoors(pid) {
+        console.log('player route length', this.players['devPlayer001'].length);
         this.worker.postMessage({
             task: 'checkDoors',
             data: {
+                pid: pid,
                 doors: this.doors,
                 players: this.players,
-                tileMap: sceneState.shipMap[sceneState.floor],
+                tileMap: this.tileMap,
                 initTime: this.initTime,
                 microTime: performance.now()
             }
@@ -113,6 +105,30 @@ class Consequences {
         this.removeProjectile(id, scene, removeAnim);
     }
 
+    removeProjectile(id, scene, removeAnim) {
+        let i=0,
+            projIndex;
+        const projLength = this.projectiles.length,
+            projectiles = this.projectiles;
+        for(i=0; i<projLength; i++) {
+            if(projectiles[i].projectileId == id) {
+                projIndex = i;
+                break;
+            }
+        }
+        if(projIndex !== undefined) {
+            this.projectiles.splice(projIndex, 1);
+        }
+        if(removeAnim) removeAnim(id);
+        if(scene.remove && scene.getObjectByName) {
+            scene.remove(scene.getObjectByName(id));
+        }
+    }
+
+    removeFromHitList(id) {
+        delete this.hitList[id];
+    }
+
     checkHitTime(id) {
         let curTime, hitter;
         if(!this.hitList[id]) return false;
@@ -122,20 +138,6 @@ class Consequences {
             return hitter;
         }
         return false;
-    }
-
-    checkHitTime2(id) {
-        this.worker.postMessage({
-            task: 'checkHitTime',
-            data: {
-                pid: id,
-                id: id,
-                hitList: this.hitList,
-                initTime: this.initTime,
-                microTime: performance.now()
-            }
-        });
-        return this.worker;
     }
 
     checkAllHitTimes(scene) {
@@ -161,32 +163,6 @@ class Consequences {
 
     checkIfAliveOnHitList(id) {
         return this.hitList[id];
-    }
-
-    removeProjectile(id, scene, removeAnim) {
-        // DO IN WORKER (partially)
-        let i=0,
-            projIndex;
-        const projLength = this.projectiles.length,
-            projectiles = this.projectiles;
-        for(i=0; i<projLength; i++) {
-            if(projectiles[i].projectileId == id) {
-                projIndex = i;
-                break;
-            }
-        }
-        if(projIndex !== undefined) {
-            this.projectiles.splice(projIndex, 1);
-        }
-        if(removeAnim) removeAnim(id);
-        if(scene.remove && scene.getObjectByName) {
-            scene.remove(scene.getObjectByName(id));
-        }
-    }
-
-    removeFromHitList(id) {
-        // DO IN WORKER (MAYBE)
-        delete this.hitList[id];
     }
     
 }

@@ -83,17 +83,19 @@ var tasks = {
                 });
             }
         }
+        animations.pid = request.data.pid;
         return animations;
     },
     createHitList: function(request) {
         var index = request.data.index,
+            projectiles = request.data.projectiles,
             hitList = {};
         if(index === undefined) {
             var pr = 0,
-                projLength = request.data.projectiles.length;
+                projLength = projectiles.length;
             // Go through all projectiles and add them all to hitList
             for(pr=0; pr<projLength; pr++) {
-                request.data.index = this.projectiles[pr];
+                request.data.index = projectiles[pr];
                 hitList = Object.assign({}, hitList, this.addToHitList(request));
             }
         } else {
@@ -270,7 +272,6 @@ var tasks = {
             hitter;
         if(!hitList[id]) return { result: false };
         hitter = hitList[id];
-        console.log('check hit time', hitter);
         if(hitter.time < curTime) {
             hitter.result = true;
             return hitter;
