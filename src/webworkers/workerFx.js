@@ -11,12 +11,25 @@ var fxTypes = function(request) {
         case 'sparksParticlesFx':
             results[fx.name] = calculateSparkParticles(fx, request);
             break;
+        case 'hitBlastBasic':
+            results[fx.name] = calculateHitBlast(fx, request);
+            break;
         default:
             console.error('Game engine error (workerFx.js): could not recognise fx name, ' + fx.name.toString());
             break;
         }
     }
     return results;
+};
+
+var calculateHitBlast = function(fx, request) {
+    var randomTwist = Math.random() * 3.1416,
+        randomSize = _randomFloatInBetween(fx.minSize, fx.maxSize);
+    return {
+        hitPos: request.hitPos,
+        randomTwist: randomTwist,
+        randomSize: randomSize
+    };
 };
 
 var calculateSparkParticles = function(fx, request) {

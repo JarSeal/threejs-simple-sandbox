@@ -710,6 +710,11 @@ class Projectiles {
                     minSize: 0.12,
                     maxSize: 0.14,
                 },
+                {
+                    name: 'hitBlastBasic',
+                    minSize: 0.25,
+                    maxSize: 1.0
+                }
             ],
             hitPos: [
                 posWOffset[0],
@@ -721,7 +726,8 @@ class Projectiles {
             projectileLifeSpecial: projectileLife.special,
             rendererPixelRatio: this.sceneState.settings.rendererPixelRatio,
         }).onmessage = (e) => {
-            const particleData = e.data.sparksParticlesFx;
+            const particleData = e.data.sparksParticlesFx,
+                hitBlastData = e.data.hitBlastBasic;
             this.initSparkParticles(
                 scene,
                 particleData.vertices,
@@ -731,21 +737,26 @@ class Projectiles {
                 particleData.colors,
                 particleData.maxAnimLength
             );
+            this.initHitBlast(
+                scene,
+                hitBlastData.hitPos,
+                hitBlastData.randomTwist,
+                hitBlastData.randomSize
+            );
         };
+    }
 
-        // Hit blast
+    initHitBlast(scene, hitPos, randomTwist, randomSize) {
         const hitBlastId = 'hit-blast-' + performance.now(),
-            blast = this.VisualEffects.getEffectMesh('hitBlast_basic', hitBlastId),
-            randomTwist = Math.random() * 3.1416;
-        let randomSize = Math.random() * (1 - 0.25) + 0.25;
+            blast = this.VisualEffects.getEffectMesh('hitBlast_basic', hitBlastId);
         if(blast) {
-            blast.rotation.set(randomTwist, randomTwist, randomTwist);
             blast.name = hitBlastId;
+            blast.rotation.set(randomTwist, randomTwist, randomTwist);
             blast.scale.set(randomSize, randomSize, randomSize);
             blast.position.set(
-                posWOffset[0],
-                posWOffset[1],
-                this.shotHeight
+                hitPos[0],
+                hitPos[1],
+                hitPos[2]
             );
             scene.add(blast);
             this.VisualEffects.startAnim({
