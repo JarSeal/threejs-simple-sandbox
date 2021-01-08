@@ -47,7 +47,6 @@ class TileMapRoot {
                 usePostProcessing: false,
                 useSmaa: true,
                 useUnrealBloom: false,
-                useDebugStats: true,
                 debugStatsMode: 0
             },
             localStorage: new LStorage(),
@@ -119,7 +118,6 @@ class TileMapRoot {
             window.innerHeight * this.sceneState.settings.rendererPixelRatio
         );
         composer.addPass(this.sceneState.postProcess.smaa);
-        console.log(this.sceneState.postProcess.smaa);
         // Postprocessing [END]
         
         let renderCallerI = 0,
@@ -142,7 +140,7 @@ class TileMapRoot {
                 renderer.render(scene, camera);
             }
             if(this.sceneState.updateSettingsNextRender) this.updateRenderSettings(renderer, composer, stats);
-            if(settings.useDebugStats) stats.update(); // Debug statistics
+            if(settings.debugStatsMode !== -1) stats.update(); // Debug statistics
         };
 
         document.getElementsByTagName('body')[0].style.width = this.sceneState.getScreenResolution().x + 'px';
@@ -255,8 +253,9 @@ class TileMapRoot {
         renderer.setPixelRatio(settings.rendererPixelRatio);
         composer.setPixelRatio(settings.rendererPixelRatio);
         
-        document.getElementById('debug-stats-wrapper').style.display = settings.useDebugStats ? 'block' : 'none';
-        stats.setMode(settings.debugStatsMode);
+        document.getElementById('debug-stats-wrapper').style.display = settings.debugStatsMode === -1 ? 'none' : 'block';
+        console.log(stats);
+        stats.setMode(settings.debugStatsMode === -1 ? 0 : settings.debugStatsMode);
 
         this.sceneState.updateSettingsNextRender = false;
     }
