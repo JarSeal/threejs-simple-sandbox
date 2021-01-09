@@ -123,9 +123,10 @@ var tasks = {
             hitFound = false,
             hitList = {};
         for(r=1; r<routeLength; r++) { // Skip the first tile
+            var prPos = projectile.route[r].pos;
+            if(!tileMap[prPos[0]] || !tileMap[prPos[1]]) break;
             var prEnterTime = projectile.route[r].enterTime,
                 prLeaveTime = projectile.route[r].leaveTime,
-                prPos = projectile.route[r].pos,
                 curTile = tileMap[prPos[0]][prPos[1]],
                 curTileDoor = { open: false };
             // Check if players are on the way of the projectile's route

@@ -44,7 +44,9 @@ class Consequences {
     movePlayerCallBack(data) {
         this.players = data.players;
         this.doors = data.doors;
-        this.createHitList();
+        this.createHitList().onmessage = (e) => { // TODO: move this to the player-controller.js
+            this.updateHitList(e.data);
+        };
     }
 
     addDoor(door) {
@@ -77,8 +79,12 @@ class Consequences {
     }
 
     addProjectile(shooterId, projectileId, route) {
-        this.projectiles.push({shooterId: shooterId, projectileId: projectileId, route: route});
-        this.createHitList(this.projectiles.length - 1);
+        this.projectiles.push({shooterId, projectileId, route});
+        return this.createHitList(this.projectiles.length - 1);
+    }
+
+    updateHitList(newHitList) {
+        this.hitList = Object.assign({}, this.hitList, newHitList);
     }
     
     createHitList(index) {
@@ -92,9 +98,10 @@ class Consequences {
                 tileMap: this.tileMap,
             }
         });
-        this.worker.onmessage = (e) => {
-            this.hitList = Object.assign({}, this.hitList, e.data);
-        };
+        return this.worker;
+        // this.worker.onmessage = (e) => {
+        //     this.hitList = Object.assign({}, this.hitList, e.data);
+        // };
     }
 
     doHitConsequence(id, scene, removeAnim) {
