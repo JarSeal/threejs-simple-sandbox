@@ -289,10 +289,10 @@ class PlayerController {
             onComplete: () => {
                 player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
                 player.microPos = [route[routeIndex].x, route[routeIndex].y, player.pos[2]];
-                let evenX = route[routeIndex].x - route[routeIndex].xInt;
-                let evenY = route[routeIndex].y - route[routeIndex].yInt;
+                const evenX = route[routeIndex].x - route[routeIndex].xInt;
+                const evenY = route[routeIndex].y - route[routeIndex].yInt;
                 if(player.newRoute.length && evenX === 0 && evenY === 0) {
-                    let dx = player.newRoute[0],
+                    const dx = player.newRoute[0],
                         dy = player.newRoute[1];
                     player.newRoute = [];
                     player.moving = false;
@@ -303,13 +303,19 @@ class PlayerController {
                 } else {
                     player.routeIndex++;
                     // Check if full destination is reached
-                    if(routeIndex == routeLength - 1) {
+                    if(routeIndex === routeLength - 1) {
                         player.moving = false;
                         player.route = [];
                         player.routeIndex = 0;
                         player.curSpeed = 0;
                         const checkDoorsPid = 'doorCheck-' + player.id + '-' + performance.now();
                         this.doorAnims.checkDoors(checkDoorsPid);
+                        if(player.newRoute.length) {
+                            const dx = player.newRoute[0],
+                                dy = player.newRoute[1];
+                            player.newRoute = [];
+                            this.calculateRoute('hero', dx, dy);
+                        }
                         return; // End animation
                     }
                     this.newMove(player);
