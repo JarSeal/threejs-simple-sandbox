@@ -83,6 +83,7 @@ class CombatView {
                                 // Calculate angle for player to turn to
                                 let angle = calculateAngle(hero.pos, sceneState.ui.curSecondaryTarget);
                                 // prevent unnecessary spin moves :)
+                                console.log('HERO', hero.mesh.rotation.z, angle);
                                 if(Math.abs(hero.mesh.rotation.z - angle) > Math.PI) {
                                     angle < 0
                                         ? hero.mesh.rotation.z = hero.mesh.rotation.z + Math.PI * -2

@@ -48,7 +48,7 @@ class Projectiles {
         VisualEffects.createEffect('sparks', 'wallHit');
     }
 
-    shootProjectile(shooter, target, scene, sceneState, AppUiLayer, camera) {
+    shootProjectile(shooter, target, scene, sceneState, AppUiLayer) {
         
         // AppUiLayer.logMessage(
         //     performance.now(),

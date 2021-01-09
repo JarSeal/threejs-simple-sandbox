@@ -177,14 +177,13 @@ class PlayerController {
         }
     }
 
-    fire(player, target, scene, sceneState, AppUiLayer, camera) {
+    fire(player, target, scene, sceneState, AppUiLayer) {
         this.projectiles.shootProjectile(
             player,
             target,
             scene,
             sceneState,
-            AppUiLayer,
-            camera
+            AppUiLayer
         );
     }
 
