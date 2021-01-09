@@ -237,7 +237,6 @@ class CombatView {
                             settingsUI.useSmaa.removeListeners();
                             settingsUI.useUnrealBloom.removeListeners();
                             settingsUI.rendererPixelRatio.removeListeners();
-                            settingsUI.useDebugStats.removeListeners();
                             settingsUI.debugStatsMode.removeListeners();
                             settingsUI = {};
                             modalContent.innerHTML = '';
@@ -264,8 +263,8 @@ class CombatView {
                                 {title: '5', value: 5},
                                 {title: 'device val', value: window.devicePixelRatio || 1},
                             ], true);
-                            settingsUI.useDebugStats = new OnOff(this.sceneState, 'useDebugStats', true);
                             settingsUI.debugStatsMode = new DropDown(this.sceneState, 'debugStatsMode', 'int', [
+                                {title: 'Do not show', value: -1},
                                 {title: 'FPS', value: 0},
                                 {title: 'MSPF', value: 1},
                                 {title: 'Memory usage', value: 2},
@@ -310,12 +309,6 @@ class CombatView {
                                         '</div>'+
                                     '</li>'+
                                     '<li class="sl-item">'+
-                                        '<h3>Show performance statistics:</h3>'+
-                                        '<div class="sl-setting">'+
-                                            settingsUI.useDebugStats.render() +
-                                        '</div>'+
-                                    '</li>'+
-                                    '<li class="sl-item">'+
                                         '<h3>Performance statistics default mode (hint: click on stats to change mode):</h3>'+
                                         '<div class="sl-setting">'+
                                             settingsUI.debugStatsMode.render() +
@@ -337,7 +330,6 @@ class CombatView {
                             settingsUI.useSmaa.addListeners();
                             settingsUI.useUnrealBloom.addListeners();
                             settingsUI.rendererPixelRatio.addListeners();
-                            settingsUI.useDebugStats.addListeners();
                             settingsUI.debugStatsMode.addListeners();
                             
                             document.getElementById('reset-to-default').addEventListener('click', (e) => {

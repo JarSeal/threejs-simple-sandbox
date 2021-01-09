@@ -84,9 +84,7 @@ class Projectiles {
         targetPos = [intersects[0].point.x, intersects[0].point.y];
         angle = calculateAngle(from, targetPos);
 
-        let speed = intersects[0].distance * speedPerTile;
-        this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route);
-        let particles = 0;
+        const speed = intersects[0].distance * speedPerTile;
 
         const laser = this.VisualEffects.getEffectMesh('projectile_redBlast', name);
         laser.name = name;
@@ -96,50 +94,55 @@ class Projectiles {
             from[1],
             this.shotHeight
         );
-        scene.add(laser);
-        this.VisualEffects.startAnim({
-            id: name,
-            meshName: 'projectile_redBlast',
-            mesh: laser
-        });
+        this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route).onmessage = (e) => {
+            this.sceneState.consequences.updateHitList(e.data);
+            scene.add(laser);
+            this.VisualEffects.startAnim({
+                id: name,
+                meshName: 'projectile_redBlast',
+                mesh: laser
+            });
 
-        this.sceneState.particles += particles;
-        let tl = new TimelineMax();
-        tl.startTime = performance.now();
-        this.Sound.playFx(this.sounds, [
-            'projectile-002',
-            'whoosh-001'
-        ]);
-        tl.to(laser.position, speed, {
-            x: targetPos[0],
-            y: targetPos[1],
-            ease: Linear.easeNone,
-            onUpdate: () => {
-                const hitter = this.sceneState.consequences.checkHitTime(name);
-                if(hitter) {
-                    this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
-                    this.sceneState.particles -= particles;
-                    this.hitObstacle(hitter.target, scene, name, camera, tileMap, hitter.hitPos, projectileLife);
-                    tl.kill();
-                    return;
-                }
-                const timeNow = this.sceneState.initTime.s + performance.now() / 1000,
-                    lastTile = projectileLife.route[projectileLife.route.length - 1];
-                if(!lastTile || timeNow > lastTile.leaveTime + 0.5) {
+            let tl = new TimelineMax();
+            tl.startTime = performance.now();
+            this.Sound.playFx(this.sounds, [
+                'projectile-002',
+                'whoosh-001'
+            ]);
+            tl.to(laser.position, speed, {
+                x: targetPos[0],
+                y: targetPos[1],
+                ease: Linear.easeNone,
+                onUpdate: () => {
+                    const hitter = this.sceneState.consequences.checkHitTime(name);
+                    if(hitter) {
+                        this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
+                        this.hitObstacle(hitter.target, scene, tileMap, hitter.hitPos, projectileLife);
+                        tl.kill();
+                        return;
+                    }
+                    // const timeNow = this.sceneState.initTime.s + performance.now() / 1000,
+                    //     lastTile = projectileLife.route[projectileLife.route.length - 1];
+                    // if(!lastTile || timeNow > lastTile.leaveTime + 0.5) {
+                    //     this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
+                    //     tl.kill();
+                    // }
+                },
+                onComplete: () => {
+                    // scene.remove(helperLine);
+                    const hitter = this.sceneState.consequences.checkHitTime(name);
+                    if(hitter) {
+                        this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
+                        this.hitObstacle(hitter.target, scene, tileMap, hitter.hitPos, projectileLife);
+                        return;
+                    }
+                    if(!projectileLife.noHit) {
+                        this.hitObstacle('solid', scene, tileMap, targetPos, projectileLife);
+                    }
                     this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
-                    this.sceneState.particles -= particles;
-                    tl.kill();
                 }
-            },
-            onComplete: () => {
-                this.sceneState.particles -= particles; // REMOVE PARTICLE(S)
-                if(!projectileLife.noHit) {
-                    this.hitObstacle('solid', scene, name, camera, tileMap, targetPos, projectileLife);
-                }
-                this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
-                // scene.remove(helperLine);
-            }
-        });
+            });
+        };
     }
 
     getProjectileRoute(from, targetPos, speedPerTile, distance, dir) {
@@ -545,13 +548,9 @@ class Projectiles {
         return tileMap[x][y].type === 2;
     }
 
-    hitObstacle(type, scene, projectileName, camera, tileMap, targetPos, projectileLife) {
-        let pos = [targetPos[0], targetPos[1]],
-            posWOffset = [targetPos[0] + projectileLife.xOffset, targetPos[1] + projectileLife.yOffset],
-            minFloorParticles = 5,
-            maxFloorParticles = 50,
-            floorParticles = this._randomIntInBetween(minFloorParticles, maxFloorParticles);
-        this.hitFx(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife);
+    hitObstacle(type, scene, tileMap, targetPos, projectileLife) {
+        const posWOffset = [targetPos[0] + projectileLife.xOffset, targetPos[1] + projectileLife.yOffset];
+        this.hitFx(scene, posWOffset, tileMap, projectileLife);
         if(type == 'solid') {
             this.Sound.playFx(this.sounds, 'ricochet-001');
         } else if(type == 'player' || type == 'door') {
@@ -697,7 +696,7 @@ class Projectiles {
         }
     }
 
-    hitFx(floorParticles, scene, camera, posWOffset, pos, tileMap, projectileLife) {
+    hitFx(scene, posWOffset, tileMap, projectileLife) {
         // Send a request to a web worker (via VisualEffects class) for hit calculations
         this.VisualEffects.calculate({
             fxList: [
@@ -793,7 +792,7 @@ class Projectiles {
             sparks.geometry.dispose();
             sparks.material.dispose();
             scene.remove(sparks);
-        }, maxAnimLength + 200);
+        }, maxAnimLength);
     }
 
     createCustomParticles(scene, posWOffset, pos, tileMap, projectileLife) {
