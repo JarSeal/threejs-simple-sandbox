@@ -217,7 +217,9 @@ class PlayerController {
             );
             resultRoute.unshift({x:playerPos[0],y:playerPos[1]});
             resultRoute = this.predictAndDividePositions(resultRoute, this.sceneState.players.hero);
-            this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute).onmessage = (e) => {
+            const pid = 'move-' + this.sceneState.players.hero.id + '-' + performance.now();
+            this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute, pid).onmessage = (e) => {
+                if(e.data.pid !== pid) return;
                 this.sceneState.consequences.movePlayerCallBack(e.data);
                 this.sceneState.players.hero.route = resultRoute;
                 this.sceneState.players.hero.routeIndex = 0;

@@ -262,6 +262,7 @@ var tasks = {
             }
         }
         return {
+            pid: request.data.pid,
             players: players,
             doors: doors
         };
