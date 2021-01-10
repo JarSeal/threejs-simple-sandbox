@@ -25,10 +25,11 @@ class Consequences {
         }];
     }
 
-    movePlayer(playerId, route) {
+    movePlayer(playerId, route, pid) {
         this.worker.postMessage({
             task: 'movePlayer',
             data: {
+                pid: pid,
                 playerId: playerId,
                 playerRoute: route,
                 doors: this.doors,

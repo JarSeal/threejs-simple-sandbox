@@ -177,14 +177,13 @@ class PlayerController {
         }
     }
 
-    fire(player, target, scene, sceneState, AppUiLayer, camera) {
+    fire(player, target, scene, sceneState, AppUiLayer) {
         this.projectiles.shootProjectile(
             player,
             target,
             scene,
             sceneState,
-            AppUiLayer,
-            camera
+            AppUiLayer
         );
     }
 
@@ -217,7 +216,9 @@ class PlayerController {
             );
             resultRoute.unshift({x:playerPos[0],y:playerPos[1]});
             resultRoute = this.predictAndDividePositions(resultRoute, this.sceneState.players.hero);
-            this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute).onmessage = (e) => {
+            const pid = 'move-' + this.sceneState.players.hero.id + '-' + performance.now();
+            this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute, pid).onmessage = (e) => {
+                if(e.data.pid !== pid) return;
                 this.sceneState.consequences.movePlayerCallBack(e.data);
                 this.sceneState.players.hero.route = resultRoute;
                 this.sceneState.players.hero.routeIndex = 0;
@@ -240,24 +241,26 @@ class PlayerController {
             tlRotate = new TimelineMax(),
             routeIndex = player.routeIndex,
             ease,
-            speed,
-            newDir = calculateAngle(
+            speed;
+        if(!player.rotationAnim) {
+            const newDir = calculateAngle(
                 player.pos,
                 [route[routeIndex].x, route[routeIndex].y]
             );
-        if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
-            // prevent unnecessary spin moves :)
-            newDir < 0
-                ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2
-                : player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * 2;
-        }
-        tlRotate.to(player.mesh.rotation, 0.2, {
-            z: newDir,
-            ease: Sine.easeInOut,
-            onComplete: () => {
-                player.dir = newDir;
+            if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
+                // prevent unnecessary spin moves :)
+                newDir < 0
+                    ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2
+                    : player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * 2;
             }
-        });
+            tlRotate.to(player.mesh.rotation, 0.2, {
+                z: newDir,
+                ease: Sine.easeInOut,
+                onComplete: () => {
+                    player.dir = newDir;
+                }
+            });
+        }
         speed = route[routeIndex].speed * this.sceneState.timeSpeed;
         player.curSpeed = speed * this.sceneState.timeSpeed;
         player.animatingPos = true;
@@ -287,10 +290,10 @@ class PlayerController {
             onComplete: () => {
                 player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
                 player.microPos = [route[routeIndex].x, route[routeIndex].y, player.pos[2]];
-                let evenX = route[routeIndex].x - route[routeIndex].xInt;
-                let evenY = route[routeIndex].y - route[routeIndex].yInt;
+                const evenX = route[routeIndex].x - route[routeIndex].xInt;
+                const evenY = route[routeIndex].y - route[routeIndex].yInt;
                 if(player.newRoute.length && evenX === 0 && evenY === 0) {
-                    let dx = player.newRoute[0],
+                    const dx = player.newRoute[0],
                         dy = player.newRoute[1];
                     player.newRoute = [];
                     player.moving = false;
@@ -301,13 +304,19 @@ class PlayerController {
                 } else {
                     player.routeIndex++;
                     // Check if full destination is reached
-                    if(routeIndex == routeLength - 1) {
+                    if(routeIndex === routeLength - 1) {
                         player.moving = false;
                         player.route = [];
                         player.routeIndex = 0;
                         player.curSpeed = 0;
                         const checkDoorsPid = 'doorCheck-' + player.id + '-' + performance.now();
                         this.doorAnims.checkDoors(checkDoorsPid);
+                        if(player.newRoute.length) {
+                            const dx = player.newRoute[0],
+                                dy = player.newRoute[1];
+                            player.newRoute = [];
+                            this.calculateRoute('hero', dx, dy);
+                        }
                         return; // End animation
                     }
                     this.newMove(player);

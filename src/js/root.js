@@ -254,7 +254,6 @@ class TileMapRoot {
         composer.setPixelRatio(settings.rendererPixelRatio);
         
         document.getElementById('debug-stats-wrapper').style.display = settings.debugStatsMode === -1 ? 'none' : 'block';
-        console.log(stats);
         stats.setMode(settings.debugStatsMode === -1 ? 0 : settings.debugStatsMode);
 
         this.sceneState.updateSettingsNextRender = false;
