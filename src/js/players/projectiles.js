@@ -857,6 +857,10 @@ class Projectiles {
             uStartTime: { value: 0 },
         };
         const vertexShader = `
+            #ifndef HALF_PI
+            #define HALF_PI 1.5707963267948966
+            #endif
+
             uniform float uTime;
             uniform float uStartTime;
             attribute float size;
@@ -890,11 +894,15 @@ class Projectiles {
                 return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));
             }
 
+            float sineOut(float t) {
+                return sin(t * HALF_PI);
+            }
+
             void main() {
                 float timer = (uTime - uStartTime) / animLength;
                 float timerClamp = clamp(timer, 0.0, 1.0);
                 vTimerClamp = timerClamp;
-                vec3 curPos = position + (tPosition - position) * timerClamp;
+                vec3 curPos = position + (tPosition - position) * sineOut(timerClamp);
                 curPos.z = position.z - bounceOut(timerClamp);
                 float curSize = size * (1.0 - exponentialIn(timerClamp));
 
