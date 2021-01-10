@@ -241,24 +241,26 @@ class PlayerController {
             tlRotate = new TimelineMax(),
             routeIndex = player.routeIndex,
             ease,
-            speed,
-            newDir = calculateAngle(
+            speed;
+        if(!player.rotationAnim) {
+            const newDir = calculateAngle(
                 player.pos,
                 [route[routeIndex].x, route[routeIndex].y]
             );
-        if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
-            // prevent unnecessary spin moves :)
-            newDir < 0
-                ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2
-                : player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * 2;
-        }
-        tlRotate.to(player.mesh.rotation, 0.2, {
-            z: newDir,
-            ease: Sine.easeInOut,
-            onComplete: () => {
-                player.dir = newDir;
+            if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
+                // prevent unnecessary spin moves :)
+                newDir < 0
+                    ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2
+                    : player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * 2;
             }
-        });
+            tlRotate.to(player.mesh.rotation, 0.2, {
+                z: newDir,
+                ease: Sine.easeInOut,
+                onComplete: () => {
+                    player.dir = newDir;
+                }
+            });
+        }
         speed = route[routeIndex].speed * this.sceneState.timeSpeed;
         player.curSpeed = speed * this.sceneState.timeSpeed;
         player.animatingPos = true;

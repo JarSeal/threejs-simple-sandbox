@@ -81,22 +81,26 @@ class CombatView {
                             }
                             if(sceneState.ui.curSecondaryTarget) {
                                 // Calculate angle for player to turn to
-                                let angle = calculateAngle(hero.pos, sceneState.ui.curSecondaryTarget);
+                                const angle = calculateAngle(hero.pos, sceneState.ui.curSecondaryTarget),
+                                    curAngle = hero.mesh.rotation.z,
+                                    halfPI = Math.PI / 2;
                                 // prevent unnecessary spin moves :)
-                                console.log('HERO', hero.mesh.rotation.z, angle);
-                                if(Math.abs(hero.mesh.rotation.z - angle) > Math.PI) {
-                                    angle < 0
-                                        ? hero.mesh.rotation.z = hero.mesh.rotation.z + Math.PI * -2
-                                        : hero.mesh.rotation.z = hero.mesh.rotation.z + Math.PI * 2;
+                                if(angle < -halfPI && curAngle > halfPI && angle < 0 && curAngle > 0) {
+                                    hero.mesh.rotation.z = -Math.PI - (Math.PI - curAngle);
                                 }
-                                new TimelineMax().to(
+                                if(angle > halfPI && curAngle < -halfPI && angle > 0 && curAngle < 0) {
+                                    hero.mesh.rotation.z = Math.PI + (Math.PI + curAngle);
+                                }
+                                if(hero.rotationAnim) hero.rotationAnim.kill();
+                                hero.rotationAnim = new TimelineMax().to(
                                     hero.mesh.rotation,
                                     0.2,
                                     {
-                                        z:angle,
+                                        z: angle,
                                         ease: Sine.easeInOut,
                                         onComplete: () => {
                                             hero.dir = angle;
+                                            hero.rotationAnim = false;
                                         }
                                     });
                                 sceneState.ui.curSecondaryTarget = null;
