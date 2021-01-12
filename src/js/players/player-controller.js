@@ -76,24 +76,35 @@ class PlayerController {
 
     importCharModel(scene, sceneState) {
         let modelLoader = new GLTFLoader(),
-            dracoLoader = new DRACOLoader();
+            dracoLoader = new DRACOLoader(),
+            textureLoader = new THREE.TextureLoader();
+        const heroTexture = textureLoader.load('/images/objects/characters/basic-hero-clothes.png');
         dracoLoader.setDecoderPath('/js/draco/');
         modelLoader.setDRACOLoader(dracoLoader);
         modelLoader.load(
-            'images/objects/characters/hero1.glb',
+            'images/objects/characters/basic-hero.glb',
+            // 'images/objects/characters/hero1.glb',
             (gltf) => {
+                console.log('HERO IMPORT', gltf);
                 let charId = 'hero',
                     object = gltf.scene;
                 sceneState.mixer = new THREE.AnimationMixer(object);
                 let fileAnimations = gltf.animations,
-                    idleAnim = THREE.AnimationClip.findByName(fileAnimations, 'Idle'),
-                    idle = sceneState.mixer.clipAction(idleAnim);
-                idle.play();
+                    idleAnim = THREE.AnimationClip.findByName(fileAnimations, 'Idle1'),
+                    idle = sceneState.mixer.clipAction(idleAnim),
+                    walkAnim = THREE.AnimationClip.findByName(fileAnimations, 'Walk1'),
+                    walk = sceneState.mixer.clipAction(walkAnim),
+                    shootAnim = THREE.AnimationClip.findByName(fileAnimations, 'ShootHandGun'),
+                    shoot = sceneState.mixer.clipAction(shootAnim);
+                sceneState.players.hero.anims = {
+                    idle, walk, shoot
+                };
+                sceneState.players.hero.anims.walk.play();
                 this.chars[charId] = {
                     object: object,
                     anims: gltf.animations,
                 };
-                //object.scale.set(1.4, 1.4, 1.4);
+                object.scale.set(0.1214, 0.1214, 0.1214);
                 object.position.x = sceneState.players.hero.pos[0];
                 object.position.y = sceneState.players.hero.pos[1];
                 object.position.z = 0;
@@ -101,9 +112,11 @@ class PlayerController {
                 object.traverse(o => {
                     if (o.isMesh) {
                         o.material = new THREE.MeshLambertMaterial({
-                            color: 'lime',
+                            // color: 'lime',
+                            map: heroTexture,
                             skinning: true
                         });
+                        o.material.map.flipY = false;
                         // o.material = this.createCharacterMaterial();
                     }
                 });

@@ -76,7 +76,8 @@ class CombatView {
                         });
                         if(this.id == sceneState.ui.curId && sceneState.ui.curState == 'startClick') {
                             if(sceneState.ui.viewData[this.index].actionPhase === 0) {
-                                if(heroMaterial.color) heroMaterial.color.setHex(0xffffff);
+                                heroMaterial.emissive.setHex(0x333333);
+                                heroMaterial.needsUpdate = true;
                                 sceneState.ui.viewData[this.index].actionPhase = 1;
                             }
                             if(sceneState.ui.curSecondaryTarget) {
@@ -108,7 +109,8 @@ class CombatView {
                             return;
                         }
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
-                            if(heroMaterial.color) heroMaterial.color.set('lime');
+                            heroMaterial.emissive.setHex(0x000000);
+                            heroMaterial.needsUpdate = true;
                             sceneState.ui.viewData[this.index].actionPhase = 0;
                         }
                     },
