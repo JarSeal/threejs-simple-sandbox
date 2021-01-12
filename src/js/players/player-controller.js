@@ -83,7 +83,6 @@ class PlayerController {
         modelLoader.setDRACOLoader(dracoLoader);
         modelLoader.load(
             'images/objects/characters/basic-hero.glb',
-            // 'images/objects/characters/hero1.glb',
             (gltf) => {
                 console.log('HERO IMPORT', gltf);
                 let charId = 'hero',
@@ -95,11 +94,13 @@ class PlayerController {
                     walkAnim = THREE.AnimationClip.findByName(fileAnimations, 'Walk1'),
                     walk = sceneState.mixer.clipAction(walkAnim),
                     shootAnim = THREE.AnimationClip.findByName(fileAnimations, 'ShootHandGun'),
-                    shoot = sceneState.mixer.clipAction(shootAnim);
+                    shoot = sceneState.mixer.clipAction(shootAnim),
+                    aimAnim = THREE.AnimationClip.findByName(fileAnimations, 'AimHandGun'),
+                    aim = sceneState.mixer.clipAction(aimAnim);
                 sceneState.players.hero.anims = {
-                    idle, walk, shoot
+                    idle, walk, shoot, aim
                 };
-                sceneState.players.hero.anims.walk.play();
+                sceneState.players.hero.anims.aim.play();
                 this.chars[charId] = {
                     object: object,
                     anims: gltf.animations,
