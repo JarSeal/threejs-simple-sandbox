@@ -109,6 +109,10 @@ class Projectiles {
                 'projectile-002',
                 'whoosh-001'
             ]);
+            shooter.anims.shoot.weight = 2;
+            shooter.anims.shoot.reset();
+            shooter.anims.shoot.play();
+            shooter.anims.shoot.setLoop(THREE.LoopOnce);
             tl.to(laser.position, speed, {
                 x: targetPos[0],
                 y: targetPos[1],

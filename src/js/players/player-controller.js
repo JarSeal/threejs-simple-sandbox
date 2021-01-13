@@ -380,7 +380,6 @@ class PlayerController {
                                 weight: 1,
                                 ease: Sine.easeInOut
                             });
-                            console.log('speed');
                         }
                     }
                     this.newMove(player);
