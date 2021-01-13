@@ -79,16 +79,20 @@ class PlayerController {
             dracoLoader = new DRACOLoader(),
             textureLoader = new THREE.TextureLoader();
         const heroTexture = textureLoader.load('/images/objects/characters/basic-hero-clothes.png');
+        const pisa = ['nx.png', 'px.png', 'pz.png', 'nz.png', 'py.png', 'ny.png'];
+        const test = [
+            'envMapTestNegY.jpg',
+            'envMapTestNegY.jpg',
+            'envMapTestPosX.jpg',
+            'envMapTestPosZ.jpg',
+            'envMapTestPosZ.jpg',
+            'envMapTestPosZ.jpg',
+        ];
         const envMap = new THREE.CubeTextureLoader()
             .setPath('/images/objects/characters/envMapTest2/')
-            .load( [
-                'envMapTestPosX.jpg',
-                'envMapTestNegX.jpg',
-                'envMapTestPosY.jpg',
-                'envMapTestNegY.jpg',
-                'envMapTestPosZ.jpg',
-                'envMapTestNegZ.jpg'
-            ]);
+            .load(test, () => {
+                envMap.encoding = THREE.sRGBEncoding;
+            });
         dracoLoader.setDecoderPath('/js/draco/');
         modelLoader.setDRACOLoader(dracoLoader);
         modelLoader.load(
@@ -134,15 +138,29 @@ class PlayerController {
                         o.material = new THREE.MeshLambertMaterial({
                             // color: 'red',
                             map: heroTexture,
+                            emissive: 0x442222,
+                            emissiveMap: heroTexture,
                             skinning: true,
-                            envMap: envMap,
-                            reflectivity: 0,
-                            combine: THREE.AddOperation
+                            // envMap: envMap,
+                            // reflectivity: 0.1,
+                            // combine: THREE.AddOperation
                         });
                         o.material.map.flipY = false;
                         // o.material = this.createCharacterMaterial();
                     }
                 });
+                const shadow = new THREE.Mesh(
+                    new THREE.PlaneBufferGeometry(14, 14),
+                    new THREE.MeshBasicMaterial({
+                        map: textureLoader.load('/images/sprites/round-shadow-256x256.png'),
+                        transparent: true,
+                        depthWrite: false
+                    })
+                );
+                // shadow.position.x = sceneState.players.hero.pos[0];
+                // shadow.position.y = sceneState.players.hero.pos[1];
+                shadow.position.z = 0.25;
+                object.add(shadow);
                 scene.add(object);
                 sceneState.players.hero.mesh = object;
             },

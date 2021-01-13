@@ -22,13 +22,14 @@ class CombatScene {
         this.scene = new THREE.Scene();
         this.sceneState = sceneState;
 
-        let hemi = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.8);
+        const hemi = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.65);
+        hemi.position.set(32, -32, 5);
         this.scene.add(hemi);
-        this.scene.add(new THREE.AmbientLight(0xf0f0f0, 0.5));
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.25));
 
         this.VisualEffects = new VisualEffects(this.scene, this.sceneState);
 
-        let doorAnimationController = new DoorAnimationController(this.scene, sceneState, SoundController);
+        const doorAnimationController = new DoorAnimationController(this.scene, sceneState, SoundController);
         this.playerController = new PlayerController(this.scene, sceneState, doorAnimationController, SoundController, this.VisualEffects);
 
         this.tileMapCamera = new TileMapCamera(this.scene, renderer, sceneState, AppUiLayer, this.playerController);
