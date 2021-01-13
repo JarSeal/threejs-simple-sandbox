@@ -298,7 +298,7 @@ class PlayerController {
                     ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2
                     : player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * 2;
             }
-            tlRotate.to(player.mesh.rotation, 0.2, {
+            tlRotate.to(player.mesh.rotation, 0.3, {
                 z: newDir,
                 ease: Sine.easeInOut,
                 onComplete: () => {
