@@ -105,6 +105,11 @@ class PlayerController {
                 sceneState.players.hero.anims.walk.timeScale = 1.25;
                 sceneState.players.hero.anims.walk.weight = 0;
                 sceneState.players.hero.anims.aim.weight = 0;
+                // ANIMATIONS ARE HANDLED IN HERE:
+                // player-controller.js, calculateRoute (to start walking)
+                // player-controller.js, newMove (to end walking)
+                // projectiles.js, shootProjectile (to play shooting nudge)
+                // ui/views/combat-view.js, uiData.action (to aim and return to idle or walk)
                 this.chars[charId] = {
                     object: object,
                     anims: gltf.animations,
