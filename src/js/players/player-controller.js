@@ -100,7 +100,11 @@ class PlayerController {
                 sceneState.players.hero.anims = {
                     idle, walk, shoot, aim
                 };
-                sceneState.players.hero.anims.aim.play();
+                console.log(sceneState.players.hero.anims);
+                sceneState.players.hero.anims.idle.play();
+                sceneState.players.hero.anims.walk.timeScale = 1.25;
+                sceneState.players.hero.anims.walk.weight = 0;
+                sceneState.players.hero.anims.aim.weight = 0;
                 this.chars[charId] = {
                     object: object,
                     anims: gltf.animations,
@@ -238,6 +242,28 @@ class PlayerController {
                 this.sceneState.players.hero.routeIndex = 0;
                 this.sceneState.players.hero.animatingPos = false;
                 this.sceneState.players.hero.moving = true;
+                if(!this.sceneState.players.hero.anims.walk.isRunning()) {
+                    if(this.sceneState.players.hero.anims.idle.isRunning()) {
+                        let fadeTime = 0.5;
+                        if(this.sceneState.players.hero.route.length === 2) {
+                            fadeTime = 0.3;
+                        }
+                        const from = this.sceneState.players.hero.anims.idle,
+                            to = this.sceneState.players.hero.anims.walk,
+                            fromTL = new TimelineMax(),
+                            toTL = new TimelineMax();
+                        to.play();
+                        fromTL.to(from, fadeTime, {
+                            weight: 0,
+                            onComplete: () => {
+                                from.stop();
+                            }
+                        });
+                        toTL.to(to, fadeTime, {
+                            weight: 1
+                        });
+                    }
+                }
             };
         } else if(this.sceneState.players.hero.moving) {
             // Route change during movement:
@@ -332,6 +358,30 @@ class PlayerController {
                             this.calculateRoute('hero', dx, dy);
                         }
                         return; // End animation
+                    } else if(routeIndex === routeLength - 2) {
+                        if(this.sceneState.players.hero.anims.walk.isRunning()) {
+                            let fadeTime = 0.7;
+                            if(routeLength === 2) {
+                                fadeTime = 0.5;
+                            }
+                            const from = this.sceneState.players.hero.anims.walk,
+                                to = this.sceneState.players.hero.anims.idle,
+                                fromTL = new TimelineMax(),
+                                toTL = new TimelineMax();
+                            to.play();
+                            fromTL.to(from, fadeTime, {
+                                weight: 0,
+                                ease: Sine.easeInOut,
+                                onComplete: () => {
+                                    from.stop();
+                                }
+                            });
+                            toTL.to(to, fadeTime, {
+                                weight: 1,
+                                ease: Sine.easeInOut
+                            });
+                            console.log('speed');
+                        }
                     }
                     this.newMove(player);
                 }

@@ -67,17 +67,37 @@ class CombatView {
                     action: function(sceneState, calculateAngle) {
                         if(!sceneState.players.hero || !sceneState.players.hero.mesh || !sceneState.players.hero.mesh.children || !sceneState.players.hero.mesh.children.length) return;
                         // 3D layer change:
-                        let hero = sceneState.players.hero,
-                            heroMaterial;
-                        hero.mesh.traverse(o => {
-                            if (o.isMesh) {
-                                heroMaterial = o.material;
-                            }
-                        });
+                        let hero = sceneState.players.hero;
+                        // let heroMaterial;
+                        // hero.mesh.traverse(o => {
+                        //     if (o.isMesh) {
+                        //         heroMaterial = o.material;
+                        //     }
+                        // });
                         if(this.id == sceneState.ui.curId && sceneState.ui.curState == 'startClick') {
                             if(sceneState.ui.viewData[this.index].actionPhase === 0) {
-                                heroMaterial.emissive.setHex(0x333333);
-                                heroMaterial.needsUpdate = true;
+                                // hero.anims.idle.stop();
+                                // hero.anims.walk.stop();
+                                // hero.anims.aim.play();
+                                if(sceneState.players.hero.anims.idle.isRunning()) {
+                                    const fadeTime = 0.2;
+                                    const from = sceneState.players.hero.anims.idle,
+                                        to = sceneState.players.hero.anims.aim,
+                                        fromTL = new TimelineMax(),
+                                        toTL = new TimelineMax();
+                                    to.play();
+                                    fromTL.to(from, fadeTime, {
+                                        weight: 0,
+                                        ease: Sine.easeInOut,
+                                        onComplete: () => {
+                                            from.stop();
+                                        }
+                                    });
+                                    toTL.to(to, fadeTime, {
+                                        weight: 1,
+                                        ease: Sine.easeInOut
+                                    });
+                                }
                                 sceneState.ui.viewData[this.index].actionPhase = 1;
                             }
                             if(sceneState.ui.curSecondaryTarget) {
@@ -103,14 +123,36 @@ class CombatView {
                                             hero.dir = angle;
                                             hero.rotationAnim = false;
                                         }
-                                    });
+                                    }
+                                );
                                 sceneState.ui.curSecondaryTarget = null;
                             }
                             return;
                         }
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
-                            heroMaterial.emissive.setHex(0x000000);
-                            heroMaterial.needsUpdate = true;
+                            const fadeTime = 0.12;
+                            let from = sceneState.players.hero.anims.aim,
+                                to,
+                                fromTL = new TimelineMax(),
+                                toTL = new TimelineMax();
+                            if(hero.moving) {
+                                to = sceneState.players.hero.anims.walk;
+                            } else {
+                                to = sceneState.players.hero.anims.idle;
+                            }
+                            to.play();
+                            fromTL.to(from, fadeTime, {
+                                weight: 0,
+                                ease: Sine.easeInOut,
+                                onComplete: () => {
+                                    from.stop();
+                                }
+                            });
+                            toTL.to(to, fadeTime, {
+                                weight: 1,
+                                ease: Sine.easeInOut
+                            });
+
                             sceneState.ui.viewData[this.index].actionPhase = 0;
                         }
                     },
