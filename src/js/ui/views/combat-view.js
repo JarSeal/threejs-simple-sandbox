@@ -99,10 +99,8 @@ class CombatView {
                             if(sceneState.ui.curSecondaryTarget) {
                                 // Calculate angle for player to turn to
                                 const angle = calculateAngle(hero.pos, sceneState.ui.curSecondaryTarget),
-                                    curAngle = hero.mesh.rotation.z,
-                                    halfPI = Math.PI / 2;
+                                    curAngle = hero.mesh.rotation.z;
                                 // prevent unnecessary spin moves :)
-                                console.log(angle, curAngle);
                                 let difference, newExessiveAngle, exessDiff, normalDiff;
                                 if(angle < 0 && curAngle > 0) {
                                     difference = Math.PI - curAngle;
@@ -110,22 +108,13 @@ class CombatView {
                                     exessDiff = Math.abs(newExessiveAngle - angle);
                                     normalDiff = Math.abs(curAngle - angle);
                                     if(exessDiff < normalDiff) hero.mesh.rotation.z = newExessiveAngle;
-                                    console.log('newExessiveAngle', newExessiveAngle, exessDiff, normalDiff);
                                 }
                                 if(angle > 0 && curAngle < 0) {
-                                    difference = curAngle - Math.PI;
-                                    console.log('diff', difference);
+                                    difference = Math.PI - Math.abs(curAngle);
                                     newExessiveAngle = difference + Math.PI;
-                                    exessDiff = Math.abs(newExessiveAngle - curAngle);
+                                    exessDiff = Math.abs(newExessiveAngle - angle);
                                     normalDiff = Math.abs(curAngle - angle);
-                                    // if(exessDiff < normalDiff) hero.mesh.rotation.z = newExessiveAngle;
-                                    console.log('newExessiveAngle2', newExessiveAngle, exessDiff, normalDiff);
-                                }
-                                if(angle < -halfPI && curAngle > halfPI && angle < 0 && curAngle > 0) {
-                                    hero.mesh.rotation.z = -Math.PI - (Math.PI - curAngle);
-                                }
-                                if(angle > halfPI && curAngle < -halfPI && angle > 0 && curAngle < 0) {
-                                    hero.mesh.rotation.z = Math.PI + (Math.PI + curAngle);
+                                    if(exessDiff < normalDiff) hero.mesh.rotation.z = newExessiveAngle;
                                 }
                                 if(hero.rotationAnim) hero.rotationAnim.kill();
                                 hero.rotationAnim = new TimelineMax().to(
