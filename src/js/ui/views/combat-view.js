@@ -102,6 +102,25 @@ class CombatView {
                                     curAngle = hero.mesh.rotation.z,
                                     halfPI = Math.PI / 2;
                                 // prevent unnecessary spin moves :)
+                                console.log(angle, curAngle);
+                                let difference, newExessiveAngle, exessDiff, normalDiff;
+                                if(angle < 0 && curAngle > 0) {
+                                    difference = Math.PI - curAngle;
+                                    newExessiveAngle = -Math.PI - difference;
+                                    exessDiff = Math.abs(newExessiveAngle - angle);
+                                    normalDiff = Math.abs(curAngle - angle);
+                                    if(exessDiff < normalDiff) hero.mesh.rotation.z = newExessiveAngle;
+                                    console.log('newExessiveAngle', newExessiveAngle, exessDiff, normalDiff);
+                                }
+                                if(angle > 0 && curAngle < 0) {
+                                    difference = curAngle - Math.PI;
+                                    console.log('diff', difference);
+                                    newExessiveAngle = difference + Math.PI;
+                                    exessDiff = Math.abs(newExessiveAngle - curAngle);
+                                    normalDiff = Math.abs(curAngle - angle);
+                                    // if(exessDiff < normalDiff) hero.mesh.rotation.z = newExessiveAngle;
+                                    console.log('newExessiveAngle2', newExessiveAngle, exessDiff, normalDiff);
+                                }
                                 if(angle < -halfPI && curAngle > halfPI && angle < 0 && curAngle > 0) {
                                     hero.mesh.rotation.z = -Math.PI - (Math.PI - curAngle);
                                 }
