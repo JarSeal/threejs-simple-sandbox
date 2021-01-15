@@ -7,7 +7,7 @@ class Projectiles {
         this.scene = scene;
         this.sceneState = sceneState;
         this.VisualEffects = VisualEffects;
-        this.shotHeight = 1.4;
+        this.shotHeight = 1.75;
         this.vfxMap = new THREE.TextureLoader().load('/images/sprites/vfx-atlas-01.png');
         this.projectileAnims = {
             count: 0,

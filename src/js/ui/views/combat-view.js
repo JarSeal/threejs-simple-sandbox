@@ -80,13 +80,16 @@ class CombatView {
                                     }
                                     const fadeTime = 0.2;
                                     const from = sceneState.players.hero.anims.idle,
-                                        to = sceneState.players.hero.anims.aim;
+                                        to = sceneState.players.hero.anims.aimUpper,
+                                        to2 = sceneState.players.hero.anims.aimLower;
                                     to.play();
+                                    to2.play();
                                     this.animTimeline.to(to, fadeTime, {
                                         weight: 1,
                                         ease: Sine.easeInOut,
                                         onUpdate: () => {
                                             from.weight = 1 - to.weight;
+                                            to2.weight = to.weight;
                                         },
                                         onComplete: () => {
                                             from.weight = 0;
@@ -136,14 +139,18 @@ class CombatView {
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
                             hero = sceneState.players.hero;
                             const fadeTime = 0.3;
-                            let from, to;
+                            let from, from2, to, to2;
                             if(hero.moving) {
-                                to = hero.anims.walk;
+                                to = hero.anims.walkUpper;
+                                to2 = hero.anims.walkLower;
+                                to2.play();
                             } else {
                                 to = hero.anims.idle;
                                 to.weight = 0;
-                                hero.anims.walk.weight = 0;
-                                hero.anims.walk.stop();
+                                hero.anims.walkUpper.weight = 0;
+                                hero.anims.walkUpper.stop();
+                                hero.anims.walkLower.weight = 0;
+                                hero.anims.walkLower.stop();
                             }
                             to.play();
                             if(this.animTimeline._active) {
@@ -157,26 +164,39 @@ class CombatView {
                                     ease: Sine.easeInOut,
                                     onUpdate: () => {
                                         from.weight = 1 - to.weight;
-                                        hero.anims.aim.weight = from.weight;
+                                        hero.anims.aimUpper.weight = from.weight;
+                                        hero.anims.aimLower.weight = from.weight;
                                     },
                                     onComplete: () => {
-                                        hero.anims.aim.weight = 0;
-                                        hero.anims.aim.stop();
+                                        hero.anims.aimUpper.weight = 0;
+                                        hero.anims.aimUpper.stop();
+                                        hero.anims.aimLower.weight = 0;
+                                        hero.anims.aimLower.stop();
                                         from.weight = 0;
                                         from.stop();
                                     }
                                 });
                             } else {
-                                from = hero.anims.aim;
+                                from = hero.anims.aimUpper;
+                                from2 = hero.anims.aimLower;
                                 this.animTimeline.to(to, fadeTime, {
                                     weight: 1,
                                     ease: Sine.easeInOut,
                                     onUpdate: () => {
                                         from.weight = 1 - to.weight;
+                                        from2.weight = from.weight;
+                                        if(hero.moving) {
+                                            to2.weight = to.weight;
+                                        }
                                     },
                                     onComplete: () => {
                                         from.weight = 0;
                                         from.stop();
+                                        from2.weight = 0;
+                                        from2.stop();
+                                        if(hero.moving) {
+                                            to2.weight = to.weight;
+                                        }
                                     }
                                 });
                             }
