@@ -57,7 +57,14 @@ class Projectiles {
         //     'S'
         // );
 
-        let from = [shooter.microPos[0], shooter.microPos[1]];
+        const delay = 200; // milliseconds
+        let from;
+        console.log('Le Shooter', shooter);
+        if(shooter.moving) {
+            from = [shooter.microPos[0], shooter.microPos[1]];
+        } else {
+            from = [shooter.microPos[0], shooter.microPos[1]];
+        }
         if(from[0] < -256 || from[0] > 256 || from[1] < -256 || from[1] > 256) return; // Out of play area
         if((from[0] === target[0] && from[1] === target[1]) || (shooter.pos[0] === target[0] && shooter.pos[1] === target[1])) return; // Do not shoot your own legs
 
@@ -74,7 +81,7 @@ class Projectiles {
             name = 'proje-' + shooter.id + '-' + performance.now();
         let tileMap = sceneState.shipMap[sceneState.floor];
         let targetPos = [];
-        let projectileLife = this.getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance);
+        let projectileLife = this.getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance, delay);
 
         if(!intersects.length || intersects[0].distance > maxDistance) {
             intersects = projectileLife.intersects;
@@ -95,63 +102,75 @@ class Projectiles {
             this.shotHeight
         );
         this.sceneState.consequences.addProjectile(shooter.id, name, projectileLife.route).onmessage = (e) => {
-            this.sceneState.consequences.updateHitList(e.data);
-            scene.add(laser);
-            this.VisualEffects.startAnim({
-                id: name,
-                meshName: 'projectile_redBlast',
-                mesh: laser
-            });
+            setTimeout(() => {
+                this.sceneState.consequences.updateHitList(e.data);
+                scene.add(laser);
+                this.VisualEffects.startAnim({
+                    id: name,
+                    meshName: 'projectile_redBlast',
+                    mesh: laser
+                });
 
-            let tl = new TimelineMax();
-            tl.startTime = performance.now();
-            this.Sound.playFx(this.sounds, [
-                'projectile-002',
-                'whoosh-001'
-            ]);
-            shooter.anims.shoot.weight = 2;
-            shooter.anims.shoot.reset();
-            shooter.anims.shoot.play();
-            shooter.anims.shoot.setLoop(THREE.LoopOnce);
-            tl.to(laser.position, speed, {
-                x: targetPos[0],
-                y: targetPos[1],
-                ease: Linear.easeNone,
-                onUpdate: () => {
-                    const hitter = this.sceneState.consequences.checkHitTime(name);
-                    if(hitter) {
-                        this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
-                        this.hitObstacle(hitter.target, scene, tileMap, hitter.hitPos, projectileLife);
-                        tl.kill();
-                        return;
-                    }
-                    // const timeNow = this.sceneState.initTime.s + performance.now() / 1000,
-                    //     lastTile = projectileLife.route[projectileLife.route.length - 1];
-                    // if(!lastTile || timeNow > lastTile.leaveTime + 0.5) {
-                    //     this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
-                    //     tl.kill();
-                    // }
-                },
-                onComplete: () => {
-                    // scene.remove(helperLine);
-                    const hitter = this.sceneState.consequences.checkHitTime(name);
-                    if(hitter) {
-                        this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
-                        this.hitObstacle(hitter.target, scene, tileMap, hitter.hitPos, projectileLife);
-                        return;
-                    }
-                    if(!projectileLife.noHit) {
-                        this.hitObstacle('solid', scene, tileMap, targetPos, projectileLife);
-                    }
-                    this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
+                let tl = new TimelineMax();
+                tl.startTime = performance.now();
+                this.Sound.playFx(this.sounds, [
+                    'projectile-002',
+                    'whoosh-001'
+                ]);
+
+                // Player shooting animation:
+                if(shooter.moving) {
+                    shooter.anims.shootUpper.weight = 1;
+                    shooter.anims.shootUpper.reset();
+                    shooter.anims.shootUpper.play();
+                    shooter.anims.shootUpper.setLoop(THREE.LoopOnce);
+                } else {
+                    shooter.anims.shoot.weight = 1;
+                    shooter.anims.shoot.reset();
+                    shooter.anims.shoot.play();
+                    shooter.anims.shoot.setLoop(THREE.LoopOnce);
                 }
-            });
+
+                tl.to(laser.position, speed, {
+                    x: targetPos[0],
+                    y: targetPos[1],
+                    ease: Linear.easeNone,
+                    onUpdate: () => {
+                        const hitter = this.sceneState.consequences.checkHitTime(name);
+                        if(hitter) {
+                            this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
+                            this.hitObstacle(hitter.target, scene, tileMap, hitter.hitPos, projectileLife);
+                            tl.kill();
+                            return;
+                        }
+                        // const timeNow = this.sceneState.initTime.s + performance.now() / 1000,
+                        //     lastTile = projectileLife.route[projectileLife.route.length - 1];
+                        // if(!lastTile || timeNow > lastTile.leaveTime + 0.5) {
+                        //     this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
+                        //     tl.kill();
+                        // }
+                    },
+                    onComplete: () => {
+                        // scene.remove(helperLine);
+                        const hitter = this.sceneState.consequences.checkHitTime(name);
+                        if(hitter) {
+                            this.sceneState.consequences.doHitConsequence(name, scene, this.VisualEffects.removeAnim);
+                            this.hitObstacle(hitter.target, scene, tileMap, hitter.hitPos, projectileLife);
+                            return;
+                        }
+                        if(!projectileLife.noHit) {
+                            this.hitObstacle('solid', scene, tileMap, targetPos, projectileLife);
+                        }
+                        this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
+                    }
+                });
+            }, delay);
         };
     }
 
-    getProjectileRoute(from, targetPos, speedPerTile, distance, dir) {
+    getProjectileRoute(from, targetPos, speedPerTile, distance, dir, delay) {
         let route = [],
-            startTime = this.sceneState.initTime.s + performance.now() / 1000,
+            startTime = this.sceneState.initTime.s + (delay + performance.now()) / 1000,
             xLength = 0,
             yLength = 0,
             xLen,
@@ -348,7 +367,7 @@ class Projectiles {
         return {point: {x: targetPos[0], y: targetPos[1]}, distance: maxDistance, dir: dir};
     }
 
-    getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance) {
+    getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance, delay) {
         let noHit = false;
         if(!intersects.length || intersects[0].distance > maxDistance) {
             // Does not hit anything
@@ -539,7 +558,7 @@ class Projectiles {
         }
 
         let hitPosAccurate = [intersects[0].point.x, intersects[0].point.y];
-        life.route = this.getProjectileRoute(from, hitPosAccurate, speedPerTile, distance, life.dir);
+        life.route = this.getProjectileRoute(from, hitPosAccurate, speedPerTile, distance, life.dir, delay);
         life.intersects = intersects;
 
         return life;

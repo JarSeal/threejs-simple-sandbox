@@ -122,9 +122,9 @@ class PlayerController {
                 console.log(sceneState.players.hero.anims);
                 sceneState.players.hero.animTimeline = new TimelineMax();
                 sceneState.players.hero.anims.shoot.stop();
-                sceneState.players.hero.anims.shoot.weight = 0;
+                sceneState.players.hero.anims.shoot.weight = 1;
                 sceneState.players.hero.anims.shootUpper.stop();
-                sceneState.players.hero.anims.shootUpper.weight = 0;
+                sceneState.players.hero.anims.shootUpper.weight = 1;
                 sceneState.players.hero.anims.idle.play();
                 sceneState.players.hero.anims.idle.weight = 1;
                 sceneState.players.hero.anims.aim.stop();
@@ -135,8 +135,6 @@ class PlayerController {
                 sceneState.players.hero.anims.walkAndAim.weight = 0;
                 sceneState.players.hero.anims.walk.timeScale = 0.96;
                 sceneState.players.hero.anims.walkAndAim.timeScale = sceneState.players.hero.anims.walk.timeScale;
-                // sceneState.players.hero.anims.walk.weight = 0;
-                // sceneState.players.hero.anims.aim.weight = 0;
 
                 // ANIMATIONS ARE HANDLED IN HERE:
                 // player-controller.js, calculateRoute (to start walking)
@@ -165,7 +163,6 @@ class PlayerController {
                             // combine: THREE.AddOperation
                         });
                         o.material.map.flipY = false;
-                        // o.material = this.createCharacterMaterial();
                     }
                 });
                 const shadow = new THREE.Mesh(
@@ -176,8 +173,6 @@ class PlayerController {
                         depthWrite: false
                     })
                 );
-                // shadow.position.x = sceneState.players.hero.pos[0];
-                // shadow.position.y = sceneState.players.hero.pos[1];
                 shadow.position.z = 0.25;
                 object.add(shadow);
                 scene.add(object);
@@ -188,45 +183,6 @@ class PlayerController {
                 logger.error('An GLTF loading error (loading hero) happened', error);
             }
         );
-    }
-
-    createCharacterMaterial() {
-        return new THREE.MeshBasicMaterial({color: 'lime', skinning: true});
-        // const uniforms = {
-        //     linewidth:  { type: 'f', value: 0.3 },
-        // };
-        // const vertexShader = `
-        // uniform float linewidth;
-        // varying vec2 vUv;
-        // void main() {
-        //     vUv = uv;
-        //     // gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        //     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        //     vec4 displacement = vec4( normalize( normalMatrix * normal ) * linewidth, 0.0 ) + mvPosition;
-        //     gl_Position = projectionMatrix * displacement;
-        // }`;
-        // const fragmentShader = `
-        // varying vec2 vUv;
-        // void main() {
-        //     // float t = 0.1;
-        //     // float threshold = 0.5;
-        //     // float width = 10.0;
-        //     // float isEdge = clamp(width - abs(threshold - t) / fwidth(t), 0.0, 1.0);
-        //     gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-        //     // float luminance = dot(gl_FragColor, vec4(0.2126, 0.7152, 0.0722, 0.5));
-        //     // float gradient = fwidth(luminance);
-        //     // if(gradient > 0.5) {
-        //     //     gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-        //     // } else {
-        //     //     gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-        //     // }
-        // }`;
-
-        // return new THREE.ShaderMaterial({
-        //     uniforms: uniforms,
-        //     vertexShader: vertexShader,
-        //     fragmentShader: fragmentShader
-        // });
     }
 
     getStartingPosition(sceneState, type) {
@@ -303,6 +259,7 @@ class PlayerController {
                         if(this.sceneState.players.hero.route.length === 2) {
                             fadeTime = 0.3;
                         }
+                        this.sceneState.players.hero.movingInLastTile = false;
                         this.sceneState.players.hero.anims.shoot.stop();
                         this.sceneState.players.hero.anims.shoot.weight = 0;
                         this.sceneState.players.hero.anims.aim.stop();
@@ -314,6 +271,8 @@ class PlayerController {
                             this.sceneState.players.hero.animTimeline.kill();
                             this.sceneState.players.hero.animTimeline = new TimelineMax();
                         }
+                        to.reset();
+                        to2.reset();
                         to.play();
                         to2.play();
                         this.sceneState.players.hero.animTimeline.to(from, fadeTime, {
@@ -421,36 +380,75 @@ class PlayerController {
                             player.newRoute = [];
                             this.calculateRoute('hero', dx, dy);
                         }
+                        this.endPlayerAnimations(routeLength, true);
                         return; // End animation
                     } else if(routeIndex === routeLength - 2) {
-                        if(this.sceneState.players.hero.anims.walk.isRunning()) {
-                            let fadeTime = 0.7;
-                            if(routeLength === 2) {
-                                fadeTime = 0.5;
-                            }
-                            const from = this.sceneState.players.hero.anims.walk,
-                                to = this.sceneState.players.hero.anims.idle,
-                                fromTL = new TimelineMax();
-                            to.play();
-                            fromTL.to(from, fadeTime, {
-                                weight: 0,
-                                ease: Sine.easeInOut,
-                                onUpdate: () => {
-                                    to.weight = 1 - from.weight;
-                                },
-                                onComplete: () => {
-                                    from.weight = 0;
-                                    from.stop();
-                                    this.sceneState.players.hero.anims.walkAndAim.weight = 0;
-                                    this.sceneState.players.hero.anims.walkAndAim.stop();
-                                }
-                            });
-                        }
+                        this.endPlayerAnimations(routeLength);
                     }
                     this.newMove(player);
                 }
             },
         });
+    }
+
+    endPlayerAnimations(routeLength, lastTile) {
+        this.sceneState.players.hero.movingInLastTile = lastTile;
+        if (this.sceneState.players.hero.anims.walk.weight > 0 ||
+            this.sceneState.players.hero.anims.walkAndAim.weight > 0) {
+            let fadeTime = 0.7;
+            if(routeLength === 2) fadeTime = 0.5;
+            if(lastTile) fadeTime = 0.3;
+            let to = this.sceneState.players.hero.anims.idle;
+            if(this.sceneState.players.hero.isAiming) {
+                to = this.sceneState.players.hero.anims.aim;
+            }
+            const from = this.sceneState.players.hero.anims.walk,
+                from2 = this.sceneState.players.hero.anims.walkAndAim,
+                from3 = this.sceneState.players.hero.anims.aim;
+            to.play();
+            if(this.sceneState.players.hero.animTimeline._active) {
+                this.sceneState.players.hero.animTimeline.kill();
+                this.sceneState.players.hero.animTimeline = new TimelineMax();
+            }
+            this.sceneState.players.hero.animTimeline.to(to, fadeTime, {
+                weight: 1,
+                ease: Sine.easeInOut,
+                onUpdate: () => {
+                    if(from.weight > 0) {
+                        from.weight = 1 - to.weight;
+                    }
+                    if(from2.weight > 0) {
+                        from2.weight = 1 - to.weight;
+                    }
+                    if(lastTile && !this.sceneState.players.hero.isAiming && from3.weight > 0) {
+                        from3.weight = 1 - to.weight;
+                    }
+                },
+                onComplete: () => {
+                    if(lastTile) {
+                        from.weight = 0;
+                        from2.weight = 0;
+                        from.stop();
+                        from2.stop();
+                        if(!this.sceneState.players.hero.isAiming) {
+                            from3.weight = 0;
+                            from3.stop();
+                        } else {
+                            // TODO: THIS MAKES A NUDGE, FIX AT SOME POINT
+                            from3.weight = 1;
+                            from3.play();
+                            this.sceneState.players.hero.anims.idle.weight = 0;
+                            this.sceneState.players.hero.anims.idle.stop();
+                        }
+                    }
+                    console.log(
+                        'tadaa player',
+                        this.sceneState.players.hero.anims.aim.weight,
+                        this.sceneState.players.hero.anims.idle.weight
+                    );
+                }
+            });
+        }
     }
 
     getPrevRouteTile(player) {

@@ -75,16 +75,25 @@ class CombatView {
                                     hero.animTimeline.kill();
                                     hero.animTimeline = new TimelineMax();
                                 }
+                                hero.isAiming = true;
                                 const fadeTime = 0.2;
                                 if(sceneState.players.hero.anims.idle.isRunning()) {
+                                    console.log('STRTED AIMING nad idel');
                                     const from = sceneState.players.hero.anims.idle;
                                     let to = sceneState.players.hero.anims.aim,
                                         from2;
-                                    if(sceneState.players.hero.anims.walk.weight > 0) {
+                                    if (sceneState.players.hero.anims.walk.weight > 0 &&
+                                        !sceneState.players.hero.movingInLastTile) {
                                         to = sceneState.players.hero.anims.walkAndAim;
                                         from2 = sceneState.players.hero.anims.walk;
                                         from2.weight = 0;
                                     } else {
+                                        if(sceneState.players.hero.movingInLastTile) {
+                                            sceneState.players.hero.anims.walk.weight = 0;
+                                            sceneState.players.hero.anims.walk.stop();
+                                            sceneState.players.hero.anims.walkAndAim.weight = 0;
+                                            sceneState.players.hero.anims.walkAndAim.stop();
+                                        }
                                         to.play();
                                     }
                                     hero.animTimeline.to(to, fadeTime, {
@@ -102,6 +111,7 @@ class CombatView {
                                             if(from2) {
                                                 from2.weight = 0;
                                             }
+                                            console.log('ending');
                                         }
                                     });
                                 } else if(sceneState.players.hero.anims.walk.isRunning()) {
@@ -159,8 +169,9 @@ class CombatView {
                         }
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
                             hero = sceneState.players.hero;
+                            hero.isAiming = false;
                             const fadeTime = 0.3;
-                            let from, to;
+                            let from, from2, to;
                             if(hero.moving) {
                                 to = hero.anims.walk;
                                 to.weight = 0;
@@ -189,17 +200,42 @@ class CombatView {
                                         from.stop();
                                     }
                                 });
-                            } else if(hero.anims.walkAndAim.isRunning()) {
+                            } else if(hero.anims.walkAndAim.weight > 0) {
                                 from = hero.anims.walkAndAim;
-                                to = hero.anims.walk;
+                                from2 = hero.anims.aim;
+                                if(from.weight < 1) {
+                                    console.log('KUKKUU1');
+                                    to = hero.anims.idle;
+                                    to.play();
+                                } else {
+                                    console.log('KUKKUU2');
+                                    to = hero.anims.walk;
+                                }
                                 hero.animTimeline.to(to, fadeTime, {
                                     weight: 1,
                                     ease: Sine.easeInOut,
                                     onUpdate: () => {
                                         from.weight = 1 - to.weight;
+                                        if(from2.weight > 0) {
+                                            from2.weight = from.weight;
+                                        }
                                     },
                                     onComplete: () => {
                                         from.weight = 0;
+                                        from2.weight = 0;
+                                        from2.stop();
+                                        if(hero.anims.idle.isRunning()) {
+                                            hero.anims.walk.stop();
+                                            hero.anims.walkAndAim.stop();
+                                        }
+                                        console.log(
+                                            'tadaa combat',
+                                            'i', hero.anims.idle.weight,
+                                            'w', hero.anims.walk.weight,
+                                            'waa', hero.anims.walkAndAim.weight,
+                                            'a', hero.anims.aim.weight,
+                                            's', hero.anims.shoot.weight
+                                        );
                                     }
                                 });
                             } else {
