@@ -6,7 +6,7 @@ import { astar, Graph } from '../vendor/astar.js';
 import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
 import { calculateAngle } from '../util.js';
 import Projectiles from './projectiles.js';
-import { logger } from '../util.js';
+import { logger, fixAnimClips } from '../util.js';
 
 class PlayerController {
     constructor(scene, sceneState, doorAnimationController, SoundController, VisualEffects) {
@@ -99,40 +99,42 @@ class PlayerController {
             'images/objects/characters/basic-hero2.glb',
             (gltf) => {
                 console.log('HERO IMPORT', gltf);
+                //gltf = fixAnimClips(gltf);
                 let charId = 'hero',
                     object = gltf.scene;
                 sceneState.mixer = new THREE.AnimationMixer(object);
                 let fileAnimations = gltf.animations,
                     idleAnim = THREE.AnimationClip.findByName(fileAnimations, 'Idle'),
                     idle = sceneState.mixer.clipAction(idleAnim),
-                    walkAnim1 = THREE.AnimationClip.findByName(fileAnimations, 'WalkUpper'),
-                    walkUpper = sceneState.mixer.clipAction(walkAnim1),
-                    walkAnim2 = THREE.AnimationClip.findByName(fileAnimations, 'WalkLower'),
-                    walkLower = sceneState.mixer.clipAction(walkAnim2),
+                    walkAnim = THREE.AnimationClip.findByName(fileAnimations, 'Walk'),
+                    walk = sceneState.mixer.clipAction(walkAnim),
+                    walkAndAimAnim = THREE.AnimationClip.findByName(fileAnimations, 'WalkAndAim'),
+                    walkAndAim = sceneState.mixer.clipAction(walkAndAimAnim),
                     shootAnim = THREE.AnimationClip.findByName(fileAnimations, 'ShootHandGun'),
                     shoot = sceneState.mixer.clipAction(shootAnim),
-                    aimAnim1 = THREE.AnimationClip.findByName(fileAnimations, 'AimHandGunUpper'),
-                    aimUpper = sceneState.mixer.clipAction(aimAnim1),
-                    aimAnim2 = THREE.AnimationClip.findByName(fileAnimations, 'AimHandGunLower'),
-                    aimLower = sceneState.mixer.clipAction(aimAnim2);
+                    shootAnim2 = THREE.AnimationClip.findByName(fileAnimations, 'ShootHandGunUpper'),
+                    shootUpper = sceneState.mixer.clipAction(shootAnim2),
+                    aimAnim = THREE.AnimationClip.findByName(fileAnimations, 'AimHandGun'),
+                    aim = sceneState.mixer.clipAction(aimAnim);
                 sceneState.players.hero.anims = {
-                    idle, walkUpper, walkLower, shoot, aimUpper, aimLower
+                    idle, walk, shoot, shootUpper, aim, walkAndAim
                 };
                 console.log(sceneState.players.hero.anims);
+                sceneState.players.hero.animTimeline = new TimelineMax();
                 sceneState.players.hero.anims.shoot.stop();
                 sceneState.players.hero.anims.shoot.weight = 0;
-                sceneState.players.hero.anims.idle.stop();
+                sceneState.players.hero.anims.shootUpper.stop();
+                sceneState.players.hero.anims.shootUpper.weight = 0;
+                sceneState.players.hero.anims.idle.play();
                 sceneState.players.hero.anims.idle.weight = 1;
-                sceneState.players.hero.anims.aimUpper.stop();
-                sceneState.players.hero.anims.aimUpper.weight = 0;
-                sceneState.players.hero.anims.aimLower.stop();
-                sceneState.players.hero.anims.aimLower.weight = 0;
-                sceneState.players.hero.anims.walkUpper.play();
-                sceneState.players.hero.anims.walkUpper.weight = 1;
-                sceneState.players.hero.anims.walkLower.play();
-                sceneState.players.hero.anims.walkLower.weight = 1;
-                // sceneState.players.hero.anims.walkUpper.timeScale = 1.25;
-                // sceneState.players.hero.anims.walkLower.timeScale = 1.25;
+                sceneState.players.hero.anims.aim.stop();
+                sceneState.players.hero.anims.aim.weight = 0;
+                sceneState.players.hero.anims.walk.stop();
+                sceneState.players.hero.anims.walk.weight = 0;
+                sceneState.players.hero.anims.walkAndAim.stop();
+                sceneState.players.hero.anims.walkAndAim.weight = 0;
+                sceneState.players.hero.anims.walk.timeScale = 0.96;
+                sceneState.players.hero.anims.walkAndAim.timeScale = sceneState.players.hero.anims.walk.timeScale;
                 // sceneState.players.hero.anims.walk.weight = 0;
                 // sceneState.players.hero.anims.aim.weight = 0;
 
@@ -295,7 +297,7 @@ class PlayerController {
                 this.sceneState.players.hero.routeIndex = 0;
                 this.sceneState.players.hero.animatingPos = false;
                 this.sceneState.players.hero.moving = true;
-                if(!this.sceneState.players.hero.anims.walkLower.isRunning()) {
+                if(!this.sceneState.players.hero.anims.walk.isRunning()) {
                     if(this.sceneState.players.hero.anims.idle.isRunning()) {
                         let fadeTime = 0.5;
                         if(this.sceneState.players.hero.route.length === 2) {
@@ -303,21 +305,21 @@ class PlayerController {
                         }
                         this.sceneState.players.hero.anims.shoot.stop();
                         this.sceneState.players.hero.anims.shoot.weight = 0;
-                        this.sceneState.players.hero.anims.aimLower.stop();
-                        this.sceneState.players.hero.anims.aimLower.weight = 0;
-                        this.sceneState.players.hero.anims.aimUpper.stop();
-                        this.sceneState.players.hero.anims.aimUpper.weight = 0;
+                        this.sceneState.players.hero.anims.aim.stop();
+                        this.sceneState.players.hero.anims.aim.weight = 0;
                         const from = this.sceneState.players.hero.anims.idle,
-                            to = this.sceneState.players.hero.anims.walkLower,
-                            to2 = this.sceneState.players.hero.anims.walkUpper,
-                            fromTL = new TimelineMax();
+                            to = this.sceneState.players.hero.anims.walk,
+                            to2 = this.sceneState.players.hero.anims.walkAndAim;
+                        if(this.sceneState.players.hero.animTimeline._active) {
+                            this.sceneState.players.hero.animTimeline.kill();
+                            this.sceneState.players.hero.animTimeline = new TimelineMax();
+                        }
                         to.play();
                         to2.play();
-                        fromTL.to(from, fadeTime, {
+                        this.sceneState.players.hero.animTimeline.to(from, fadeTime, {
                             weight: 0,
                             onUpdate: () => {
                                 to.weight = 1 - from.weight;
-                                to2.weight = to.weight;
                             },
                             onComplete: () => {
                                 from.weight = 0;
@@ -421,13 +423,12 @@ class PlayerController {
                         }
                         return; // End animation
                     } else if(routeIndex === routeLength - 2) {
-                        if(this.sceneState.players.hero.anims.walkLower.isRunning()) {
+                        if(this.sceneState.players.hero.anims.walk.isRunning()) {
                             let fadeTime = 0.7;
                             if(routeLength === 2) {
                                 fadeTime = 0.5;
                             }
-                            const from = this.sceneState.players.hero.anims.walkLower,
-                                from2 = this.sceneState.players.hero.anims.walkUpper,
+                            const from = this.sceneState.players.hero.anims.walk,
                                 to = this.sceneState.players.hero.anims.idle,
                                 fromTL = new TimelineMax();
                             to.play();
@@ -436,13 +437,12 @@ class PlayerController {
                                 ease: Sine.easeInOut,
                                 onUpdate: () => {
                                     to.weight = 1 - from.weight;
-                                    from2.weight = from.weight;
                                 },
                                 onComplete: () => {
                                     from.weight = 0;
                                     from.stop();
-                                    from2.weight = 0;
-                                    from2.stop();
+                                    this.sceneState.players.hero.anims.walkAndAim.weight = 0;
+                                    this.sceneState.players.hero.anims.walkAndAim.stop();
                                 }
                             });
                         }
