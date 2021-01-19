@@ -13,7 +13,7 @@ class AppUiLayer {
             'S'
         ]];
         this.uiContext;
-        this.ctrl = {keyDown:false,keyUp:true};
+        this.ctrl = { keyDown:false, keyUp:true };
         window.addEventListener('keydown', (e) => {
             this.ctrl.keyUp = false;
             if(e.ctrlKey) {
@@ -28,7 +28,7 @@ class AppUiLayer {
     }
 
     init() {
-        let ui = this.sceneState.ui;
+        const ui = this.sceneState.ui;
         this.uiContext = this.uiCanvas.getContext('2d');
 
         if(!ui.view) {
@@ -41,9 +41,9 @@ class AppUiLayer {
     resize() {
         this.uiCanvas.width = document.documentElement.clientWidth;
         this.uiCanvas.height = document.documentElement.clientHeight;
-        let data = this.sceneState.ui.viewData,
-            dataLength = data.length,
-            i;
+        const data = this.sceneState.ui.viewData,
+            dataLength = data.length;
+        let i;
         for(i=0; i<dataLength; i++) {
             data[i].resize();
         }
@@ -74,8 +74,7 @@ class AppUiLayer {
                     ctx.arc(data[i].pos[0], data[i].pos[1], data[i].radius, 0, 2 * Math.PI);
                     ctx.fill();
                     data[i].action(this.sceneState, calculateAngle);
-                } else
-                if(data[i].type == 'logDisplay') {
+                } else if(data[i].type == 'logDisplay') {
                     data[i].renderLogList(this.logList);
                 }
             }

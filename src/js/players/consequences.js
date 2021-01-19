@@ -44,10 +44,6 @@ class Consequences {
         return this.movingWorker;
     }
 
-    getPlayerPosInFuture(playerId, route) {
-        
-    }
-
     movePlayerCallBack(data) {
         this.players = data.players;
         this.doors = data.doors;

@@ -20,5 +20,6 @@ export const getPlayer = () => {
         routeIndex: 0,
         newRoute: [],
         mesh: null,
+        rotationAnims: {},
     };
 };

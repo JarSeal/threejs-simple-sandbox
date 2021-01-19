@@ -206,14 +206,16 @@ class PlayerController {
         }
     }
 
-    fire(player, target, scene, sceneState, AppUiLayer) {
-        this.projectiles.shootProjectile(
-            player,
-            target,
-            scene,
-            sceneState,
-            AppUiLayer
-        );
+    fire(player, target, scene, sceneState, AppUiLayer, delay) {
+        setTimeout(() => {
+            this.projectiles.shootProjectile(
+                player,
+                target,
+                scene,
+                sceneState,
+                AppUiLayer
+            );
+        }, delay * 1000);
     }
 
     animateMovement(player) {
@@ -441,11 +443,6 @@ class PlayerController {
                             this.sceneState.players.hero.anims.idle.stop();
                         }
                     }
-                    console.log(
-                        'tadaa player',
-                        this.sceneState.players.hero.anims.aim.weight,
-                        this.sceneState.players.hero.anims.idle.weight
-                    );
                 }
             });
         }

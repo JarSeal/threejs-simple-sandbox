@@ -63,6 +63,45 @@ class CombatView {
                         }
                         return this.colors[0];
                     },
+                    rotatePlayerAnimation: function(sceneState, player, angle, turnTimeScale) {
+                        player.rotationAnim = true;
+                        player.rotationAnim = new TimelineMax().to(
+                            player.mesh.rotation,
+                            turnTimeScale,
+                            {
+                                z: angle,
+                                ease: Sine.easeInOut,
+                                onComplete: () => {
+                                    player.dir = angle;
+                                    player.rotationAnim = false;
+                                    if(player.curRotationAnim && player.rotationAnims[player.curRotationAnim]) {
+                                        player.rotationAnims[player.curRotationAnim].done = true;
+                                        let keys = Object.keys(player.rotationAnims);
+                                        if(keys.length) {
+                                            keys.sort();
+                                            for(let i=0; i<keys.length; i++) {
+                                                let difference = 0, prevTime;
+                                                if(i !== 0) {
+                                                    prevTime = player.rotationAnims[keys[i-1]].clickTime;
+                                                    difference = player.rotationAnims[keys[i]].clickTime - prevTime;
+                                                }
+                                                if(!player.rotationAnims[keys[i]].done) {
+                                                    player.curRotationAnim = keys[i];
+                                                    player.rotationAnims[keys[i]].waitTime = difference;
+                                                    sceneState.ui.curSecondaryTarget = player.rotationAnims[keys[i]].target;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        // Brutal reset in case of trouble
+                                        player.rotationAnims = {};
+                                    }
+                                }
+                            }
+                        );
+                        sceneState.ui.curSecondaryTarget = null;
+                    },
                     actionPhase: 0,
                     action: function(sceneState, calculateAngle) {
                         if(!sceneState.players.hero || !sceneState.players.hero.mesh || !sceneState.players.hero.mesh.children || !sceneState.players.hero.mesh.children.length) return;
@@ -78,7 +117,6 @@ class CombatView {
                                 hero.isAiming = true;
                                 const fadeTime = 0.2;
                                 if(sceneState.players.hero.anims.idle.isRunning()) {
-                                    console.log('STRTED AIMING nad idel');
                                     const from = sceneState.players.hero.anims.idle;
                                     let to = sceneState.players.hero.anims.aim,
                                         from2;
@@ -111,7 +149,6 @@ class CombatView {
                                             if(from2) {
                                                 from2.weight = 0;
                                             }
-                                            console.log('ending');
                                         }
                                     });
                                 } else if(sceneState.players.hero.anims.walk.isRunning()) {
@@ -135,35 +172,39 @@ class CombatView {
                                 const angle = calculateAngle(hero.pos, sceneState.ui.curSecondaryTarget),
                                     curAngle = hero.mesh.rotation.z;
                                 // prevent unnecessary spin moves :)
-                                let difference, newExessiveAngle, exessDiff, normalDiff;
+                                let difference, newExessiveAngle, exessDiff, normalDiff,
+                                    turnAmount = curAngle > angle ? curAngle - angle : angle - curAngle;
                                 if(angle < 0 && curAngle > 0) {
                                     difference = Math.PI - curAngle;
                                     newExessiveAngle = -Math.PI - difference;
                                     exessDiff = Math.abs(newExessiveAngle - angle);
                                     normalDiff = Math.abs(curAngle - angle);
-                                    if(exessDiff < normalDiff) hero.mesh.rotation.z = newExessiveAngle;
+                                    if(exessDiff < normalDiff) {
+                                        hero.mesh.rotation.z = newExessiveAngle;
+                                        turnAmount = exessDiff;
+                                    } else {
+                                        turnAmount = normalDiff;
+                                    }
                                 }
                                 if(angle > 0 && curAngle < 0) {
                                     difference = Math.PI - Math.abs(curAngle);
                                     newExessiveAngle = difference + Math.PI;
                                     exessDiff = Math.abs(newExessiveAngle - angle);
                                     normalDiff = Math.abs(curAngle - angle);
-                                    if(exessDiff < normalDiff) hero.mesh.rotation.z = newExessiveAngle;
-                                }
-                                if(hero.rotationAnim) hero.rotationAnim.kill();
-                                hero.rotationAnim = new TimelineMax().to(
-                                    hero.mesh.rotation,
-                                    0.2,
-                                    {
-                                        z: angle,
-                                        ease: Sine.easeInOut,
-                                        onComplete: () => {
-                                            hero.dir = angle;
-                                            hero.rotationAnim = false;
-                                        }
+                                    if(exessDiff < normalDiff) {
+                                        hero.mesh.rotation.z = newExessiveAngle;
+                                        turnAmount = exessDiff;
+                                    } else {
+                                        turnAmount = normalDiff;
                                     }
-                                );
-                                sceneState.ui.curSecondaryTarget = null;
+                                }
+                                const turnTimeScale = turnAmount / Math.PI * 0.2;
+                                hero.rotationTime = turnTimeScale;
+                                if(hero.rotationAnims[hero.curRotationAnim]) {
+                                    const waitTime = hero.rotationAnims[hero.curRotationAnim].waitTime / 1000;
+                                    hero.rotationAnims[hero.curRotationAnim].waitTime = turnTimeScale < waitTime ? waitTime - turnTimeScale : waitTime;
+                                }
+                                this.rotatePlayerAnimation(sceneState, hero, angle, turnTimeScale);
                             }
                             return;
                         }
@@ -204,11 +245,9 @@ class CombatView {
                                 from = hero.anims.walkAndAim;
                                 from2 = hero.anims.aim;
                                 if(from.weight < 1) {
-                                    console.log('KUKKUU1');
                                     to = hero.anims.idle;
                                     to.play();
                                 } else {
-                                    console.log('KUKKUU2');
                                     to = hero.anims.walk;
                                 }
                                 hero.animTimeline.to(to, fadeTime, {
@@ -228,14 +267,6 @@ class CombatView {
                                             hero.anims.walk.stop();
                                             hero.anims.walkAndAim.stop();
                                         }
-                                        console.log(
-                                            'tadaa combat',
-                                            'i', hero.anims.idle.weight,
-                                            'w', hero.anims.walk.weight,
-                                            'waa', hero.anims.walkAndAim.weight,
-                                            'a', hero.anims.aim.weight,
-                                            's', hero.anims.shoot.weight
-                                        );
                                     }
                                 });
                             } else {
