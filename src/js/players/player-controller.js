@@ -225,7 +225,7 @@ class PlayerController {
         }
     }
 
-    calculateRoute(player, dx, dy) {
+    calculateRoute(player, dx, dy, newRoute) {
         const startTime = performance.now(); // Debugging (counting the time to create route)
         const newGraph = new Graph(
             this.sceneState.astar[this.sceneState.floor],
@@ -255,7 +255,9 @@ class PlayerController {
                 this.sceneState.players.hero.routeIndex = 0;
                 this.sceneState.players.hero.animatingPos = false;
                 this.sceneState.players.hero.moving = true;
-                if(!this.sceneState.players.hero.anims.walk.isRunning()) {
+                if (!this.sceneState.players.hero.anims.walk.isRunning() ||
+                    this.sceneState.players.hero.movingInLastTile ||
+                    newRoute) {
                     if(this.sceneState.players.hero.anims.idle.isRunning()) {
                         let fadeTime = 0.5;
                         if(this.sceneState.players.hero.route.length === 2) {
@@ -365,7 +367,7 @@ class PlayerController {
                     player.route = [];
                     player.routeIndex = 0;
                     player.curSpeed = 0;
-                    this.calculateRoute('hero', dx, dy);
+                    this.calculateRoute('hero', dx, dy, true);
                 } else {
                     player.routeIndex++;
                     // Check if full destination is reached
@@ -380,9 +382,10 @@ class PlayerController {
                             const dx = player.newRoute[0],
                                 dy = player.newRoute[1];
                             player.newRoute = [];
-                            this.calculateRoute('hero', dx, dy);
+                            this.calculateRoute('hero', dx, dy, true);
+                        } else {
+                            this.endPlayerAnimations(routeLength, true);
                         }
-                        this.endPlayerAnimations(routeLength, true);
                         return; // End animation
                     } else if(routeIndex === routeLength - 2) {
                         this.endPlayerAnimations(routeLength);
@@ -441,6 +444,9 @@ class PlayerController {
                             from3.play();
                             this.sceneState.players.hero.anims.idle.weight = 0;
                             this.sceneState.players.hero.anims.idle.stop();
+                            if(lastTile) {
+                                this.sceneState.players.hero.movingInLastTile = false;
+                            }
                         }
                     }
                 }
