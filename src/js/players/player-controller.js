@@ -360,11 +360,23 @@ class PlayerController {
             routeIndex = player.routeIndex,
             ease,
             speed;
-        if(!player.rotationAnim) {
-            const newDir = calculateAngle(
+        if(!player.rotationAnim && player.aimingStarted + 2000 < performance.now()) {
+            let newDir = calculateAngle(
                 player.pos,
                 [route[routeIndex].x, route[routeIndex].y]
             );
+            if(player.moveBackwards && newDir < 0) {
+                newDir += Math.PI;
+                player.anims.walk.timeScale *= -1;
+                player.anims.walkAndAim.timeScale = player.anims.walk.timeScale;
+            } else if(player.moveBackwards && newDir >= 0) {
+                newDir -= Math.PI;
+                player.anims.walk.timeScale = player.anims.walk.timeScale * (-1);
+                player.anims.walkAndAim.timeScale = player.anims.walk.timeScale;
+            } else if(!player.moveBackwards) {
+                player.anims.walk.timeScale = Math.abs(player.anims.walk.timeScale);
+                player.anims.walkAndAim.timeScale = player.anims.walk.timeScale;
+            }
             if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
                 // prevent unnecessary spin moves :)
                 newDir < 0

@@ -116,7 +116,9 @@ class Projectiles {
             ]);
 
             // Player shooting animation:
-            shooter.animFns.shotKick.fn(shooter.moving);
+            if(shooter.animFns && shooter.animFns.shotKick) {
+                shooter.animFns.shotKick.fn(shooter.moving);
+            }
 
             tl.to(laser.position, speed, {
                 x: targetPos[0],

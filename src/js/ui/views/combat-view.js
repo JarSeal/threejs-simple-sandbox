@@ -115,6 +115,7 @@ class CombatView {
                                     hero.animTimeline = new TimelineMax();
                                 }
                                 hero.isAiming = true;
+                                hero.aimingStarted = performance.now();
                                 const fadeTime = 0.2;
                                 if(sceneState.players.hero.anims.idle.isRunning()) {
                                     const from = sceneState.players.hero.anims.idle;
@@ -198,6 +199,17 @@ class CombatView {
                                         turnAmount = normalDiff;
                                     }
                                 }
+                                if(hero.moving && turnAmount > Math.PI / 2) {
+                                    // Make the hero walk backwards
+                                    console.log('backwards walk', hero.dir);
+                                    hero.moveBackwards = true;
+                                } else if(hero.moving) {
+                                    // Continue with hero movement
+                                    console.log('frontwards walk', hero.dir);
+                                    hero.moveBackwards = false;
+                                } else {
+                                    hero.moveBackwards = false;
+                                }
                                 const turnTimeScale = turnAmount / Math.PI * 0.2;
                                 hero.rotationTime = turnTimeScale;
                                 if(hero.rotationAnims[hero.curRotationAnim]) {
@@ -211,6 +223,7 @@ class CombatView {
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
                             hero = sceneState.players.hero;
                             hero.isAiming = false;
+                            hero.aimingStarted = 0;
                             const fadeTime = 0.3;
                             let from, from2, to;
                             if(hero.moving) {

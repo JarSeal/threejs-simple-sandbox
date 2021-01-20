@@ -21,5 +21,8 @@ export const getPlayer = () => {
         newRoute: [],
         mesh: null,
         rotationAnims: {},
+        isAiming: false,
+        aimingStarted: 0,
+        moveBackwards: false,
     };
 };
