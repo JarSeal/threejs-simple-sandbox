@@ -227,21 +227,7 @@ class CombatView {
                                 hero.animTimeline.kill();
                                 hero.animTimeline = new TimelineMax();
                             }
-                            if(hero.anims.shoot.isRunning()) {
-                                from = hero.anims.shoot;
-                                hero.animTimeline.to(to, fadeTime, {
-                                    weight: 1,
-                                    ease: Sine.easeInOut,
-                                    onUpdate: () => {
-                                        from.weight = 1 - to.weight;
-                                        hero.anims.aim.weight = from.weight;
-                                    },
-                                    onComplete: () => {
-                                        from.weight = 0;
-                                        from.stop();
-                                    }
-                                });
-                            } else if(hero.anims.walkAndAim.weight > 0) {
+                            if(hero.anims.walkAndAim.weight > 0) {
                                 from = hero.anims.walkAndAim;
                                 from2 = hero.anims.aim;
                                 if(from.weight < 1) {

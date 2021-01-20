@@ -116,12 +116,7 @@ class Projectiles {
             ]);
 
             // Player shooting animation:
-            if(!shooter.moving) {
-                shooter.anims.shoot.weight = 1;
-                shooter.anims.shoot.reset();
-                shooter.anims.shoot.play();
-                shooter.anims.shoot.setLoop(THREE.LoopOnce);
-            }
+            shooter.animFns.shotKick.fn(shooter.moving);
 
             tl.to(laser.position, speed, {
                 x: targetPos[0],

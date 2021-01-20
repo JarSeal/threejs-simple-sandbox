@@ -96,7 +96,7 @@ class PlayerController {
         dracoLoader.setDecoderPath('/js/draco/');
         modelLoader.setDRACOLoader(dracoLoader);
         modelLoader.load(
-            'images/objects/characters/basic-hero2.glb',
+            'images/objects/characters/basic-hero.glb',
             (gltf) => {
                 console.log('HERO IMPORT', gltf);
                 //gltf = fixAnimClips(gltf);
@@ -110,21 +110,13 @@ class PlayerController {
                     walk = sceneState.mixer.clipAction(walkAnim),
                     walkAndAimAnim = THREE.AnimationClip.findByName(fileAnimations, 'WalkAndAim'),
                     walkAndAim = sceneState.mixer.clipAction(walkAndAimAnim),
-                    shootAnim = THREE.AnimationClip.findByName(fileAnimations, 'ShootHandGun'),
-                    shoot = sceneState.mixer.clipAction(shootAnim),
-                    shootAnim2 = THREE.AnimationClip.findByName(fileAnimations, 'ShootHandGunUpper'),
-                    shootUpper = sceneState.mixer.clipAction(shootAnim2),
                     aimAnim = THREE.AnimationClip.findByName(fileAnimations, 'AimHandGun'),
                     aim = sceneState.mixer.clipAction(aimAnim);
                 sceneState.players.hero.anims = {
-                    idle, walk, shoot, shootUpper, aim, walkAndAim
+                    idle, walk, aim, walkAndAim
                 };
                 console.log(sceneState.players.hero.anims);
                 sceneState.players.hero.animTimeline = new TimelineMax();
-                sceneState.players.hero.anims.shoot.stop();
-                sceneState.players.hero.anims.shoot.weight = 1;
-                sceneState.players.hero.anims.shootUpper.stop();
-                sceneState.players.hero.anims.shootUpper.weight = 1;
                 sceneState.players.hero.anims.idle.play();
                 sceneState.players.hero.anims.idle.weight = 1;
                 sceneState.players.hero.anims.aim.stop();
@@ -177,12 +169,73 @@ class PlayerController {
                 object.add(shadow);
                 scene.add(object);
                 sceneState.players.hero.mesh = object;
+                sceneState.players.hero.animFns = {
+                    shotKick: this.shootingAnimation(object)
+                };
             },
             () => {},
             (error) => {
                 logger.error('An GLTF loading error (loading hero) happened', error);
             }
         );
+    }
+
+    shootingAnimation(object) {
+        // The nudge kick after a shot:
+        return {
+            timeKick: 0.05,
+            timeReturn: 0.5,
+            upperArmR: object.children[0].getObjectByName('UpperArmR'),
+            upperArmRStartPos: 0.23127223520138918,
+            upperArmRStartPosMoving: -0.1563762787215246,
+            lowerArmR: object.children[0].getObjectByName('LowerArmR'),
+            lowerArmRStartPos: -0.8660703441113196,
+            lowerArmRStartPosMoving: -0.7410378740184024,
+            upperArmL: object.children[0].getObjectByName('UpperArmL'),
+            upperArmLStartPos: 0.11632805687631982,
+            upperArmLStartPosMoving: -0.48482386836748914,
+            lowerArmL: object.children[0].getObjectByName('LowerArmL'),
+            lowerArmLStartPos: 1.5293015255195912,
+            lowerArmLStartPosMoving: 1.5293015255195912,
+            spine: object.children[0].getObjectByName('Spine1'),
+            spineStartPos: 0.03215915581770319,
+            spineStartPosMoving: 7.301161851467171,
+            kickTL: new TimelineMax(),
+            fn: function(moving) {
+                if(this.kickTL._active) this.kickTL.kill();
+                this.kickTL = new TimelineMax();
+                if(moving) {
+                    this.upperArmR.rotation.z = this.upperArmRStartPosMoving;
+                    this.lowerArmR.rotation.z = this.lowerArmRStartPosMoving;
+                    this.upperArmL.rotation.z = this.upperArmLStartPosMoving;
+                    this.kickTL 
+                        .to(this.upperArmR.rotation, this.timeKick, { z: -0.5 }, 0)
+                        .to(this.upperArmR.rotation, this.timeReturn, { z: this.upperArmRStartPosMoving }, this.timeKick)
+                        .to(this.lowerArmR.rotation, this.timeKick, { z: -1 }, 0)
+                        .to(this.lowerArmR.rotation, this.timeReturn, { z: this.lowerArmRStartPosMoving }, this.timeKick)
+                        .to(this.upperArmL.rotation, this.timeKick, { z: 0 }, 0)
+                        .to(this.upperArmL.rotation, this.timeReturn, { z: this.upperArmLStartPosMoving }, this.timeKick)
+                        .to(this.spine.rotation, this.timeKick, { x: -0.15 }, 0)
+                        .to(this.spine.rotation, this.timeReturn, { x: this.spineStartPos }, this.timeKick);
+                } else {
+                    this.upperArmR.rotation.z = this.upperArmRStartPos;
+                    this.lowerArmR.rotation.z = this.lowerArmRStartPos;
+                    this.upperArmL.rotation.z = this.upperArmLStartPos;
+                    this.lowerArmL.rotation.x = this.lowerArmLStartPos;
+                    this.kickTL
+                        .to(this.upperArmR.rotation, this.timeKick, { z: -0.2 }, 0)
+                        .to(this.upperArmR.rotation, this.timeReturn, { z: this.upperArmRStartPos }, this.timeKick)
+                        .to(this.lowerArmR.rotation, this.timeKick, { z: -1 }, 0)
+                        .to(this.lowerArmR.rotation, this.timeReturn, { z: this.lowerArmRStartPos }, this.timeKick)
+                        .to(this.upperArmL.rotation, this.timeKick, { z: 0.8 }, 0)
+                        .to(this.upperArmL.rotation, this.timeReturn, { z: this.upperArmLStartPos }, this.timeKick)
+                        .to(this.lowerArmL.rotation, this.timeKick, { x: 1 }, 0)
+                        .to(this.lowerArmL.rotation, this.timeReturn, { x: this.lowerArmLStartPos }, this.timeKick)
+                        .to(this.spine.rotation, this.timeKick, { x: -0.15 }, 0)
+                        .to(this.spine.rotation, this.timeReturn, { x: this.spineStartPos }, this.timeKick);
+                }
+            }
+        };
     }
 
     getStartingPosition(sceneState, type) {
@@ -264,8 +317,6 @@ class PlayerController {
                             fadeTime = 0.3;
                         }
                         this.sceneState.players.hero.movingInLastTile = false;
-                        this.sceneState.players.hero.anims.shoot.stop();
-                        this.sceneState.players.hero.anims.shoot.weight = 0;
                         this.sceneState.players.hero.anims.aim.stop();
                         this.sceneState.players.hero.anims.aim.weight = 0;
                         const from = this.sceneState.players.hero.anims.idle,
