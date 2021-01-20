@@ -117,6 +117,10 @@ class PlayerController {
                 };
                 console.log(sceneState.players.hero.anims);
                 sceneState.players.hero.animTimeline = new TimelineMax();
+                sceneState.players.hero.anims.data = {
+                    walkTimeScale: 0.96,
+                    walkBackwardsTimeScale: -0.96
+                };
                 sceneState.players.hero.anims.idle.play();
                 sceneState.players.hero.anims.idle.weight = 1;
                 sceneState.players.hero.anims.aim.stop();
@@ -125,8 +129,8 @@ class PlayerController {
                 sceneState.players.hero.anims.walk.weight = 0;
                 sceneState.players.hero.anims.walkAndAim.stop();
                 sceneState.players.hero.anims.walkAndAim.weight = 0;
-                sceneState.players.hero.anims.walk.timeScale = 0.96;
-                sceneState.players.hero.anims.walkAndAim.timeScale = sceneState.players.hero.anims.walk.timeScale;
+                sceneState.players.hero.anims.walk.timeScale = sceneState.players.hero.anims.data.walkTimeScale;
+                sceneState.players.hero.anims.walkAndAim.timeScale = sceneState.players.hero.anims.data.walkTimeScale;
 
                 // ANIMATIONS ARE HANDLED IN HERE:
                 // player-controller.js, calculateRoute (to start walking)
@@ -360,22 +364,25 @@ class PlayerController {
             routeIndex = player.routeIndex,
             ease,
             speed;
-        if(!player.rotationAnim && player.aimingStarted + 2000 < performance.now()) {
+        if(player.aimingStarted + 2500 < performance.now()) {
+            player.moveBackwards = false;
+        }
+        if(!player.rotationAnim) {
             let newDir = calculateAngle(
                 player.pos,
                 [route[routeIndex].x, route[routeIndex].y]
             );
             if(player.moveBackwards && newDir < 0) {
                 newDir += Math.PI;
-                player.anims.walk.timeScale *= -1;
-                player.anims.walkAndAim.timeScale = player.anims.walk.timeScale;
+                player.anims.walk.timeScale = player.anims.data.walkBackwardsTimeScale;
+                player.anims.walkAndAim.timeScale = player.anims.data.walkBackwardsTimeScale;
             } else if(player.moveBackwards && newDir >= 0) {
                 newDir -= Math.PI;
-                player.anims.walk.timeScale = player.anims.walk.timeScale * (-1);
-                player.anims.walkAndAim.timeScale = player.anims.walk.timeScale;
+                player.anims.walk.timeScale = player.anims.data.walkBackwardsTimeScale;
+                player.anims.walkAndAim.timeScale = player.anims.data.walkBackwardsTimeScale;
             } else if(!player.moveBackwards) {
-                player.anims.walk.timeScale = Math.abs(player.anims.walk.timeScale);
-                player.anims.walkAndAim.timeScale = player.anims.walk.timeScale;
+                player.anims.walk.timeScale = player.anims.data.walkTimeScale;
+                player.anims.walkAndAim.timeScale = player.anims.data.walkTimeScale;
             }
             if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
                 // prevent unnecessary spin moves :)
@@ -430,6 +437,10 @@ class PlayerController {
                     player.route = [];
                     player.routeIndex = 0;
                     player.curSpeed = 0;
+                    if(dx === route[routeIndex].xInt && dy === route[routeIndex].yInt) {
+                        this.endPlayerAnimations(routeLength, true);
+                        return;
+                    }
                     this.calculateRoute('hero', dx, dy, true);
                 } else {
                     player.routeIndex++;
@@ -461,6 +472,7 @@ class PlayerController {
 
     endPlayerAnimations(routeLength, lastTile) {
         this.sceneState.players.hero.movingInLastTile = lastTile;
+        if(lastTile) this.sceneState.players.hero.moveBackwards = false;
         if (this.sceneState.players.hero.anims.walk.weight > 0 ||
             this.sceneState.players.hero.anims.walkAndAim.weight > 0) {
             let fadeTime = 0.7;

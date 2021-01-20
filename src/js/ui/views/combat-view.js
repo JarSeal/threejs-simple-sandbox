@@ -103,6 +103,7 @@ class CombatView {
                         sceneState.ui.curSecondaryTarget = null;
                     },
                     actionPhase: 0,
+                    halfPI: Math.PI / 2,
                     action: function(sceneState, calculateAngle) {
                         if(!sceneState.players.hero || !sceneState.players.hero.mesh || !sceneState.players.hero.mesh.children || !sceneState.players.hero.mesh.children.length) return;
                         // 3D layer change:
@@ -199,14 +200,9 @@ class CombatView {
                                         turnAmount = normalDiff;
                                     }
                                 }
-                                if(hero.moving && turnAmount > Math.PI / 2) {
-                                    // Make the hero walk backwards
-                                    console.log('backwards walk', hero.dir);
+                                if ((hero.moving && !hero.moveBackwards && turnAmount > this.halfPI) ||
+                                    (hero.moving && hero.moveBackwards && turnAmount <= this.halfPI)) {
                                     hero.moveBackwards = true;
-                                } else if(hero.moving) {
-                                    // Continue with hero movement
-                                    console.log('frontwards walk', hero.dir);
-                                    hero.moveBackwards = false;
                                 } else {
                                     hero.moveBackwards = false;
                                 }
@@ -223,7 +219,7 @@ class CombatView {
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
                             hero = sceneState.players.hero;
                             hero.isAiming = false;
-                            hero.aimingStarted = 0;
+                            hero.aimingStarted = performance.now() - 2000;
                             const fadeTime = 0.3;
                             let from, from2, to;
                             if(hero.moving) {
