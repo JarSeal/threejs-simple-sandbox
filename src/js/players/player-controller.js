@@ -366,6 +366,8 @@ class PlayerController {
             speed;
         if(player.aimingStarted + 2500 < performance.now()) {
             player.moveBackwards = false;
+            player.anims.walk.timeScale = player.anims.data.walkTimeScale;
+            player.anims.walkAndAim.timeScale = player.anims.data.walkTimeScale;
         }
         if(!player.rotationAnim) {
             let newDir = calculateAngle(
@@ -506,6 +508,7 @@ class PlayerController {
                 this.sceneState.players.hero.animTimeline.kill();
                 this.sceneState.players.hero.animTimeline = new TimelineMax();
             }
+            const spine = this.sceneState.players.hero.mesh.children[0].getObjectByName('Spine1');
             this.sceneState.players.hero.animTimeline.to(to, fadeTime, {
                 weight: 1,
                 ease: Sine.easeInOut,
@@ -518,6 +521,9 @@ class PlayerController {
                     }
                     if(lastTile && !this.sceneState.players.hero.isAiming && from3.weight > 0) {
                         from3.weight = 1 - to.weight;
+                    }
+                    if(this.sceneState.players.hero.spineRotated) {
+                        spine.rotation.y = this.sceneState.players.hero.spineRotated;
                     }
                 },
                 onComplete: () => {
@@ -538,6 +544,20 @@ class PlayerController {
                             if(lastTile) {
                                 this.sceneState.players.hero.movingInLastTile = false;
                             }
+                        }
+                        if(this.sceneState.players.hero.spineRotated) {
+                            spine.rotation.y = this.sceneState.players.hero.spineRotated;
+                            new TimelineMax().to(
+                                spine.rotation,
+                                0.2,
+                                {
+                                    y: 0,
+                                    ease: Sine.easeInOut,
+                                    onUpdate: () => {
+                                        this.sceneState.players.hero.spineRotated = spine.rotation.y;
+                                    },
+                                }
+                            );
                         }
                     }
                 }
