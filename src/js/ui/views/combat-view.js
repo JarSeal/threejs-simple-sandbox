@@ -118,52 +118,104 @@ class CombatView {
                                 hero.isAiming = true;
                                 hero.aimingStarted = performance.now();
                                 const fadeTime = 0.2;
-                                if(sceneState.players.hero.anims.idle.isRunning()) {
-                                    const from = sceneState.players.hero.anims.idle;
-                                    let to = sceneState.players.hero.anims.aim,
-                                        from2;
-                                    if (sceneState.players.hero.anims.walk.weight > 0 &&
-                                        !sceneState.players.hero.movingInLastTile) {
-                                        to = sceneState.players.hero.anims.walkAndAim;
-                                        from2 = sceneState.players.hero.anims.walk;
-                                        from2.weight = 0;
-                                    } else {
-                                        if(sceneState.players.hero.movingInLastTile) {
-                                            sceneState.players.hero.anims.walk.weight = 0;
-                                            sceneState.players.hero.anims.walk.stop();
-                                            sceneState.players.hero.anims.walkAndAim.weight = 0;
-                                            sceneState.players.hero.anims.walkAndAim.stop();
-                                        }
-                                        to.play();
+                                if(hero.anims.idle.isRunning()) {
+                                    if(hero.animTimeline._active) {
+                                        hero.animTimeline.kill();
+                                        hero.animTimeline = new TimelineMax();
                                     }
-                                    hero.animTimeline.to(to, fadeTime, {
-                                        weight: 1,
-                                        ease: Sine.easeInOut,
-                                        onUpdate: () => {
-                                            from.weight = 1 - to.weight;
-                                            if(from2) {
-                                                from2.weight = 0;
+                                    if(!hero.moving) {
+                                        const from = hero.anims.idle;
+                                        let to = hero.anims.aim,
+                                            from2;
+                                        if (hero.anims.walk.weight > 0 &&
+                                            !hero.movingInLastTile) {
+                                            to = hero.anims.walkAndAim;
+                                            from2 = hero.anims.walk;
+                                            from2.weight = 0;
+                                        } else {
+                                            if(hero.movingInLastTile) {
+                                                hero.anims.walk.weight = 0;
+                                                hero.anims.walk.stop();
+                                                hero.anims.walkAndAim.weight = 0;
+                                                hero.anims.walkAndAim.stop();
                                             }
-                                        },
-                                        onComplete: () => {
-                                            from.weight = 0;
-                                            from.stop();
-                                            if(from2) {
-                                                from2.weight = 0;
-                                            }
+                                            to.play();
                                         }
-                                    });
-                                } else if(sceneState.players.hero.anims.walk.isRunning()) {
-                                    const from = sceneState.players.hero.anims.walk,
-                                        to = sceneState.players.hero.anims.walkAndAim;
+                                        hero.animTimeline.to(to, fadeTime, {
+                                            weight: 1,
+                                            ease: Sine.easeInOut,
+                                            onUpdate: () => {
+                                                from.weight = 1 - to.weight;
+                                                if(from2) {
+                                                    from2.weight = 0;
+                                                }
+                                            },
+                                            onComplete: () => {
+                                                from.weight = 0;
+                                                from.stop();
+                                                if(from2) {
+                                                    from2.weight = 0;
+                                                }
+                                            }
+                                        });
+                                    } else {
+                                        const from = sceneState.players.hero.anims.idle,
+                                            to = sceneState.players.hero.anims.walkAndAim,
+                                            from2 = hero.anims.walk,
+                                            from3 = hero.anims.aim,
+                                            from4 = hero.anims.idle;
+                                        hero.animTimeline.to(to, fadeTime, {
+                                            weight: 1,
+                                            ease: Sine.easeInOut,
+                                            onUpdate: () => {
+                                                from.weight = 1 - to.weight;
+                                                if(from2.weight > 0) {
+                                                    from2.weight = 0;
+                                                }
+                                                if(from3.weight > 0) {
+                                                    from3.weight = 0;
+                                                    from3.stop();
+                                                }
+                                                if(from4.weight > 0) {
+                                                    from4.weight = 0;
+                                                    from4.stop();
+                                                }
+                                            },
+                                            onComplete: () => {
+                                                from.weight = 0;
+                                                from.stop();
+                                            }
+                                        });
+                                    }
+                                } else if(hero.anims.walk.isRunning()) {
+                                    if(hero.animTimeline._active) {
+                                        hero.animTimeline.kill();
+                                        hero.animTimeline = new TimelineMax();
+                                    }
+                                    const from = hero.anims.walk,
+                                        to = hero.anims.walkAndAim,
+                                        from2 = hero.anims.aim,
+                                        from3 = hero.anims.idle;
                                     hero.animTimeline.to(to, fadeTime, {
                                         weight: 1,
                                         ease: Sine.easeInOut,
                                         onUpdate: () => {
                                             from.weight = 1 - to.weight;
+                                            if(from2.weight > 0) {
+                                                from2.weight = 0;
+                                                from2.stop();
+                                            }
+                                            if(from3.weight > 0) {
+                                                from3.weight = 0;
+                                                from3.stop();
+                                            }
                                         },
                                         onComplete: () => {
                                             from.weight = 0;
+                                            from2.weight = 0;
+                                            from2.stop();
+                                            from3.weight = 0;
+                                            from3.stop();
                                         }
                                     });
                                 }

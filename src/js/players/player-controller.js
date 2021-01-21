@@ -423,6 +423,21 @@ class PlayerController {
             onUpdate: () => {
                 player.microPos = [player.mesh.position.x, player.mesh.position.y, player.pos[2]];
                 player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
+                if(player.isAiming) {
+                    if(player.anims.walkAndAim.weight === 0) {
+                        player.anims.walkAndAim.weight = 1;
+                        player.anims.walk.weight = 0;
+                        player.anims.idle.weight = 0;
+                        player.anims.aim.weight = 0;
+                    }
+                } else {
+                    if(player.anims.walk.weight === 0) {
+                        player.anims.walk.weight = 1;
+                        player.anims.walkAndAim.weight = 0;
+                        player.anims.idle.weight = 0;
+                        player.anims.aim.weight = 0;
+                    }
+                }
             },
             onComplete: () => {
                 player.pos = [route[routeIndex].xInt, route[routeIndex].yInt, player.pos[2]];
