@@ -438,6 +438,7 @@ class PlayerController {
                     player.routeIndex = 0;
                     player.curSpeed = 0;
                     if(dx === route[routeIndex].xInt && dy === route[routeIndex].yInt) {
+                        this.sceneState.consequences.stopPlayerMovement(player.id, [dx, dy]);
                         this.endPlayerAnimations(routeLength, true);
                         return;
                     }

@@ -44,6 +44,15 @@ class Consequences {
         return this.movingWorker;
     }
 
+    stopPlayerMovement(playerId, tile) {
+        this.players[playerId] = [{
+            pos: tile,
+            posInt: tile,
+            enterTime: this.initTime + performance.now() / 1000,
+            leaveTime: 0
+        }];
+    }
+
     movePlayerCallBack(data) {
         this.players = data.players;
         this.doors = data.doors;
