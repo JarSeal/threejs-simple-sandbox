@@ -3,7 +3,7 @@ import { TimelineMax, Sine, Power0 } from 'gsap-ssr';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { astar, Graph } from '../vendor/astar.js';
-import { calculateAngle, calculateAngle2 } from '../util.js';
+import { calculateNewAngleForPlayer } from '../util.js';
 import Projectiles from './projectiles.js';
 import { logger } from '../util.js';
 
@@ -329,10 +329,10 @@ class PlayerController {
             player.anims.walkAndAim.timeScale = player.anims.data.walkTimeScale;
         }
         if(!player.rotationAnim) {
-            let newDir = calculateAngle(
-                player.pos,
-                [route[routeIndex].x, route[routeIndex].y]
-            );
+            const target = [route[routeIndex].x, route[routeIndex].y];
+            const calculatedAngles = calculateNewAngleForPlayer(player, target);
+            let angle = calculatedAngles.angle,
+                newDir = calculatedAngles.fixedAngle;
             if(player.moveBackwards && newDir < 0) {
                 newDir += Math.PI;
                 player.anims.walk.timeScale = player.anims.data.walkBackwardsTimeScale;
@@ -345,17 +345,12 @@ class PlayerController {
                 player.anims.walk.timeScale = player.anims.data.walkTimeScale;
                 player.anims.walkAndAim.timeScale = player.anims.data.walkTimeScale;
             }
-            if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
-                // prevent unnecessary spin moves :)
-                newDir < 0
-                    ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2
-                    : player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * 2;
-            }
             tlRotate.to(player.mesh.rotation, 0.3, {
                 z: newDir,
                 ease: Sine.easeInOut,
                 onComplete: () => {
-                    player.dir = newDir;
+                    player.dir = angle;
+                    player.mesh.rotation.z = angle;
                 }
             });
         }
@@ -764,60 +759,10 @@ class PlayerController {
     }
 
     startFiring(player, target, sceneState) {
-        // Calculate angle for player to turn to
-        const angle = calculateAngle2(player.pos, target),
-            curAngle = player.mesh.rotation.z;
-        // prevent unnecessary spin moves :)
-        let difference, newExessiveAngle, exessDiff, normalDiff,
-            turnAmount = curAngle > angle ? curAngle - angle : angle - curAngle;
-        // if(angle < 0 && curAngle > 0) {
-        //     difference = Math.PI - curAngle;
-        //     newExessiveAngle = -Math.PI - difference;
-        //     exessDiff = Math.abs(newExessiveAngle - angle);
-        //     normalDiff = Math.abs(curAngle - angle);
-        //     if(exessDiff < normalDiff) {
-        //         player.mesh.rotation.z = newExessiveAngle;
-        //         turnAmount = exessDiff;
-        //     } else {
-        //         turnAmount = normalDiff;
-        //     }
-        // }
-        // if(angle > 0 && curAngle < 0) {
-        //     difference = Math.PI - Math.abs(curAngle);
-        //     newExessiveAngle = difference + Math.PI;
-        //     exessDiff = Math.abs(newExessiveAngle - angle);
-        //     normalDiff = Math.abs(curAngle - angle);
-        //     if(exessDiff < normalDiff) {
-        //         player.mesh.rotation.z = newExessiveAngle;
-        //         turnAmount = exessDiff;
-        //     } else {
-        //         turnAmount = normalDiff;
-        //     }
-        // }
-        if(angle < 0 && curAngle > 0) {
-            difference = Math.PI - curAngle;
-            newExessiveAngle = -Math.PI - difference;
-            exessDiff = Math.abs(newExessiveAngle - angle);
-            normalDiff = Math.abs(curAngle - angle);
-            if(exessDiff < normalDiff) {
-                player.mesh.rotation.z = newExessiveAngle;
-                turnAmount = exessDiff;
-            } else {
-                turnAmount = normalDiff;
-            }
-        }
-        if(angle > 0 && curAngle < 0) {
-            difference = Math.PI - Math.abs(curAngle);
-            newExessiveAngle = difference + Math.PI;
-            exessDiff = Math.abs(newExessiveAngle - angle);
-            normalDiff = Math.abs(curAngle - angle);
-            if(exessDiff < normalDiff) {
-                player.mesh.rotation.z = newExessiveAngle;
-                turnAmount = exessDiff;
-            } else {
-                turnAmount = normalDiff;
-            }
-        }
+        const calculatedAngles = calculateNewAngleForPlayer(player, target),
+            angle = calculatedAngles.angle,
+            fixedAngle = calculatedAngles.fixedAngle,
+            turnAmount = calculatedAngles.turnAmount;
         if ((player.moving && !player.moveBackwards && turnAmount > this.halfPI) ||
             (player.moving && player.moveBackwards && turnAmount <= this.halfPI)) {
             player.moveBackwards = true;
@@ -904,10 +849,11 @@ class PlayerController {
                 player.mesh.rotation,
                 turnTimeScale,
                 {
-                    z: angle,
+                    z: fixedAngle,
                     ease: Sine.easeInOut,
                     onComplete: () => {
                         player.dir = angle;
+                        player.mesh.rotation.z = angle;
                         player.rotationAnim = false;
                         if(player.curRotationAnim && player.rotationAnims[player.curRotationAnim]) {
                             player.rotationAnims[player.curRotationAnim].done = true;
