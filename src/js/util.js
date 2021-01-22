@@ -1,6 +1,40 @@
+export const HALF_PI = 1.5707963267948966;
 
 export const calculateAngle = (startPos, endPos) => {
-    return Math.atan2(endPos[0] - startPos[0], startPos[1] - endPos[1]);
+    let angle = Math.atan2(startPos[0] - endPos[0], startPos[1] - endPos[1]);
+    if(angle < 0) {
+        angle = Math.abs(angle);
+    } else if(angle > 0) {
+        angle = Math.PI - angle + Math.PI;
+    }
+    return angle;
+};
+
+export const calculateNewAngleForPlayer = (player, endPos) => {
+    const startPos = player.pos;
+    const angle = calculateAngle(startPos, endPos);
+    let curAngle = player.mesh.rotation.z,
+        difference,
+        turnAmount = curAngle > angle ? curAngle - angle : angle - curAngle;
+    difference = Math.abs(angle - curAngle);
+    let fixedAngle = angle;
+    // prevent unnecessary spin moves :)
+    if(difference > Math.PI) {
+        if(angle > curAngle) {
+            curAngle = Math.PI * 2 + curAngle;
+            player.mesh.rotation.z = curAngle;
+            turnAmount = curAngle - fixedAngle;
+        } else {
+            fixedAngle = Math.PI * 2 + angle;
+            turnAmount = fixedAngle - curAngle;
+        }
+    }
+    return {
+        angle,
+        curAngle,
+        fixedAngle,
+        turnAmount
+    };
 };
 
 export const randomInt = (from, to) => {

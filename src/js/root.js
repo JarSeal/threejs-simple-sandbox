@@ -34,7 +34,7 @@ class TileMapRoot {
             tileMap: [],
             astarMap: [],
             uniforms: {},
-            mixer: undefined,
+            mixers: [],
             clock: new THREE.Clock(),
             timeSpeed: 1,
             particles: 0,
@@ -130,7 +130,7 @@ class TileMapRoot {
             sceneController.doLoops();
             appUiLayer.renderUi();
             this.setShaderTime(delta);
-            if(this.sceneState.mixer) this.sceneState.mixer.update(delta);
+            this.updateMixers(delta);
             for(renderCallerI=0; renderCallerI<renderCalls.length; renderCallerI++) {
                 renderCalls[renderCallerI](delta);
             }
@@ -257,6 +257,13 @@ class TileMapRoot {
         stats.setMode(settings.debugStatsMode === -1 ? 0 : settings.debugStatsMode);
 
         this.sceneState.updateSettingsNextRender = false;
+    }
+
+    updateMixers(delta) {
+        const mixers = this.sceneState.mixers;
+        mixers.forEach(mixer => {
+            mixer.update(delta);
+        });
     }
 }
 

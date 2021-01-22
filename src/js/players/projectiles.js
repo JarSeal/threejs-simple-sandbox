@@ -48,16 +48,7 @@ class Projectiles {
         VisualEffects.createEffect('sparks', 'wallHit');
     }
 
-    shootProjectile(shooter, target, scene, sceneState/*, AppUiLayer*/) {
-        
-        // AppUiLayer.logMessage(
-        //     performance.now(),
-        //     sceneState.players.hero.name,
-        //     'Shots fired..',
-        //     'S'
-        // );
-
-        shooter.aimingStarted = performance.now();
+    shootProjectile(shooter, target, scene, sceneState) {
         const from = [shooter.microPos[0], shooter.microPos[1], this.shotHeight];
         if(from[0] < -256 || from[0] > 256 || from[1] < -256 || from[1] > 256) return; // Out of play area
         if((from[0] === target[0] && from[1] === target[1]) || (shooter.pos[0] === target[0] && shooter.pos[1] === target[1])) return; // Do not shoot your own legs
@@ -71,8 +62,7 @@ class Projectiles {
         direction.subVectors(new THREE.Vector3(target[0], target[1], this.shotHeight), startPoint).normalize();
         raycaster.set(startPoint, direction, true);
         let intersects = raycaster.intersectObject(hitObject, true);
-        let angle = 0,
-            name = 'proje-' + shooter.id + '-' + performance.now();
+        let name = 'proje-' + shooter.id + '-' + performance.now();
         let tileMap = sceneState.shipMap[sceneState.floor];
         let targetPos = [];
         let projectileLife = this.getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance);
@@ -83,13 +73,12 @@ class Projectiles {
 
         //let helperLine = this.showProjectileHelper(startPoint, intersects, scene);
         targetPos = [intersects[0].point.x, intersects[0].point.y];
-        angle = calculateAngle(from, targetPos);
 
         const speed = intersects[0].distance * speedPerTile;
 
         const laser = this.VisualEffects.getEffectMesh('projectile_redBlast', name);
         laser.name = name;
-        laser.rotation.z = angle;
+        laser.rotation.z = calculateAngle(from, targetPos);
         laser.position.set(
             from[0],
             from[1],
@@ -111,11 +100,6 @@ class Projectiles {
                 'whoosh-001'
             ]);
 
-            // Player shooting animation:
-            if(shooter.animFns && shooter.animFns.shotKick) {
-                shooter.animFns.shotKick.fn(shooter.moving);
-            }
-
             tl.to(laser.position, speed, {
                 x: targetPos[0],
                 y: targetPos[1],
@@ -128,12 +112,6 @@ class Projectiles {
                         tl.kill();
                         return;
                     }
-                    // const timeNow = this.sceneState.initTime.s + performance.now() / 1000,
-                    //     lastTile = projectileLife.route[projectileLife.route.length - 1];
-                    // if(!lastTile || timeNow > lastTile.leaveTime + 0.5) {
-                    //     this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
-                    //     tl.kill();
-                    // }
                 },
                 onComplete: () => {
                     // scene.remove(helperLine);
@@ -342,16 +320,17 @@ class Projectiles {
             if(from[1] < target[1] && from[0] > target[0]) { dir = 3; } else
             if(from[1] < target[1] && from[0] < target[0]) { dir = 5; } else
             if(from[1] > target[1] && from[0] < target[0]) { dir = 7; }
-            angle = calculateAngle(from, target) + 1.5708;
-            let xLength = Math.abs(Math.cos(angle) * maxDistance);
-            let yLength = Math.abs(Math.sin(angle) * maxDistance);
+            angle = calculateAngle(from, target);
+            let xLength = Math.abs(Math.sin(angle) * maxDistance);
+            let yLength = Math.abs(Math.cos(angle) * maxDistance);
             dir > 4 ? targetPos[0] = from[0] + xLength : targetPos[0] = from[0] - xLength;
             dir > 2 && dir < 6 ? targetPos[1] = from[1] + yLength : targetPos[1] = from[1] - yLength;
         }
         return {point: {x: targetPos[0], y: targetPos[1]}, distance: maxDistance, dir: dir};
     }
 
-    getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance) {        let noHit = false;
+    getProjectileLife(intersects, from, target, speedPerTile, tileMap, maxDistance) {
+        let noHit = false;
         if(!intersects.length || intersects[0].distance > maxDistance) {
             // Does not hit anything
             intersects = [];

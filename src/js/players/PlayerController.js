@@ -3,160 +3,113 @@ import { TimelineMax, Sine, Power0 } from 'gsap-ssr';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { astar, Graph } from '../vendor/astar.js';
-import { getPlayer } from '../data/dev-player.js'; // GET NEW PLAYER DUMMY DATA HERE
-import { calculateAngle } from '../util.js';
+import { HALF_PI, calculateNewAngleForPlayer } from '../util.js';
 import Projectiles from './projectiles.js';
-import { logger, fixAnimClips } from '../util.js';
+import { logger } from '../util.js';
 
 class PlayerController {
-    constructor(scene, sceneState, doorAnimationController, SoundController, VisualEffects) {
+    constructor(data, scene, sceneState, doorAnimationController, SoundController, VisualEffects) {
+        this.playerId = data.id;
+        this.data = data;
+        this.scene = scene;
         this.sceneState = sceneState;
-        this.chars = {};
         this.doorAnims = doorAnimationController;
         this.SoundController = SoundController;
         this.projectiles = new Projectiles(scene, sceneState, SoundController, VisualEffects);
+        this.TWO_PI = Math.PI * 2;
+        this.createNewPlayer(data, scene, sceneState);
     }
 
-    createNewPlayer(scene, renderer, sceneState, type) {
-        switch(type) {
+    createNewPlayer(data, scene, sceneState) {
+        switch(data.type) {
         case 'hero':
-            this.createHero(sceneState, scene);
+            if(!sceneState.players.hero) {
+                this.createHero(data, scene, sceneState, 'hero');
+            } else {
+                logger.error('Hero cannot be initiated twice (error at PlayerController -> createNewPlayer).');
+            }
+            break;
+        case 'npc':
+            this.createHero(data, scene, sceneState, data.id);
             break;
         default:
+            logger.error('Player type was not recognized (error at PlayerController -> createNewPlayer).');
             return;
         }
     }
 
-    createHero(sceneState, scene) {
-        let hero = getPlayer();
-        sceneState.players.hero = hero;
-        sceneState.players.hero.pos = [35,43,0];
-        sceneState.players.hero.microPos = [35,43,0];
-        sceneState.consequences.addPlayer(sceneState.players.hero);
-        
-        // TEMP DUDE
-        let tempDudePos = [33, 43];
-        sceneState.consequences.addPlayer({id:'testPLAYER',pos:[tempDudePos[0], tempDudePos[1],0]}); // TEMP PLAYER
-        let tempGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
-        let tempMaterial = new THREE.MeshLambertMaterial({color: 0x333333});
-        let tempMesh = new THREE.Mesh(tempGeometry, tempMaterial);
-        tempMesh.scale.x = 0.5;
-        tempMesh.scale.y = 0.5;
-        tempMesh.position.x = tempDudePos[0];
-        tempMesh.position.y = tempDudePos[1];
-        tempMesh.position.z = 1;
-        scene.add(tempMesh);
-        
-        let group = new THREE.Group();
-        let heroGeometry = new THREE.BoxBufferGeometry(1,1,hero.height);
-        let heroMaterial = new THREE.MeshLambertMaterial({color: 0xff0088});
-        let heroMesh = new THREE.Mesh(heroGeometry, heroMaterial);
-        heroMesh.scale.x = 0.5;
-        heroMesh.scale.y = 0.5;
-        group.add(heroMesh);
-
-        let pointerGeo = new THREE.BoxBufferGeometry(0.2,0.2,0.2);
-        let pointerMat = new THREE.MeshLambertMaterial({color: 0x550066});
-        let pointerMesh = new THREE.Mesh(pointerGeo, pointerMat);
-        pointerMesh.position.z = hero.height / 2;
-        pointerMesh.position.y = -0.2;
-
-        group.add(pointerMesh);
-
+    createHero(data, scene, sceneState, handle) {
+        sceneState.players[handle] = data;
+        sceneState.players[handle].startAiming = this.startAiming;
+        sceneState.players[handle].endAiming = this.endAiming;
+        sceneState.players[handle].startFiring = this.startFiring;
+        sceneState.consequences.addPlayer(data);
         this.importCharModel(scene, sceneState);
-
-        group.position.x = sceneState.players.hero.pos[0];
-        group.position.y = sceneState.players.hero.pos[1];
-        group.position.z = 0.5;
-        group.rotation.z = hero.dir;
-
-        //scene.add(group);
-        //sceneState.players.hero.mesh = group;
     }
 
     importCharModel(scene, sceneState) {
-        let modelLoader = new GLTFLoader(),
+        const modelLoader = new GLTFLoader(),
             dracoLoader = new DRACOLoader(),
             textureLoader = new THREE.TextureLoader();
         const heroTexture = textureLoader.load('/images/objects/characters/basic-hero-clothes.png');
-        const pisa = ['nx.png', 'px.png', 'pz.png', 'nz.png', 'py.png', 'ny.png'];
-        const test = [
-            'envMapTestNegY.jpg',
-            'envMapTestNegY.jpg',
-            'envMapTestPosX.jpg',
-            'envMapTestPosZ.jpg',
-            'envMapTestPosZ.jpg',
-            'envMapTestPosZ.jpg',
-        ];
-        const envMap = new THREE.CubeTextureLoader()
-            .setPath('/images/objects/characters/envMapTest2/')
-            .load(test, () => {
-                envMap.encoding = THREE.sRGBEncoding;
-            });
         dracoLoader.setDecoderPath('/js/draco/');
         modelLoader.setDRACOLoader(dracoLoader);
         modelLoader.load(
             'images/objects/characters/basic-hero.glb',
             (gltf) => {
                 console.log('HERO IMPORT', gltf);
-                //gltf = fixAnimClips(gltf);
-                let charId = 'hero',
-                    object = gltf.scene;
-                sceneState.mixer = new THREE.AnimationMixer(object);
-                let fileAnimations = gltf.animations,
+                const object = gltf.scene;
+                object.name = this.playerId;
+                const mixer = new THREE.AnimationMixer(object);
+                const fileAnimations = gltf.animations,
                     idleAnim = THREE.AnimationClip.findByName(fileAnimations, 'Idle'),
-                    idle = sceneState.mixer.clipAction(idleAnim),
+                    idle = mixer.clipAction(idleAnim),
                     walkAnim = THREE.AnimationClip.findByName(fileAnimations, 'Walk'),
-                    walk = sceneState.mixer.clipAction(walkAnim),
+                    walk = mixer.clipAction(walkAnim),
                     walkAndAimAnim = THREE.AnimationClip.findByName(fileAnimations, 'WalkAndAim'),
-                    walkAndAim = sceneState.mixer.clipAction(walkAndAimAnim),
+                    walkAndAim = mixer.clipAction(walkAndAimAnim),
                     aimAnim = THREE.AnimationClip.findByName(fileAnimations, 'AimHandGun'),
-                    aim = sceneState.mixer.clipAction(aimAnim);
-                sceneState.players.hero.anims = {
+                    aim = mixer.clipAction(aimAnim);
+                sceneState.mixers.push(mixer);
+                this.data.anims = {
                     idle, walk, aim, walkAndAim
                 };
-                console.log(sceneState.players.hero.anims);
-                sceneState.players.hero.animTimeline = new TimelineMax();
-                sceneState.players.hero.anims.data = {
+                console.log(this.data.anims);
+                this.data.animTimeline = new TimelineMax();
+                this.data.anims.data = {
                     walkTimeScale: 0.96,
-                    walkBackwardsTimeScale: -0.96
+                    walkBackwardsTimeScale: -0.96,
                 };
-                sceneState.players.hero.anims.idle.play();
-                sceneState.players.hero.anims.idle.weight = 1;
-                sceneState.players.hero.anims.aim.stop();
-                sceneState.players.hero.anims.aim.weight = 0;
-                sceneState.players.hero.anims.walk.stop();
-                sceneState.players.hero.anims.walk.weight = 0;
-                sceneState.players.hero.anims.walkAndAim.stop();
-                sceneState.players.hero.anims.walkAndAim.weight = 0;
-                sceneState.players.hero.anims.walk.timeScale = sceneState.players.hero.anims.data.walkTimeScale;
-                sceneState.players.hero.anims.walkAndAim.timeScale = sceneState.players.hero.anims.data.walkTimeScale;
+                this.data.anims.idle.play();
+                this.data.anims.idle.weight = 1;
+                this.data.anims.aim.stop();
+                this.data.anims.aim.weight = 0;
+                this.data.anims.walk.stop();
+                this.data.anims.walk.weight = 0;
+                this.data.anims.walkAndAim.stop();
+                this.data.anims.walkAndAim.weight = 0;
+                this.data.anims.walk.timeScale = this.data.anims.data.walkTimeScale;
+                this.data.anims.walkAndAim.timeScale = this.data.anims.data.walkTimeScale;
 
                 // ANIMATIONS ARE HANDLED IN HERE:
-                // player-controller.js, calculateRoute (to start walking)
-                // player-controller.js, newMove (to end walking)
-                // projectiles.js, shootProjectile (to play shooting nudge)
-                // ui/views/combat-view.js, uiData.action (to aim and return to idle or walk)
-                this.chars[charId] = {
-                    object: object,
-                    anims: gltf.animations,
-                };
+                // calculateRoute() (to start walking)
+                // newMove() (to end walking)
+                // fire() method (to play shooting nudge)
+                // startAiming()
+                // endAiming()
+                // startFiring() (does the rotate and backwards walk checks)
                 object.scale.set(0.1214, 0.1214, 0.1214);
-                object.position.x = sceneState.players.hero.pos[0];
-                object.position.y = sceneState.players.hero.pos[1];
+                object.position.x = this.data.pos[0];
+                object.position.y = this.data.pos[1];
                 object.position.z = 0;
-                object.rotation.z = sceneState.players.hero.dir;
+                object.rotation.z = this.data.dir;
                 object.traverse(o => {
                     if (o.isMesh) {
                         o.material = new THREE.MeshLambertMaterial({
-                            // color: 'red',
                             map: heroTexture,
                             emissive: 0x442222,
                             emissiveMap: heroTexture,
                             skinning: true,
-                            // envMap: envMap,
-                            // reflectivity: 0.1,
-                            // combine: THREE.AddOperation
                         });
                         o.material.map.flipY = false;
                     }
@@ -172,8 +125,8 @@ class PlayerController {
                 shadow.position.z = 0.25;
                 object.add(shadow);
                 scene.add(object);
-                sceneState.players.hero.mesh = object;
-                sceneState.players.hero.animFns = {
+                this.data.mesh = object;
+                this.data.animFns = {
                     shotKick: this.shootingAnimation(object)
                 };
             },
@@ -248,93 +201,90 @@ class PlayerController {
         // TODO: finish this. We need moduleMap and shipMap to determine actual tile..
     }
 
-    setPositions() {
-        let playerTypes = [
-                'hero',
-            ],
-            playerTypesLength = playerTypes.length,
-            t;
-        for(t=0;t<playerTypesLength;t++) {
-            switch(playerTypes[t]) {
-            case 'hero':
-                this.animateMovement(this.sceneState.players.hero);
-                break;
-            }
+    render() {
+        this.animateMovement(this.data);
+        if(this.data.projectileTarget) {
+            this.fire(this.data, this.data.projectileTarget);
+            this.data.projectileTarget = null;
         }
     }
 
-    fire(player, target, scene, sceneState, AppUiLayer, delay) {
+    fire(player, target) {
+        // Player shooting animation:
+        if(player.animFns && player.animFns.shotKick) {
+            player.animFns.shotKick.fn(player.moving);
+        }
+        const delay = player.rotationTime * 1000;
         setTimeout(() => {
             this.projectiles.shootProjectile(
                 player,
                 target,
-                scene,
-                sceneState,
-                AppUiLayer
+                this.scene,
+                this.sceneState
             );
-        }, delay * 1000);
+        }, delay);
     }
 
     animateMovement(player) {
-        const routeLength = player.route.length;
+        const routeLength = player.route ? player.route.length : 0;
         if(player.moving && routeLength && !player.animatingPos) {
             this.newMove(player);
         }
     }
 
-    calculateRoute(player, dx, dy, newRoute) {
+    calculateRoute(dx, dy, newRoute) {
         const startTime = performance.now(); // Debugging (counting the time to create route)
         const newGraph = new Graph(
             this.sceneState.astar[this.sceneState.floor],
             { diagonal: true }
         );
-        let playerPos = [this.sceneState.players.hero.pos[0], this.sceneState.players.hero.pos[1]];
-        if(this.sceneState.players.hero.moving) {
+        let playerPos = [this.data.pos[0], this.data.pos[1]];
+        if(this.data.moving) {
             playerPos = [
-                this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].xInt,
-                this.sceneState.players.hero.route[this.sceneState.players.hero.routeIndex].yInt,
+                this.data.route[this.data.routeIndex].xInt,
+                this.data.route[this.data.routeIndex].yInt,
             ];
         }
         let resultRoute;
-        if(this.sceneState.players.hero && !this.sceneState.players.hero.moving) {
+        if(this.data && !this.data.moving) {
             resultRoute = astar.search(
                 newGraph, newGraph.grid[playerPos[0]][playerPos[1]],
                 newGraph.grid[dx][dy],
                 { closest: true }
             );
             resultRoute.unshift({x:playerPos[0],y:playerPos[1]});
-            resultRoute = this.predictAndDividePositions(resultRoute, this.sceneState.players.hero);
-            const pid = 'move-' + this.sceneState.players.hero.id + '-' + performance.now();
-            this.sceneState.consequences.movePlayer(this.sceneState.players.hero.id, resultRoute, pid).onmessage = (e) => {
+            resultRoute = this.predictAndDividePositions(resultRoute, this.data);
+            const pid = 'move-' + this.data.id + '-' + performance.now();
+            this.sceneState.consequences.movePlayer(this.data.id, resultRoute, pid).onmessage = (e) => {
                 if(e.data.pid !== pid) return;
                 this.sceneState.consequences.movePlayerCallBack(e.data);
-                this.sceneState.players.hero.route = resultRoute;
-                this.sceneState.players.hero.routeIndex = 0;
-                this.sceneState.players.hero.animatingPos = false;
-                this.sceneState.players.hero.moving = true;
-                if (!this.sceneState.players.hero.anims.walk.isRunning() ||
-                    this.sceneState.players.hero.movingInLastTile ||
+                this.data.route = resultRoute;
+                this.data.routeIndex = 0;
+                this.data.animatingPos = false;
+                this.data.moving = true;
+                if (!this.data.anims.walk.isRunning() ||
+                    this.data.movingInLastTile ||
                     newRoute) {
-                    if(this.sceneState.players.hero.anims.idle.isRunning()) {
+                    if(this.data.anims.idle.isRunning()) {
                         let fadeTime = 0.5;
-                        if(this.sceneState.players.hero.route.length === 2) {
+                        if(this.data.route.length === 2) {
                             fadeTime = 0.3;
                         }
-                        this.sceneState.players.hero.movingInLastTile = false;
-                        this.sceneState.players.hero.anims.aim.stop();
-                        this.sceneState.players.hero.anims.aim.weight = 0;
-                        const from = this.sceneState.players.hero.anims.idle,
-                            to = this.sceneState.players.hero.anims.walk,
-                            to2 = this.sceneState.players.hero.anims.walkAndAim;
-                        if(this.sceneState.players.hero.animTimeline._active) {
-                            this.sceneState.players.hero.animTimeline.kill();
-                            this.sceneState.players.hero.animTimeline = new TimelineMax();
+                        this.data.movingInLastTile = false;
+                        this.data.anims.aim.stop();
+                        this.data.anims.aim.weight = 0;
+                        const from = this.data.anims.idle,
+                            to = this.data.anims.walk,
+                            to2 = this.data.anims.walkAndAim;
+                        if(this.data.animTimeline._active) {
+                            this.data.animTimeline.kill();
+                            this.data.animTimeline = new TimelineMax();
                         }
                         to.reset();
                         to2.reset();
                         to.play();
                         to2.play();
-                        this.sceneState.players.hero.animTimeline.to(from, fadeTime, {
+                        this.data.animTimeline.to(from, fadeTime, {
                             weight: 0,
                             onUpdate: () => {
                                 to.weight = 1 - from.weight;
@@ -347,20 +297,19 @@ class PlayerController {
                     }
                 }
             };
-        } else if(this.sceneState.players.hero.moving) {
+        } else if(this.data.moving) {
             // Route change during movement:
-            this.sceneState.players.hero.newRoute = [dx, dy];
+            this.data.newRoute = [dx, dy];
         }
         const endTime = performance.now(); // FOR DEBUGGING PURPOSES ONLY
         logger.log(dx, dy, 'route', (endTime - startTime) + 'ms', resultRoute, this.sceneState, this.sceneState.shipMap[this.sceneState.floor][dx][dy]);
     }
 
     newMove(player) {
-        // One tile movement
+        // Half a tile movement
         let route = player.route,
             routeLength = route.length,
             tl = new TimelineMax(),
-            tlRotate = new TimelineMax(),
             routeIndex = player.routeIndex,
             ease,
             speed;
@@ -370,35 +319,30 @@ class PlayerController {
             player.anims.walkAndAim.timeScale = player.anims.data.walkTimeScale;
         }
         if(!player.rotationAnim) {
-            let newDir = calculateAngle(
-                player.pos,
-                [route[routeIndex].x, route[routeIndex].y]
-            );
-            if(player.moveBackwards && newDir < 0) {
+            const target = [route[routeIndex].x, route[routeIndex].y];
+            const calculatedAngles = calculateNewAngleForPlayer(player, target);
+            let newDir = calculatedAngles.fixedAngle;
+            if(player.moveBackwards) {
                 newDir += Math.PI;
-                player.anims.walk.timeScale = player.anims.data.walkBackwardsTimeScale;
-                player.anims.walkAndAim.timeScale = player.anims.data.walkBackwardsTimeScale;
-            } else if(player.moveBackwards && newDir >= 0) {
-                newDir -= Math.PI;
+                if(newDir >= this.TWO_PI) {
+                    newDir -= this.TWO_PI;
+                }
                 player.anims.walk.timeScale = player.anims.data.walkBackwardsTimeScale;
                 player.anims.walkAndAim.timeScale = player.anims.data.walkBackwardsTimeScale;
             } else if(!player.moveBackwards) {
                 player.anims.walk.timeScale = player.anims.data.walkTimeScale;
                 player.anims.walkAndAim.timeScale = player.anims.data.walkTimeScale;
             }
-            if(Math.abs(player.mesh.rotation.z - newDir) > Math.PI) {
-                // prevent unnecessary spin moves :)
-                newDir < 0
-                    ? player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * -2
-                    : player.mesh.rotation.z = player.mesh.rotation.z + Math.PI * 2;
+            if(player.dir !== newDir) {
+                new TimelineMax().to(player.mesh.rotation, 0.2, {
+                    z: newDir,
+                    ease: Sine.easeInOut,
+                    onComplete: () => {
+                        player.dir = newDir;
+                        player.mesh.rotation.z = newDir;
+                    }
+                });
             }
-            tlRotate.to(player.mesh.rotation, 0.3, {
-                z: newDir,
-                ease: Sine.easeInOut,
-                onComplete: () => {
-                    player.dir = newDir;
-                }
-            });
         }
         speed = route[routeIndex].speed * this.sceneState.timeSpeed;
         player.curSpeed = speed * this.sceneState.timeSpeed;
@@ -459,7 +403,7 @@ class PlayerController {
                         this.endPlayerAnimations(routeLength, true);
                         return;
                     }
-                    this.calculateRoute('hero', dx, dy, true);
+                    this.calculateRoute(dx, dy, true);
                 } else {
                     player.routeIndex++;
                     // Check if full destination is reached
@@ -474,7 +418,7 @@ class PlayerController {
                             const dx = player.newRoute[0],
                                 dy = player.newRoute[1];
                             player.newRoute = [];
-                            this.calculateRoute('hero', dx, dy, true);
+                            this.calculateRoute(dx, dy, true);
                         } else {
                             this.endPlayerAnimations(routeLength, true);
                         }
@@ -489,27 +433,27 @@ class PlayerController {
     }
 
     endPlayerAnimations(routeLength, lastTile) {
-        this.sceneState.players.hero.movingInLastTile = lastTile;
-        if(lastTile) this.sceneState.players.hero.moveBackwards = false;
-        if (this.sceneState.players.hero.anims.walk.weight > 0 ||
-            this.sceneState.players.hero.anims.walkAndAim.weight > 0) {
+        this.data.movingInLastTile = lastTile;
+        if(lastTile) this.data.moveBackwards = false;
+        if (this.data.anims.walk.weight > 0 ||
+            this.data.anims.walkAndAim.weight > 0) {
             let fadeTime = 0.7;
             if(routeLength === 2) fadeTime = 0.5;
             if(lastTile) fadeTime = 0.3;
-            let to = this.sceneState.players.hero.anims.idle;
-            if(this.sceneState.players.hero.isAiming) {
-                to = this.sceneState.players.hero.anims.aim;
+            let to = this.data.anims.idle;
+            if(this.data.isAiming) {
+                to = this.data.anims.aim;
             }
-            const from = this.sceneState.players.hero.anims.walk,
-                from2 = this.sceneState.players.hero.anims.walkAndAim,
-                from3 = this.sceneState.players.hero.anims.aim;
+            const from = this.data.anims.walk,
+                from2 = this.data.anims.walkAndAim,
+                from3 = this.data.anims.aim;
             to.play();
-            if(this.sceneState.players.hero.animTimeline._active) {
-                this.sceneState.players.hero.animTimeline.kill();
-                this.sceneState.players.hero.animTimeline = new TimelineMax();
+            if(this.data.animTimeline._active) {
+                this.data.animTimeline.kill();
+                this.data.animTimeline = new TimelineMax();
             }
-            const spine = this.sceneState.players.hero.mesh.children[0].getObjectByName('Spine1');
-            this.sceneState.players.hero.animTimeline.to(to, fadeTime, {
+            const spine = this.data.mesh.children[0].getObjectByName('Spine1');
+            this.data.animTimeline.to(to, fadeTime, {
                 weight: 1,
                 ease: Sine.easeInOut,
                 onUpdate: () => {
@@ -519,11 +463,11 @@ class PlayerController {
                     if(from2.weight > 0) {
                         from2.weight = 1 - to.weight;
                     }
-                    if(lastTile && !this.sceneState.players.hero.isAiming && from3.weight > 0) {
+                    if(lastTile && !this.data.isAiming && from3.weight > 0) {
                         from3.weight = 1 - to.weight;
                     }
-                    if(this.sceneState.players.hero.spineRotated) {
-                        spine.rotation.y = this.sceneState.players.hero.spineRotated;
+                    if(this.data.spineRotated) {
+                        spine.rotation.y = this.data.spineRotated;
                     }
                 },
                 onComplete: () => {
@@ -532,21 +476,21 @@ class PlayerController {
                         from2.weight = 0;
                         from.stop();
                         from2.stop();
-                        if(!this.sceneState.players.hero.isAiming) {
+                        if(!this.data.isAiming) {
                             from3.weight = 0;
                             from3.stop();
                         } else {
                             // TODO: THIS MAKES A NUDGE, FIX AT SOME POINT
                             from3.weight = 1;
                             from3.play();
-                            this.sceneState.players.hero.anims.idle.weight = 0;
-                            this.sceneState.players.hero.anims.idle.stop();
+                            this.data.anims.idle.weight = 0;
+                            this.data.anims.idle.stop();
                             if(lastTile) {
-                                this.sceneState.players.hero.movingInLastTile = false;
+                                this.data.movingInLastTile = false;
                             }
                         }
-                        if(this.sceneState.players.hero.spineRotated) {
-                            spine.rotation.y = this.sceneState.players.hero.spineRotated;
+                        if(this.data.spineRotated) {
+                            spine.rotation.y = this.data.spineRotated;
                             new TimelineMax().to(
                                 spine.rotation,
                                 0.2,
@@ -554,7 +498,7 @@ class PlayerController {
                                     y: 0,
                                     ease: Sine.easeInOut,
                                     onUpdate: () => {
-                                        this.sceneState.players.hero.spineRotated = spine.rotation.y;
+                                        this.data.spineRotated = spine.rotation.y;
                                     },
                                 }
                             );
@@ -587,7 +531,7 @@ class PlayerController {
             // Check how much player is behind of eta
             if((route[i].enterTime < timeNow && route[i].leaveTime > timeNow) || (i == routeLength - 1 && route[i].enterTime < timeNow)) {
                 curIndex = i;
-                curPos = [route[i].xInt, route[i].yInt, this.sceneState.players.hero.pos[2]];
+                curPos = [route[i].xInt, route[i].yInt, this.data.pos[2]];
             }
         }
         return {
@@ -693,6 +637,262 @@ class PlayerController {
             parsedRoute.push(route[i]);
         }
         return parsedRoute;
+    }
+
+    startFiring(player, target) {
+        player.aimingStarted = performance.now();
+        const calculatedAngles = calculateNewAngleForPlayer(player, target),
+            angle = calculatedAngles.angle,
+            fixedAngle = calculatedAngles.fixedAngle,
+            turnAmount = calculatedAngles.turnAmount;
+        if ((player.moving && !player.moveBackwards && turnAmount > HALF_PI) ||
+            (player.moving && player.moveBackwards && turnAmount <= HALF_PI)) {
+            player.moveBackwards = true;
+        } else {
+            player.moveBackwards = false;
+        }
+        const turnTimeScale = turnAmount / Math.PI * 0.1;
+        player.rotationTime = turnTimeScale;
+        const spine = player.mesh.children[0].getObjectByName('Spine1');
+        if (player.moving &&
+            !player.moveBackwards &&
+            angle !== player.dir &&
+            player.routeIndex < player.route.length - 2) {
+            let newSpineAngle;
+            player.anims.walk.timeScale = player.anims.data.walkTimeScale;
+            player.anims.walkAndAim.timeScale = player.anims.data.walkTimeScale;
+            if(angle <= 0) {
+                newSpineAngle = angle - player.dir * -1;
+            } else {
+                newSpineAngle = angle - player.dir;
+            }
+            player.rotationAnim = new TimelineMax().to(
+                spine.rotation,
+                turnTimeScale,
+                {
+                    y: newSpineAngle,
+                    ease: Sine.easeInOut,
+                    onUpdate: () => {
+                        player.spineRotated = spine.rotation.y;
+                    },
+                    onComplete: () => {
+                        player.rotationAnim = false;
+                        player.projectileTarget = target;
+                        clearTimeout(player.rotateSpineBackTimer);
+                        player.rotateSpineBackTimer = setTimeout(() => {
+                            new TimelineMax().to(
+                                spine.rotation, 0.5,
+                                {
+                                    y: 0,
+                                    ease: Sine.easeInOut,
+                                    onUpdate: () => {
+                                        player.spineRotated = spine.rotation.y;
+                                    },
+                                    onComplete: () => {
+                                        player.spineRotated = 0;
+                                    }
+                                }
+                            );
+                        }, 500);
+                    }
+                }, turnTimeScale
+            );
+        } else {
+            if(player.spineRotated) {
+                spine.rotation.y = 0;
+            }
+            player.rotationAnim = new TimelineMax().to(
+                player.mesh.rotation,
+                turnTimeScale,
+                {
+                    z: fixedAngle,
+                    ease: Sine.easeInOut,
+                    onComplete: () => {
+                        player.dir = angle;
+                        player.mesh.rotation.z = angle;
+                        player.rotationAnim = false;
+                        player.projectileTarget = target;
+                    }
+                }
+            );
+        }
+    }
+
+    startAiming(player) {
+        if(player.animTimeline._active) {
+            player.animTimeline.kill();
+            player.animTimeline = new TimelineMax();
+        }
+        player.isAiming = true;
+        player.aimingStarted = performance.now();
+        const fadeTime = 0.2;
+        let to, from, from2, from3, from4;
+        if(player.anims.idle.isRunning()) {
+            if(!player.moving) {
+                from = player.anims.idle;
+                to = player.anims.aim;
+                if (player.anims.walk.weight > 0 &&
+                    !player.movingInLastTile) {
+                    to = player.anims.walkAndAim;
+                    from2 = player.anims.walk;
+                    from2.weight = 0;
+                } else {
+                    if(player.movingInLastTile) {
+                        player.anims.walk.weight = 0;
+                        player.anims.walk.stop();
+                        player.anims.walkAndAim.weight = 0;
+                        player.anims.walkAndAim.stop();
+                    }
+                    to.play();
+                }
+                const targetAnim = { target: to.weight };
+                player.animTimeline.to(targetAnim, fadeTime, {
+                    target: 1,
+                    ease: Sine.easeInOut,
+                    onUpdate: () => {
+                        to.weight = targetAnim.target;
+                        from.weight = 1 - to.weight;
+                        if(from2) {
+                            from2.weight = 0;
+                        }
+                    },
+                    onComplete: () => {
+                        from.weight = 0;
+                        from.stop();
+                        if(from2) {
+                            from2.weight = 0;
+                        }
+                    }
+                });
+            } else {
+                from = player.anims.idle;
+                to = player.anims.walkAndAim;
+                from2 = player.anims.walk;
+                from3 = player.anims.aim;
+                from4 = player.anims.idle;
+                const targetAnim = { target: to.weight };
+                player.animTimeline.to(targetAnim, fadeTime, {
+                    target: 1,
+                    ease: Sine.easeInOut,
+                    onUpdate: () => {
+                        to.weight = targetAnim.target;
+                        from.weight = 1 - to.weight;
+                        if(from2.weight > 0) {
+                            from2.weight = 0;
+                        }
+                        if(from3.weight > 0) {
+                            from3.weight = 0;
+                            from3.stop();
+                        }
+                        if(from4.weight > 0) {
+                            from4.weight = 0;
+                            from4.stop();
+                        }
+                    },
+                    onComplete: () => {
+                        from.weight = 0;
+                        from.stop();
+                    }
+                });
+            }
+        } else if(player.anims.walk.isRunning()) {
+            from = player.anims.walk;
+            to = player.anims.walkAndAim;
+            from2 = player.anims.aim;
+            from3 = player.anims.idle;
+            to.weight = 0;
+            const targetAnim = { target: to.weight }; // Animate this object because otherwise buggy
+            player.animTimeline.to(targetAnim, 0.2, {
+                target: 1,
+                ease: Sine.easeInOut,
+                onUpdate: () => {
+                    to.weight = targetAnim.target;
+                    from.weight = 1 - to.weight;
+                    if(from2.weight > 0) {
+                        from2.weight = 0;
+                        from2.stop();
+                    }
+                    if(from3.weight > 0) {
+                        from3.weight = 0;
+                        from3.stop();
+                    }
+                },
+                onComplete: () => {
+                    from.weight = 0;
+                    from2.weight = 0;
+                    from2.stop();
+                    from3.weight = 0;
+                    from3.stop();
+                }
+            });
+        }
+    }
+
+    endAiming(player) {
+        player.isAiming = false;
+        player.aimingStarted = performance.now() - 2000;
+        const fadeTime = 0.3;
+        let from, from2, to;
+        if(player.moving) {
+            to = player.anims.walk;
+            to.weight = 0;
+        } else {
+            to = player.anims.idle;
+            to.weight = 0;
+            player.anims.walk.weight = 0;
+            player.anims.walk.stop();
+        }
+        to.play();
+        if(player.animTimeline._active) {
+            player.animTimeline.kill();
+            player.animTimeline = new TimelineMax();
+        }
+        if(player.anims.walkAndAim.weight > 0) {
+            from = player.anims.walkAndAim;
+            from2 = player.anims.aim;
+            if(from.weight < 1) {
+                to = player.anims.idle;
+                to.play();
+            } else {
+                to = player.anims.walk;
+            }
+            const targetAnim = { target: to.weight };
+            player.animTimeline.to(targetAnim, fadeTime, {
+                target: 1,
+                ease: Sine.easeInOut,
+                onUpdate: () => {
+                    to.weight = targetAnim.target;
+                    from.weight = 1 - to.weight;
+                    if(from2.weight > 0) {
+                        from2.weight = from.weight;
+                    }
+                },
+                onComplete: () => {
+                    from.weight = 0;
+                    from2.weight = 0;
+                    from2.stop();
+                    if(player.anims.idle.isRunning()) {
+                        player.anims.walk.stop();
+                        player.anims.walkAndAim.stop();
+                    }
+                }
+            });
+        } else {
+            from = player.anims.aim;
+            const targetAnim = { target: to.weight };
+            player.animTimeline.to(targetAnim, fadeTime, {
+                target: 1,
+                ease: Sine.easeInOut,
+                onUpdate: () => {
+                    to.weight = targetAnim.target;
+                    from.weight = 1 - to.weight;
+                },
+                onComplete: () => {
+                    from.weight = 0;
+                    from.stop();
+                }
+            });
+        }
     }
 }
 

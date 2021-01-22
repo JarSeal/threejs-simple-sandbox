@@ -4,6 +4,7 @@ export const getPlayer = () => {
     return {
         name: 'DEV PLAYER',
         id: 'devPlayer001',
+        type: 'hero',
         pos: [],
         microPos: [],
         startPos: [3,4,0,2,0], // x,y,floor,moduleId,moduleIndex,
@@ -20,7 +21,6 @@ export const getPlayer = () => {
         routeIndex: 0,
         newRoute: [],
         mesh: null,
-        rotationAnims: {},
         isAiming: false,
         aimingStarted: 0,
         moveBackwards: false,

@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { TimelineMax, Expo } from 'gsap-ssr';
 
 class TileMapCamera {
-    constructor(scene, renderer, sceneState, AppUiLayer, PlayerController) {
+    constructor(scene, renderer, sceneState, AppUiLayer, HeroController) {
         this.scene = scene;
         this.renderer = renderer;
         this.sceneState = sceneState;
         this.AppUiLayer = AppUiLayer;
-        this.PlayerController = PlayerController;
+        this.HeroController = HeroController;
         this.stageMaxPosX = 64;
         this.stageMaxPosY = 64;
         this.initPosition = {
@@ -298,7 +298,7 @@ class TileMapCamera {
                     );
                 }
 
-                this.PlayerController.calculateRoute('hero', dx, dy);
+                this.HeroController.calculateRoute(dx, dy);
 
             } else if(this.sceneState.ui.curSecondaryState) {
                 // Shoot (a projectile or something else.. todo):
@@ -311,34 +311,8 @@ class TileMapCamera {
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
-                const rotationID = 'shootProje' + performance.now();
-                const anims = Object.keys(this.sceneState.players.hero.rotationAnims);
-                if(!anims.length) this.sceneState.players.hero.curRotationAnim = rotationID;
-                this.sceneState.players.hero.rotationAnims[rotationID] = {
-                    done: false,
-                    clickTime: performance.now(),
-                    waitTime: 0,
-                    target: [dx,dy]
-                };
-
                 this.sceneState.ui.curSecondaryState = null;
                 this.sceneState.ui.curSecondaryTarget = [dx,dy];
-
-                const checker = setInterval(() => {
-                    if (this.sceneState.players.hero.rotationAnims[rotationID] &&
-                        this.sceneState.players.hero.rotationAnims[rotationID].done) {
-                        this.PlayerController.fire(
-                            this.sceneState.players.hero,
-                            this.sceneState.players.hero.rotationAnims[rotationID].target,
-                            this.scene,
-                            this.sceneState,
-                            this.AppUiLayer,
-                            this.sceneState.players.hero.rotationAnims[rotationID].waitTime
-                        );
-                        delete this.sceneState.players.hero.rotationAnims[rotationID];
-                        clearInterval(checker);
-                    }
-                }, 5);
             }
         }
     }
