@@ -78,8 +78,8 @@ class CombatScene {
     }
 
     doLoops() {
-        this.Hero.setPositions();
-        this.TempDude.setPositions();
+        this.Hero.render();
+        this.TempDude.render();
         this.tileMapController.moduleAnims(this.scene);
         if(this.lastConsequenceCheck + this.lastCheckInterval < performance.now()) {
             this.sceneState.consequences.checkAllHitTimes(this.scene);

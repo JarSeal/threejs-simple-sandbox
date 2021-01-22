@@ -48,15 +48,7 @@ class Projectiles {
         VisualEffects.createEffect('sparks', 'wallHit');
     }
 
-    shootProjectile(shooter, target, scene, sceneState/*, AppUiLayer*/) {
-        
-        // AppUiLayer.logMessage(
-        //     performance.now(),
-        //     sceneState.players.hero.name,
-        //     'Shots fired..',
-        //     'S'
-        // );
-
+    shootProjectile(shooter, target, scene, sceneState) {
         const from = [shooter.microPos[0], shooter.microPos[1], this.shotHeight];
         if(from[0] < -256 || from[0] > 256 || from[1] < -256 || from[1] > 256) return; // Out of play area
         if((from[0] === target[0] && from[1] === target[1]) || (shooter.pos[0] === target[0] && shooter.pos[1] === target[1])) return; // Do not shoot your own legs

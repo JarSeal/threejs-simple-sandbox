@@ -73,7 +73,7 @@ class CombatView {
                                 sceneState.ui.viewData[this.index].actionPhase = 1;
                             }
                             if(sceneState.ui.curSecondaryTarget) {
-                                hero.startFiring(hero, sceneState.ui.curSecondaryTarget, sceneState);
+                                hero.startFiring(hero, sceneState.ui.curSecondaryTarget);
                                 sceneState.ui.curSecondaryTarget = null;
                             }
                             return;

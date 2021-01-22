@@ -1,3 +1,4 @@
+export const HALF_PI = 1.5707963267948966;
 
 export const calculateAngle = (startPos, endPos) => {
     let angle = Math.atan2(startPos[0] - endPos[0], startPos[1] - endPos[1]);

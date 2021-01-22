@@ -311,34 +311,8 @@ class TileMapCamera {
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
-                const rotationID = 'shootProje' + performance.now();
-                const anims = Object.keys(this.sceneState.players.hero.rotationAnims);
-                if(!anims.length) this.sceneState.players.hero.curRotationAnim = rotationID;
-                this.sceneState.players.hero.rotationAnims[rotationID] = {
-                    done: false,
-                    clickTime: performance.now(),
-                    waitTime: 0,
-                    target: [dx,dy]
-                };
-
                 this.sceneState.ui.curSecondaryState = null;
                 this.sceneState.ui.curSecondaryTarget = [dx,dy];
-
-                const checker = setInterval(() => {
-                    if (this.sceneState.players.hero.rotationAnims[rotationID] &&
-                        this.sceneState.players.hero.rotationAnims[rotationID].done) {
-                        this.HeroController.fire(
-                            this.sceneState.players.hero,
-                            this.sceneState.players.hero.rotationAnims[rotationID].target,
-                            this.scene,
-                            this.sceneState,
-                            this.AppUiLayer,
-                            this.sceneState.players.hero.rotationAnims[rotationID].waitTime
-                        );
-                        delete this.sceneState.players.hero.rotationAnims[rotationID];
-                        clearInterval(checker);
-                    }
-                }, 5);
             }
         }
     }

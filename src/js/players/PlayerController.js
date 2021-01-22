@@ -3,7 +3,7 @@ import { TimelineMax, Sine, Power0 } from 'gsap-ssr';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { astar, Graph } from '../vendor/astar.js';
-import { calculateNewAngleForPlayer } from '../util.js';
+import { HALF_PI, calculateNewAngleForPlayer } from '../util.js';
 import Projectiles from './projectiles.js';
 import { logger } from '../util.js';
 
@@ -11,12 +11,13 @@ class PlayerController {
     constructor(data, scene, sceneState, doorAnimationController, SoundController, VisualEffects) {
         this.playerId = data.id;
         this.data = data;
+        this.scene = scene;
         this.sceneState = sceneState;
         this.doorAnims = doorAnimationController;
         this.SoundController = SoundController;
         this.projectiles = new Projectiles(scene, sceneState, SoundController, VisualEffects);
+        this.TWO_PI = Math.PI * 2;
         this.createNewPlayer(data, scene, sceneState);
-        this.halfPI = Math.PI / 2;
     }
 
     createNewPlayer(data, scene, sceneState) {
@@ -77,7 +78,7 @@ class PlayerController {
                 this.data.animTimeline = new TimelineMax();
                 this.data.anims.data = {
                     walkTimeScale: 0.96,
-                    walkBackwardsTimeScale: -0.96
+                    walkBackwardsTimeScale: -0.96,
                 };
                 this.data.anims.idle.play();
                 this.data.anims.idle.weight = 1;
@@ -94,7 +95,9 @@ class PlayerController {
                 // calculateRoute() (to start walking)
                 // newMove() (to end walking)
                 // fire() method (to play shooting nudge)
-                // ui/views/combat-view.js, uiData.action (to aim and return to idle or walk)
+                // startAiming()
+                // endAiming()
+                // startFiring() (does the rotate and backwards walk checks)
                 object.scale.set(0.1214, 0.1214, 0.1214);
                 object.position.x = this.data.pos[0];
                 object.position.y = this.data.pos[1];
@@ -198,40 +201,28 @@ class PlayerController {
         // TODO: finish this. We need moduleMap and shipMap to determine actual tile..
     }
 
-    setPositions() {
-        let playerTypes = [
-                'hero',
-                'npc'
-            ],
-            playerTypesLength = playerTypes.length,
-            t;
-        for(t=0;t<playerTypesLength;t++) {
-            switch(playerTypes[t]) {
-            case 'hero':
-                this.animateMovement(this.data);
-                break;
-            case 'npc':
-                this.animateMovement(this.data);
-                break;
-            }
+    render() {
+        this.animateMovement(this.data);
+        if(this.data.projectileTarget) {
+            this.fire(this.data, this.data.projectileTarget);
+            this.data.projectileTarget = null;
         }
     }
 
-    fire(player, target, scene, sceneState, AppUiLayer, delay) {
-        player.aimingStarted = performance.now();
+    fire(player, target) {
         // Player shooting animation:
         if(player.animFns && player.animFns.shotKick) {
             player.animFns.shotKick.fn(player.moving);
         }
+        const delay = player.rotationTime * 1000;
         setTimeout(() => {
             this.projectiles.shootProjectile(
                 player,
                 target,
-                scene,
-                sceneState,
-                AppUiLayer
+                this.scene,
+                this.sceneState
             );
-        }, delay * 1000);
+        }, delay);
     }
 
     animateMovement(player) {
@@ -315,11 +306,10 @@ class PlayerController {
     }
 
     newMove(player) {
-        // One tile movement
+        // Half a tile movement
         let route = player.route,
             routeLength = route.length,
             tl = new TimelineMax(),
-            tlRotate = new TimelineMax(),
             routeIndex = player.routeIndex,
             ease,
             speed;
@@ -331,28 +321,28 @@ class PlayerController {
         if(!player.rotationAnim) {
             const target = [route[routeIndex].x, route[routeIndex].y];
             const calculatedAngles = calculateNewAngleForPlayer(player, target);
-            let angle = calculatedAngles.angle,
-                newDir = calculatedAngles.fixedAngle;
-            if(player.moveBackwards && newDir < 0) {
+            let newDir = calculatedAngles.fixedAngle;
+            if(player.moveBackwards) {
                 newDir += Math.PI;
-                player.anims.walk.timeScale = player.anims.data.walkBackwardsTimeScale;
-                player.anims.walkAndAim.timeScale = player.anims.data.walkBackwardsTimeScale;
-            } else if(player.moveBackwards && newDir >= 0) {
-                newDir -= Math.PI;
+                if(newDir >= this.TWO_PI) {
+                    newDir -= this.TWO_PI;
+                }
                 player.anims.walk.timeScale = player.anims.data.walkBackwardsTimeScale;
                 player.anims.walkAndAim.timeScale = player.anims.data.walkBackwardsTimeScale;
             } else if(!player.moveBackwards) {
                 player.anims.walk.timeScale = player.anims.data.walkTimeScale;
                 player.anims.walkAndAim.timeScale = player.anims.data.walkTimeScale;
             }
-            tlRotate.to(player.mesh.rotation, 0.3, {
-                z: newDir,
-                ease: Sine.easeInOut,
-                onComplete: () => {
-                    player.dir = angle;
-                    player.mesh.rotation.z = angle;
-                }
-            });
+            if(player.dir !== newDir) {
+                new TimelineMax().to(player.mesh.rotation, 0.2, {
+                    z: newDir,
+                    ease: Sine.easeInOut,
+                    onComplete: () => {
+                        player.dir = newDir;
+                        player.mesh.rotation.z = newDir;
+                    }
+                });
+            }
         }
         speed = route[routeIndex].speed * this.sceneState.timeSpeed;
         player.curSpeed = speed * this.sceneState.timeSpeed;
@@ -649,132 +639,20 @@ class PlayerController {
         return parsedRoute;
     }
 
-    rotatePlayer(player, angle, turnTimeScale) {
-        const spine = player.mesh.children[0].getObjectByName('Spine1');
-        if (player.moving &&
-            !player.moveBackwards &&
-            angle !== player.dir &&
-            player.routeIndex < player.route.length - 2) {
-            let newSpineAngle;
-            player.anims.walk.timeScale = player.anims.data.walkTimeScale;
-            player.anims.walkAndAim.timeScale = player.anims.data.walkTimeScale;
-            if(angle <= 0) {
-                newSpineAngle = angle - player.dir * -1;
-            } else {
-                newSpineAngle = angle - player.dir;
-            }
-            player.rotationAnim = new TimelineMax().to(
-                spine.rotation,
-                turnTimeScale,
-                {
-                    y: newSpineAngle,
-                    ease: Sine.easeInOut,
-                    onUpdate: () => {
-                        player.spineRotated = spine.rotation.y;
-                    },
-                    onComplete: () => {
-                        player.rotationAnim = false;
-                        if(player.curRotationAnim && player.rotationAnims[player.curRotationAnim]) {
-                            player.rotationAnims[player.curRotationAnim].done = true;
-                            let keys = Object.keys(player.rotationAnims);
-                            if(keys.length) {
-                                keys.sort();
-                                for(let i=0; i<keys.length; i++) {
-                                    let difference = 0, prevTime;
-                                    if(i !== 0) {
-                                        prevTime = player.rotationAnims[keys[i-1]].clickTime;
-                                        difference = player.rotationAnims[keys[i]].clickTime - prevTime;
-                                    }
-                                    if(!player.rotationAnims[keys[i]].done) {
-                                        player.curRotationAnim = keys[i];
-                                        player.rotationAnims[keys[i]].waitTime = difference;
-                                        this.sceneState.ui.curSecondaryTarget = player.rotationAnims[keys[i]].target;
-                                        break;
-                                    }
-                                }
-                            }
-                        } else { 
-                            // Brutal reset in case of trouble
-                            player.rotationAnims = {};
-                        }
-                        clearTimeout(player.rotateSpineBackTimer);
-                        player.rotateSpineBackTimer = setTimeout(() => {
-                            new TimelineMax().to(
-                                spine.rotation, 0.5,
-                                {
-                                    y: 0,
-                                    ease: Sine.easeInOut,
-                                    onUpdate: () => {
-                                        player.spineRotated = spine.rotation.y;
-                                    },
-                                    onComplete: () => {
-                                        player.spineRotated = 0;
-                                    }
-                                }
-                            );
-                        }, 500);
-                    }
-                }, turnTimeScale
-            );
-        } else {
-            if(player.spineRotated) {
-                spine.rotation.y = 0;
-            }
-            player.rotationAnim = new TimelineMax().to(
-                player.mesh.rotation,
-                turnTimeScale,
-                {
-                    z: angle,
-                    ease: Sine.easeInOut,
-                    onComplete: () => {
-                        player.dir = angle;
-                        player.rotationAnim = false;
-                        if(player.curRotationAnim && player.rotationAnims[player.curRotationAnim]) {
-                            player.rotationAnims[player.curRotationAnim].done = true;
-                            let keys = Object.keys(player.rotationAnims);
-                            if(keys.length) {
-                                keys.sort();
-                                for(let i=0; i<keys.length; i++) {
-                                    let difference = 0, prevTime;
-                                    if(i !== 0) {
-                                        prevTime = player.rotationAnims[keys[i-1]].clickTime;
-                                        difference = player.rotationAnims[keys[i]].clickTime - prevTime;
-                                    }
-                                    if(!player.rotationAnims[keys[i]].done) {
-                                        player.curRotationAnim = keys[i];
-                                        player.rotationAnims[keys[i]].waitTime = difference;
-                                        this.sceneState.ui.curSecondaryTarget = player.rotationAnims[keys[i]].target;
-                                        break;
-                                    }
-                                }
-                            }
-                        } else {
-                            // Brutal reset in case of trouble
-                            player.rotationAnims = {};
-                        }
-                    }
-                }
-            );
-        }
-    }
-
-    startFiring(player, target, sceneState) {
+    startFiring(player, target) {
+        player.aimingStarted = performance.now();
         const calculatedAngles = calculateNewAngleForPlayer(player, target),
             angle = calculatedAngles.angle,
             fixedAngle = calculatedAngles.fixedAngle,
             turnAmount = calculatedAngles.turnAmount;
-        if ((player.moving && !player.moveBackwards && turnAmount > this.halfPI) ||
-            (player.moving && player.moveBackwards && turnAmount <= this.halfPI)) {
+        if ((player.moving && !player.moveBackwards && turnAmount > HALF_PI) ||
+            (player.moving && player.moveBackwards && turnAmount <= HALF_PI)) {
             player.moveBackwards = true;
         } else {
             player.moveBackwards = false;
         }
-        const turnTimeScale = turnAmount / Math.PI * 0.2;
+        const turnTimeScale = turnAmount / Math.PI * 0.1;
         player.rotationTime = turnTimeScale;
-        if(player.rotationAnims[player.curRotationAnim]) {
-            const waitTime = player.rotationAnims[player.curRotationAnim].waitTime / 1000;
-            player.rotationAnims[player.curRotationAnim].waitTime = turnTimeScale < waitTime ? waitTime - turnTimeScale : waitTime;
-        }
         const spine = player.mesh.children[0].getObjectByName('Spine1');
         if (player.moving &&
             !player.moveBackwards &&
@@ -799,29 +677,7 @@ class PlayerController {
                     },
                     onComplete: () => {
                         player.rotationAnim = false;
-                        if(player.curRotationAnim && player.rotationAnims[player.curRotationAnim]) {
-                            player.rotationAnims[player.curRotationAnim].done = true;
-                            let keys = Object.keys(player.rotationAnims);
-                            if(keys.length) {
-                                keys.sort();
-                                for(let i=0; i<keys.length; i++) {
-                                    let difference = 0, prevTime;
-                                    if(i !== 0) {
-                                        prevTime = player.rotationAnims[keys[i-1]].clickTime;
-                                        difference = player.rotationAnims[keys[i]].clickTime - prevTime;
-                                    }
-                                    if(!player.rotationAnims[keys[i]].done) {
-                                        player.curRotationAnim = keys[i];
-                                        player.rotationAnims[keys[i]].waitTime = difference;
-                                        sceneState.ui.curSecondaryTarget = player.rotationAnims[keys[i]].target;
-                                        break;
-                                    }
-                                }
-                            }
-                        } else { 
-                            // Brutal reset in case of trouble
-                            player.rotationAnims = {};
-                        }
+                        player.projectileTarget = target;
                         clearTimeout(player.rotateSpineBackTimer);
                         player.rotateSpineBackTimer = setTimeout(() => {
                             new TimelineMax().to(
@@ -855,29 +711,7 @@ class PlayerController {
                         player.dir = angle;
                         player.mesh.rotation.z = angle;
                         player.rotationAnim = false;
-                        if(player.curRotationAnim && player.rotationAnims[player.curRotationAnim]) {
-                            player.rotationAnims[player.curRotationAnim].done = true;
-                            let keys = Object.keys(player.rotationAnims);
-                            if(keys.length) {
-                                keys.sort();
-                                for(let i=0; i<keys.length; i++) {
-                                    let difference = 0, prevTime;
-                                    if(i !== 0) {
-                                        prevTime = player.rotationAnims[keys[i-1]].clickTime;
-                                        difference = player.rotationAnims[keys[i]].clickTime - prevTime;
-                                    }
-                                    if(!player.rotationAnims[keys[i]].done) {
-                                        player.curRotationAnim = keys[i];
-                                        player.rotationAnims[keys[i]].waitTime = difference;
-                                        sceneState.ui.curSecondaryTarget = player.rotationAnims[keys[i]].target;
-                                        break;
-                                    }
-                                }
-                            }
-                        } else {
-                            // Brutal reset in case of trouble
-                            player.rotationAnims = {};
-                        }
+                        player.projectileTarget = target;
                     }
                 }
             );
@@ -892,15 +726,11 @@ class PlayerController {
         player.isAiming = true;
         player.aimingStarted = performance.now();
         const fadeTime = 0.2;
+        let to, from, from2, from3, from4;
         if(player.anims.idle.isRunning()) {
-            if(player.animTimeline._active) {
-                player.animTimeline.kill();
-                player.animTimeline = new TimelineMax();
-            }
             if(!player.moving) {
-                const from = player.anims.idle;
-                let to = player.anims.aim,
-                    from2;
+                from = player.anims.idle;
+                to = player.anims.aim;
                 if (player.anims.walk.weight > 0 &&
                     !player.movingInLastTile) {
                     to = player.anims.walkAndAim;
@@ -915,10 +745,12 @@ class PlayerController {
                     }
                     to.play();
                 }
-                player.animTimeline.to(to, fadeTime, {
-                    weight: 1,
+                const targetAnim = { target: to.weight };
+                player.animTimeline.to(targetAnim, fadeTime, {
+                    target: 1,
                     ease: Sine.easeInOut,
                     onUpdate: () => {
+                        to.weight = targetAnim.target;
                         from.weight = 1 - to.weight;
                         if(from2) {
                             from2.weight = 0;
@@ -933,15 +765,17 @@ class PlayerController {
                     }
                 });
             } else {
-                const from = player.anims.idle,
-                    to = player.anims.walkAndAim,
-                    from2 = player.anims.walk,
-                    from3 = player.anims.aim,
-                    from4 = player.anims.idle;
-                player.animTimeline.to(to, fadeTime, {
-                    weight: 1,
+                from = player.anims.idle;
+                to = player.anims.walkAndAim;
+                from2 = player.anims.walk;
+                from3 = player.anims.aim;
+                from4 = player.anims.idle;
+                const targetAnim = { target: to.weight };
+                player.animTimeline.to(targetAnim, fadeTime, {
+                    target: 1,
                     ease: Sine.easeInOut,
                     onUpdate: () => {
+                        to.weight = targetAnim.target;
                         from.weight = 1 - to.weight;
                         if(from2.weight > 0) {
                             from2.weight = 0;
@@ -962,18 +796,17 @@ class PlayerController {
                 });
             }
         } else if(player.anims.walk.isRunning()) {
-            if(player.animTimeline._active) {
-                player.animTimeline.kill();
-                player.animTimeline = new TimelineMax();
-            }
-            const from = player.anims.walk,
-                to = player.anims.walkAndAim,
-                from2 = player.anims.aim,
-                from3 = player.anims.idle;
-            player.animTimeline.to(to, fadeTime, {
-                weight: 1,
+            from = player.anims.walk;
+            to = player.anims.walkAndAim;
+            from2 = player.anims.aim;
+            from3 = player.anims.idle;
+            to.weight = 0;
+            const targetAnim = { target: to.weight }; // Animate this object because otherwise buggy
+            player.animTimeline.to(targetAnim, 0.2, {
+                target: 1,
                 ease: Sine.easeInOut,
                 onUpdate: () => {
+                    to.weight = targetAnim.target;
                     from.weight = 1 - to.weight;
                     if(from2.weight > 0) {
                         from2.weight = 0;
@@ -1023,10 +856,12 @@ class PlayerController {
             } else {
                 to = player.anims.walk;
             }
-            player.animTimeline.to(to, fadeTime, {
-                weight: 1,
+            const targetAnim = { target: to.weight };
+            player.animTimeline.to(targetAnim, fadeTime, {
+                target: 1,
                 ease: Sine.easeInOut,
                 onUpdate: () => {
+                    to.weight = targetAnim.target;
                     from.weight = 1 - to.weight;
                     if(from2.weight > 0) {
                         from2.weight = from.weight;
@@ -1044,10 +879,12 @@ class PlayerController {
             });
         } else {
             from = player.anims.aim;
-            player.animTimeline.to(to, fadeTime, {
-                weight: 1,
+            const targetAnim = { target: to.weight };
+            player.animTimeline.to(targetAnim, fadeTime, {
+                target: 1,
                 ease: Sine.easeInOut,
                 onUpdate: () => {
+                    to.weight = targetAnim.target;
                     from.weight = 1 - to.weight;
                 },
                 onComplete: () => {
