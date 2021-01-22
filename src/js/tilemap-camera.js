@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { TimelineMax, Expo } from 'gsap-ssr';
 
 class TileMapCamera {
-    constructor(scene, renderer, sceneState, AppUiLayer, PlayerController) {
+    constructor(scene, renderer, sceneState, AppUiLayer, HeroController) {
         this.scene = scene;
         this.renderer = renderer;
         this.sceneState = sceneState;
         this.AppUiLayer = AppUiLayer;
-        this.PlayerController = PlayerController;
+        this.HeroController = HeroController;
         this.stageMaxPosX = 64;
         this.stageMaxPosY = 64;
         this.initPosition = {
@@ -298,7 +298,7 @@ class TileMapCamera {
                     );
                 }
 
-                this.PlayerController.calculateRoute('hero', dx, dy);
+                this.HeroController.calculateRoute(dx, dy);
 
             } else if(this.sceneState.ui.curSecondaryState) {
                 // Shoot (a projectile or something else.. todo):
@@ -327,7 +327,7 @@ class TileMapCamera {
                 const checker = setInterval(() => {
                     if (this.sceneState.players.hero.rotationAnims[rotationID] &&
                         this.sceneState.players.hero.rotationAnims[rotationID].done) {
-                        this.PlayerController.fire(
+                        this.HeroController.fire(
                             this.sceneState.players.hero,
                             this.sceneState.players.hero.rotationAnims[rotationID].target,
                             this.scene,

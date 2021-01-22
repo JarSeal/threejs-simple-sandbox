@@ -1,5 +1,4 @@
 import CombatView from './views/combat-view.js';
-import { calculateAngle } from '../util.js';
 
 class AppUiLayer {
     constructor(sceneState) {
@@ -73,7 +72,7 @@ class AppUiLayer {
                     ctx.beginPath();
                     ctx.arc(data[i].pos[0], data[i].pos[1], data[i].radius, 0, 2 * Math.PI);
                     ctx.fill();
-                    data[i].action(this.sceneState, calculateAngle);
+                    data[i].action(this.sceneState);
                 } else if(data[i].type == 'logDisplay') {
                     data[i].renderLogList(this.logList);
                 }

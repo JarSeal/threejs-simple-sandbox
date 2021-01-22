@@ -3,6 +3,17 @@ export const calculateAngle = (startPos, endPos) => {
     return Math.atan2(endPos[0] - startPos[0], startPos[1] - endPos[1]);
 };
 
+export const calculateAngle2 = (startPos, endPos) => {
+    let angle = Math.atan2(startPos[0] - endPos[0], startPos[1] - endPos[1]);
+    if(angle < 0) {
+        angle = Math.abs(angle);
+    } else if(angle > 0) {
+        angle = Math.PI - angle + Math.PI;
+    }
+    console.log(angle);
+    return angle;
+};
+
 export const randomInt = (from, to) => {
     return Math.floor(Math.random() * (to - from + 1) + from);
 };

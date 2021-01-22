@@ -57,7 +57,6 @@ class Projectiles {
         //     'S'
         // );
 
-        shooter.aimingStarted = performance.now();
         const from = [shooter.microPos[0], shooter.microPos[1], this.shotHeight];
         if(from[0] < -256 || from[0] > 256 || from[1] < -256 || from[1] > 256) return; // Out of play area
         if((from[0] === target[0] && from[1] === target[1]) || (shooter.pos[0] === target[0] && shooter.pos[1] === target[1])) return; // Do not shoot your own legs
@@ -111,11 +110,6 @@ class Projectiles {
                 'whoosh-001'
             ]);
 
-            // Player shooting animation:
-            if(shooter.animFns && shooter.animFns.shotKick) {
-                shooter.animFns.shotKick.fn(shooter.moving);
-            }
-
             tl.to(laser.position, speed, {
                 x: targetPos[0],
                 y: targetPos[1],
@@ -128,12 +122,6 @@ class Projectiles {
                         tl.kill();
                         return;
                     }
-                    // const timeNow = this.sceneState.initTime.s + performance.now() / 1000,
-                    //     lastTile = projectileLife.route[projectileLife.route.length - 1];
-                    // if(!lastTile || timeNow > lastTile.leaveTime + 0.5) {
-                    //     this.sceneState.consequences.removeProjectile(name, scene, this.VisualEffects.removeAnim);
-                    //     tl.kill();
-                    // }
                 },
                 onComplete: () => {
                     // scene.remove(helperLine);
