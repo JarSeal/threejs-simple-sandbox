@@ -849,13 +849,8 @@ class PlayerController {
         }
         if(player.anims.walkAndAim.weight > 0) {
             from = player.anims.walkAndAim;
+            to = player.anims.walk;
             from2 = player.anims.aim;
-            if(from.weight < 1) {
-                to = player.anims.idle;
-                to.play();
-            } else {
-                to = player.anims.walk;
-            }
             const targetAnim = { target: to.weight };
             player.animTimeline.to(targetAnim, fadeTime, {
                 target: 1,
