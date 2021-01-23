@@ -9,6 +9,8 @@ class Consequences {
         this.initTime = 0;
 
         this.worker = new Worker('/webworkers/workerConsequences.js');
+        this.movingWorker = new Worker('/webworkers/workerConsequences.js');
+        this.projectileWorker = new Worker('/webworkers/workerConsequences.js');
     }
 
     addMapAndInitTime(currentMap, initTime) {
@@ -26,7 +28,7 @@ class Consequences {
     }
 
     movePlayer(playerId, route, pid) {
-        this.worker.postMessage({
+        this.movingWorker.postMessage({
             task: 'movePlayer',
             data: {
                 pid: pid,
@@ -39,13 +41,22 @@ class Consequences {
                 microTime: performance.now()
             }
         });
-        return this.worker;
+        return this.movingWorker;
+    }
+
+    stopPlayerMovement(playerId, tile) {
+        this.players[playerId] = [{
+            pos: tile,
+            posInt: tile,
+            enterTime: this.initTime + performance.now() / 1000,
+            leaveTime: 0
+        }];
     }
 
     movePlayerCallBack(data) {
         this.players = data.players;
         this.doors = data.doors;
-        this.createHitList().onmessage = (e) => { // TODO: move this to the player-controller.js
+        this.createHitList().onmessage = (e) => { // TODO: (move this to the player-controller.js) DO THIS IN THE movePlayer Worker
             this.updateHitList(e.data);
         };
     }
@@ -81,15 +92,16 @@ class Consequences {
 
     addProjectile(shooterId, projectileId, route) {
         this.projectiles.push({shooterId, projectileId, route});
-        return this.createHitList(this.projectiles.length - 1);
+        return this.createHitList(this.projectiles.length - 1, 'projectileWorker');
     }
 
     updateHitList(newHitList) {
         this.hitList = Object.assign({}, this.hitList, newHitList);
     }
     
-    createHitList(index) {
-        this.worker.postMessage({
+    createHitList(index, targetWorker) {
+        if(!targetWorker) targetWorker = 'worker';
+        this[targetWorker].postMessage({
             task: 'createHitList',
             data: {
                 index: index,
@@ -99,10 +111,7 @@ class Consequences {
                 tileMap: this.tileMap,
             }
         });
-        return this.worker;
-        // this.worker.onmessage = (e) => {
-        //     this.hitList = Object.assign({}, this.hitList, e.data);
-        // };
+        return this[targetWorker];
     }
 
     doHitConsequence(id, scene, removeAnim) {

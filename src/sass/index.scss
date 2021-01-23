@@ -1,5 +1,6 @@
 *,*:before,*:after {
     user-select: none;
+    -webkit-user-select: none;
     box-sizing: border-box;
 }
 body {
@@ -22,4 +23,3 @@ canvas {
 @import 'log-list';
 @import 'settings';
 @import 'form-elems';
-

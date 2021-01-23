@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { TimelineMax, Expo } from 'gsap-ssr';
 
 class TileMapCamera {
-    constructor(scene, renderer, sceneState, AppUiLayer, PlayerController) {
+    constructor(scene, renderer, sceneState, AppUiLayer, HeroController) {
         this.scene = scene;
         this.renderer = renderer;
         this.sceneState = sceneState;
         this.AppUiLayer = AppUiLayer;
-        this.PlayerController = PlayerController;
+        this.HeroController = HeroController;
         this.stageMaxPosX = 64;
         this.stageMaxPosY = 64;
         this.initPosition = {
@@ -298,13 +298,10 @@ class TileMapCamera {
                     );
                 }
 
-                this.PlayerController.calculateRoute('hero', dx, dy);
+                this.HeroController.calculateRoute(dx, dy);
 
             } else if(this.sceneState.ui.curSecondaryState) {
-                // Shoot a projectile:
-
-                this.sceneState.ui.curSecondaryState = null;
-                this.sceneState.ui.curSecondaryTarget = [dx,dy];
+                // Shoot (a projectile or something else.. todo):
 
                 // Add tile click marker and animate it
                 tile = this.scene.tileClick.oneTarget;
@@ -314,13 +311,8 @@ class TileMapCamera {
                 tl.to(tile.material, .1, {opacity: 0.7});
                 tl.to(tile.material, 2, {opacity: 0, ease: Expo.easeOut});
 
-                this.PlayerController.fire(
-                    this.sceneState.players.hero,
-                    this.sceneState.ui.curSecondaryTarget,
-                    this.scene,
-                    this.sceneState,
-                    this.AppUiLayer
-                );
+                this.sceneState.ui.curSecondaryState = null;
+                this.sceneState.ui.curSecondaryTarget = [dx,dy];
             }
         }
     }

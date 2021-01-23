@@ -64,51 +64,23 @@ class CombatView {
                         return this.colors[0];
                     },
                     actionPhase: 0,
-                    action: function(sceneState, calculateAngle) {
-                        if(!sceneState.players.hero || !sceneState.players.hero.mesh || !sceneState.players.hero.mesh.children || !sceneState.players.hero.mesh.children.length) return;
+                    action: function(sceneState) {
                         // 3D layer change:
-                        let hero = sceneState.players.hero,
-                            heroMaterial;
-                        hero.mesh.traverse(o => {
-                            if (o.isMesh) {
-                                heroMaterial = o.material;
-                            }
-                        });
+                        const hero = sceneState.players.hero;
                         if(this.id == sceneState.ui.curId && sceneState.ui.curState == 'startClick') {
                             if(sceneState.ui.viewData[this.index].actionPhase === 0) {
-                                if(heroMaterial.color) heroMaterial.color.setHex(0xffffff);
+                                hero.startAiming(hero);
                                 sceneState.ui.viewData[this.index].actionPhase = 1;
                             }
                             if(sceneState.ui.curSecondaryTarget) {
-                                // Calculate angle for player to turn to
-                                const angle = calculateAngle(hero.pos, sceneState.ui.curSecondaryTarget),
-                                    curAngle = hero.mesh.rotation.z,
-                                    halfPI = Math.PI / 2;
-                                // prevent unnecessary spin moves :)
-                                if(angle < -halfPI && curAngle > halfPI && angle < 0 && curAngle > 0) {
-                                    hero.mesh.rotation.z = -Math.PI - (Math.PI - curAngle);
-                                }
-                                if(angle > halfPI && curAngle < -halfPI && angle > 0 && curAngle < 0) {
-                                    hero.mesh.rotation.z = Math.PI + (Math.PI + curAngle);
-                                }
-                                if(hero.rotationAnim) hero.rotationAnim.kill();
-                                hero.rotationAnim = new TimelineMax().to(
-                                    hero.mesh.rotation,
-                                    0.2,
-                                    {
-                                        z: angle,
-                                        ease: Sine.easeInOut,
-                                        onComplete: () => {
-                                            hero.dir = angle;
-                                            hero.rotationAnim = false;
-                                        }
-                                    });
+                                hero.startFiring(hero, sceneState.ui.curSecondaryTarget);
                                 sceneState.ui.curSecondaryTarget = null;
                             }
                             return;
                         }
                         if(sceneState.ui.viewData[this.index].actionPhase == 1) {
-                            if(heroMaterial.color) heroMaterial.color.set('lime');
+                            // Stop aiming / firing pose
+                            hero.endAiming(hero);
                             sceneState.ui.viewData[this.index].actionPhase = 0;
                         }
                     },
